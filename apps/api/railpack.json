@@ -1,4 +1,0 @@
-{
-  "build": "npm run build --workspace=@sturec/shared && npx prisma generate && npm run build",
-  "start": "node dist/server.js"
-}
