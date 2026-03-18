@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+.next/
+out/
+
+# Turbo
+.turbo/
+
+# Prisma
+apps/api/prisma/generated/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+
+# Logs
+*.log
+
+# Debug
+firebase-debug.log
+firebase-service-account.json
+
+# Screenshots (dev testing)
+*.png
+
+# Playwright MCP
+.playwright-mcp/
+
+# Claude memory (local only)
+.claude/

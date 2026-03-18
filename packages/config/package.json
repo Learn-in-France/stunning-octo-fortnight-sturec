@@ -1,0 +1,10 @@
+{
+  "name": "@sturec/config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./tsconfig/*": "./tsconfig/*.json",
+    "./eslint": "./eslint/base.js",
+    "./prettier": "./prettier/index.js"
+  }
+}

@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  --font-display: var(--font-bricolage), serif;
+  --font-mono: var(--font-jetbrains), monospace;
+
+  --color-primary-50: #f0fdfa;
+  --color-primary-100: #ccfbf1;
+  --color-primary-200: #99f6e4;
+  --color-primary-300: #5eead4;
+  --color-primary-400: #2dd4bf;
+  --color-primary-500: #14b8a6;
+  --color-primary-600: #0d9488;
+  --color-primary-700: #0f766e;
+  --color-primary-800: #115e59;
+  --color-primary-900: #134e4a;
+  --color-primary-950: #042f2e;
+
+  --color-surface: #f8f8f6;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #f0efed;
+
+  --color-sidebar: #0c0f1a;
+  --color-sidebar-hover: #161a2c;
+  --color-sidebar-active: #1c2136;
+  --color-sidebar-text: #7c86a2;
+  --color-sidebar-text-active: #f1f5f9;
+  --color-sidebar-accent: #14b8a6;
+  --color-sidebar-border: #1e2338;
+
+  --color-border: #e2e0dc;
+  --color-border-strong: #c8c5bf;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #5c5c5c;
+  --color-text-muted: #8c8c8c;
+
+  --color-priority-p1: #e11d48;
+  --color-priority-p1-bg: #fff1f2;
+  --color-priority-p2: #d97706;
+  --color-priority-p2-bg: #fffbeb;
+  --color-priority-p3: #64748b;
+  --color-priority-p3-bg: #f1f5f9;
+
+  --color-status-new: #3b82f6;
+  --color-status-nurturing: #8b5cf6;
+  --color-status-qualified: #10b981;
+  --color-status-disqualified: #ef4444;
+  --color-status-converted: #0d9488;
+
+  --color-score-high: #10b981;
+  --color-score-mid: #f59e0b;
+  --color-score-low: #ef4444;
+}
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-strong);
+}

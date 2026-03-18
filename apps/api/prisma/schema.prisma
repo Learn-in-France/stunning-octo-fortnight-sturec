@@ -1,0 +1,900 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Enums ──────────────────────────────────────────────────────
+
+enum UserRole {
+  student
+  counsellor
+  admin
+}
+
+enum UserStatus {
+  active
+  invited
+  deactivated
+}
+
+enum LeadSource {
+  marketing
+  university
+  referral
+  whatsapp
+  ads
+  manual
+}
+
+enum LeadStatus {
+  new_lead     @map("new")
+  nurturing
+  qualified
+  disqualified
+  converted
+}
+
+enum PriorityLevel {
+  p1
+  p2
+  p3
+}
+
+enum StudentStage {
+  lead_created
+  intake_completed
+  qualified
+  counsellor_consultation
+  application_started
+  offer_confirmed
+  campus_france_readiness
+  visa_file_readiness
+  visa_submitted
+  visa_decision
+  arrival_onboarding
+  arrived_france
+  alumni
+}
+
+enum EnglishTestType {
+  ielts
+  toefl
+  duolingo
+  none
+}
+
+enum VisaRisk {
+  low
+  medium
+  high
+}
+
+enum DocumentType {
+  passport
+  transcript
+  sop
+  financial_proof
+  accommodation
+  offer_letter
+  other
+}
+
+enum DocumentStatus {
+  pending_upload
+  pending
+  verified
+  rejected
+}
+
+enum RequirementSource {
+  visa
+  admission
+  housing
+  custom
+}
+
+enum RequirementStatus {
+  missing
+  requested
+  uploaded
+  verified
+  rejected
+  waived
+}
+
+enum ChatSessionStatus {
+  active
+  completed
+}
+
+enum MessageRole {
+  user
+  assistant
+  system
+}
+
+enum AssessmentSourceType {
+  chat
+  document
+  lead_form
+  manual_review
+  import
+}
+
+enum ApplicationStatus {
+  draft
+  submitted
+  offer
+  rejected
+  enrolled
+}
+
+enum NoteType {
+  general
+  visa
+  academic
+  finance
+  risk
+}
+
+enum ActivityType {
+  call
+  whatsapp
+  email
+  meeting
+  follow_up
+  status_update
+  other
+}
+
+enum ActivityChannel {
+  phone
+  whatsapp_channel  @map("whatsapp")
+  email_channel     @map("email")
+  video
+  in_person
+  internal
+  other
+}
+
+enum ActivityDirection {
+  outbound
+  inbound
+  internal
+}
+
+enum ConsentType {
+  whatsapp_consent  @map("whatsapp")
+  email_consent     @map("email")
+  parent_contact
+}
+
+enum ConsentSource {
+  form
+  manual
+  import
+  webhook
+}
+
+enum ChangedByType {
+  user
+  system
+  automation
+}
+
+enum MauticEventType {
+  contact_created
+  contact_updated
+  campaign_triggered
+}
+
+enum SyncStatus {
+  pending
+  sent
+  failed
+  retrying
+}
+
+enum BookingStatus {
+  scheduled
+  completed
+  cancelled
+  no_show
+}
+
+enum NotificationChannel {
+  email
+  whatsapp
+  sms
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  delivered
+  failed
+}
+
+enum ValueType {
+  number
+  string
+  boolean
+  enum_type  @map("enum")
+}
+
+enum ContactType {
+  parent
+  guardian
+  emergency
+}
+
+// ─── Core Models ────────────────────────────────────────────────
+
+model User {
+  id          String     @id @default(uuid()) @db.Uuid
+  firebaseUid String     @unique @map("firebase_uid")
+  email       String     @unique
+  role        UserRole
+  firstName   String     @map("first_name")
+  lastName    String     @map("last_name")
+  phone       String?
+  avatarUrl   String?    @map("avatar_url")
+  invitedBy   String?    @map("invited_by") @db.Uuid
+  invitedAt   DateTime?  @map("invited_at")
+  status      UserStatus @default(active)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+
+  // Relations
+  inviter              User?                  @relation("UserInvites", fields: [invitedBy], references: [id])
+  invitees             User[]                 @relation("UserInvites")
+  leads                Lead[]                 @relation("LeadUser")
+  createdLeads         Lead[]                 @relation("LeadCreator")
+  assignedLeads        Lead[]                 @relation("LeadCounsellor")
+  student              Student?               @relation("StudentUser")
+  assignedStudents     Student[]              @relation("StudentCounsellor")
+  chatSessions         ChatSession[]
+  stageChanges         StageTransition[]      @relation("StageChanger")
+  assignmentsAsCounsellor StudentAssignment[] @relation("AssignmentCounsellor")
+  assignmentsMade      StudentAssignment[]    @relation("AssignmentAssigner")
+  documentsUploaded    Document[]             @relation("DocumentUploader")
+  documentsVerified    Document[]             @relation("DocumentVerifier")
+  counsellorNotes      CounsellorNote[]
+  activityLogs         CounsellorActivityLog[] @relation("ActivityCounsellor")
+  activityLogsCreated  CounsellorActivityLog[] @relation("ActivityCreator")
+  consentsCaptured     ConsentEvent[]
+  applicationsCreated  Application[]          @relation("ApplicationCreator")
+  applicationsUpdated  Application[]          @relation("ApplicationUpdater")
+  bookingsAsCounsellor Booking[]
+  universitiesCreated  University[]           @relation("UniversityCreator")
+  universitiesUpdated  University[]           @relation("UniversityUpdater")
+  programsCreated      Program[]              @relation("ProgramCreator")
+  programsUpdated      Program[]              @relation("ProgramUpdater")
+  intakesCreated       ProgramIntake[]        @relation("IntakeCreator")
+  intakesUpdated       ProgramIntake[]        @relation("IntakeUpdater")
+  eligibilityRulesCreated  EligibilityRule[]  @relation("EligibilityRuleCreator")
+  eligibilityRulesUpdated  EligibilityRule[]  @relation("EligibilityRuleUpdater")
+  visaRequirementsCreated  VisaRequirement[]  @relation("VisaRequirementCreator")
+  visaRequirementsUpdated  VisaRequirement[]  @relation("VisaRequirementUpdater")
+  campusFrancePrepCreated  CampusFrancePrep[] @relation("CampusFrancePrepCreator")
+  campusFrancePrepUpdated  CampusFrancePrep[] @relation("CampusFrancePrepUpdater")
+  opsAuditLogs             OpsAuditLog[]
+
+  @@map("users")
+}
+
+model Lead {
+  id                    String        @id @default(uuid()) @db.Uuid
+  email                 String
+  phone                 String?
+  firstName             String        @map("first_name")
+  lastName              String?       @map("last_name")
+  source                LeadSource
+  sourcePartner         String?       @map("source_partner")
+  status                LeadStatus    @default(new_lead)
+  qualificationScore    Int?          @map("qualification_score")
+  priorityLevel         PriorityLevel? @map("priority_level")
+  profileCompleteness   Decimal?      @map("profile_completeness") @db.Decimal(3, 2)
+  userId                String?       @map("user_id") @db.Uuid
+  assignedCounsellorId  String?       @map("assigned_counsellor_id") @db.Uuid
+  latestAiAssessmentId  String?       @map("latest_ai_assessment_id") @db.Uuid
+  qualifiedAt           DateTime?     @map("qualified_at")
+  priorityUpdatedAt     DateTime?     @map("priority_updated_at")
+  createdByUserId       String?       @map("created_by_user_id") @db.Uuid
+  notes                 String?       @db.Text
+  mauticContactId       Int?          @map("mautic_contact_id")
+  convertedStudentId    String?       @map("converted_student_id") @db.Uuid
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+  deletedAt             DateTime?     @map("deleted_at")
+
+  // Relations
+  user                User?          @relation("LeadUser", fields: [userId], references: [id])
+  assignedCounsellor  User?          @relation("LeadCounsellor", fields: [assignedCounsellorId], references: [id])
+  createdByUser       User?          @relation("LeadCreator", fields: [createdByUserId], references: [id])
+  latestAiAssessment  AiAssessment?  @relation("LeadLatestAssessment", fields: [latestAiAssessmentId], references: [id])
+  convertedStudent    Student?       @relation("LeadConvertedStudent", fields: [convertedStudentId], references: [id])
+  aiAssessments       AiAssessment[] @relation("LeadAssessments")
+  chatSessions        ChatSession[]  @relation("ChatSessionLead")
+  activityLogs        CounsellorActivityLog[] @relation("ActivityLead")
+  bookings            Booking[]      @relation("BookingLead")
+  mauticSyncLogs      MauticSyncLog[] @relation("MauticSyncLead")
+  notificationLogs    NotificationLog[] @relation("NotificationLead")
+
+  @@index([status])
+  @@index([assignedCounsellorId])
+  @@index([userId])
+  @@index([email])
+  @@index([qualificationScore])
+  @@index([priorityLevel])
+  @@map("leads")
+}
+
+model Student {
+  id                    String        @id @default(uuid()) @db.Uuid
+  userId                String        @unique @map("user_id") @db.Uuid
+  referenceCode         String        @unique @map("reference_code")
+  source                String
+  sourcePartner         String?       @map("source_partner")
+  stage                 StudentStage  @default(lead_created)
+  stageUpdatedAt        DateTime      @default(now()) @map("stage_updated_at")
+  // Academic profile
+  degreeLevel           String?       @map("degree_level")
+  bachelorDegree        String?       @map("bachelor_degree")
+  gpa                   Decimal?      @db.Decimal(4, 2)
+  graduationYear        Int?          @map("graduation_year")
+  workExperienceYears   Int?          @map("work_experience_years")
+  studyGapYears         Int?          @map("study_gap_years")
+  // Language
+  englishTestType       EnglishTestType? @map("english_test_type")
+  englishScore          Decimal?      @map("english_score") @db.Decimal(4, 1)
+  // Preferences
+  budgetMin             Int?          @map("budget_min")
+  budgetMax             Int?          @map("budget_max")
+  fundingRoute          String?       @map("funding_route")
+  preferredCity         String?       @map("preferred_city")
+  preferredIntake       String?       @map("preferred_intake")
+  housingNeeded         Boolean?      @map("housing_needed")
+  // Scores
+  academicFitScore      Int?          @map("academic_fit_score")
+  financialReadinessScore Int?        @map("financial_readiness_score")
+  visaRisk              VisaRisk?     @map("visa_risk")
+  overallReadinessScore Int?          @map("overall_readiness_score")
+  latestAiAssessmentId  String?       @map("latest_ai_assessment_id") @db.Uuid
+  lastAssessedAt        DateTime?     @map("last_assessed_at")
+  // Assignment
+  assignedCounsellorId  String?       @map("assigned_counsellor_id") @db.Uuid
+  assignedAt            DateTime?     @map("assigned_at")
+  // Mautic
+  mauticContactId       Int?          @map("mautic_contact_id")
+  mauticSyncedAt        DateTime?     @map("mautic_synced_at")
+  // Consent
+  whatsappConsent       Boolean       @default(false) @map("whatsapp_consent")
+  emailConsent          Boolean       @default(false) @map("email_consent")
+  parentInvolvement     Boolean       @default(false) @map("parent_involvement")
+  // Meta
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+  deletedAt             DateTime?     @map("deleted_at")
+
+  // Relations
+  user                  User          @relation("StudentUser", fields: [userId], references: [id])
+  assignedCounsellor    User?         @relation("StudentCounsellor", fields: [assignedCounsellorId], references: [id])
+  latestAiAssessment    AiAssessment? @relation("StudentLatestAssessment", fields: [latestAiAssessmentId], references: [id])
+  convertedFromLeads    Lead[]        @relation("LeadConvertedStudent")
+  stageTransitions      StageTransition[]
+  assignments           StudentAssignment[]
+  applications          Application[]
+  chatSessions          ChatSession[] @relation("ChatSessionStudent")
+  aiAssessments         AiAssessment[] @relation("StudentAssessments")
+  documents             Document[]
+  documentRequirements  StudentDocumentRequirement[]
+  counsellorNotes       CounsellorNote[]
+  activityLogs          CounsellorActivityLog[] @relation("ActivityStudent")
+  contacts              StudentContact[]
+  consentEvents         ConsentEvent[]
+  bookings              Booking[]     @relation("BookingStudent")
+  mauticSyncLogs        MauticSyncLog[] @relation("MauticSyncStudent")
+  notificationLogs      NotificationLog[] @relation("NotificationStudent")
+
+  @@index([stage])
+  @@index([assignedCounsellorId])
+  @@index([stageUpdatedAt])
+  @@map("students")
+}
+
+model StageTransition {
+  id              String        @id @default(uuid()) @db.Uuid
+  studentId       String        @map("student_id") @db.Uuid
+  fromStage       StudentStage? @map("from_stage")
+  toStage         StudentStage  @map("to_stage")
+  changedByUserId String?       @map("changed_by_user_id") @db.Uuid
+  changedByType   ChangedByType @map("changed_by_type")
+  reasonCode      String        @map("reason_code")
+  reasonNote      String?       @map("reason_note") @db.Text
+  timestamp       DateTime      @default(now())
+
+  // Relations
+  student         Student       @relation(fields: [studentId], references: [id])
+  changedByUser   User?         @relation("StageChanger", fields: [changedByUserId], references: [id])
+
+  @@index([studentId, timestamp])
+  @@map("stage_transitions")
+}
+
+model StudentAssignment {
+  id            String    @id @default(uuid()) @db.Uuid
+  studentId     String    @map("student_id") @db.Uuid
+  counsellorId  String    @map("counsellor_id") @db.Uuid
+  assignedBy    String    @map("assigned_by") @db.Uuid
+  assignedAt    DateTime  @default(now()) @map("assigned_at")
+  unassignedAt  DateTime? @map("unassigned_at")
+  reason        String?   @db.Text
+
+  // Relations
+  student       Student   @relation(fields: [studentId], references: [id])
+  counsellor    User      @relation("AssignmentCounsellor", fields: [counsellorId], references: [id])
+  assignedByUser User     @relation("AssignmentAssigner", fields: [assignedBy], references: [id])
+
+  @@map("student_assignments")
+}
+
+model Application {
+  id                     String            @id @default(uuid()) @db.Uuid
+  studentId              String            @map("student_id") @db.Uuid
+  programId              String            @map("program_id") @db.Uuid
+  intakeId               String?           @map("intake_id") @db.Uuid
+  status                 ApplicationStatus @default(draft)
+  submittedAt            DateTime?         @map("submitted_at")
+  decisionAt             DateTime?         @map("decision_at")
+  offerLetterDocumentId  String?           @map("offer_letter_document_id") @db.Uuid
+  notes                  String?           @db.Text
+  createdBy              String            @map("created_by") @db.Uuid
+  updatedBy              String?           @map("updated_by") @db.Uuid
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  student                Student           @relation(fields: [studentId], references: [id])
+  program                Program           @relation(fields: [programId], references: [id])
+  intake                 ProgramIntake?    @relation(fields: [intakeId], references: [id])
+  offerLetterDocument    Document?         @relation("ApplicationOfferLetter", fields: [offerLetterDocumentId], references: [id])
+  createdByUser          User              @relation("ApplicationCreator", fields: [createdBy], references: [id])
+  updatedByUser          User?             @relation("ApplicationUpdater", fields: [updatedBy], references: [id])
+
+  @@map("applications")
+}
+
+model ChatSession {
+  id        String            @id @default(uuid()) @db.Uuid
+  userId    String            @map("user_id") @db.Uuid
+  leadId    String            @map("lead_id") @db.Uuid
+  studentId String?           @map("student_id") @db.Uuid
+  startedAt DateTime          @default(now()) @map("started_at")
+  endedAt   DateTime?         @map("ended_at")
+  status    ChatSessionStatus @default(active)
+
+  // Relations
+  user      User              @relation(fields: [userId], references: [id])
+  lead      Lead              @relation("ChatSessionLead", fields: [leadId], references: [id])
+  student   Student?          @relation("ChatSessionStudent", fields: [studentId], references: [id])
+  messages  ChatMessage[]
+
+  @@index([userId])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid()) @db.Uuid
+  sessionId String      @map("session_id") @db.Uuid
+  role      MessageRole
+  content   String      @db.Text
+  timestamp DateTime    @default(now())
+
+  // Relations
+  session   ChatSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
+  @@map("chat_messages")
+}
+
+model AiAssessment {
+  id                      String              @id @default(uuid()) @db.Uuid
+  studentId               String?             @map("student_id") @db.Uuid
+  leadId                  String?             @map("lead_id") @db.Uuid
+  sourceType              AssessmentSourceType @map("source_type")
+  sourceId                String?             @map("source_id")
+  academicFitScore        Int?                @map("academic_fit_score")
+  financialReadinessScore Int?                @map("financial_readiness_score")
+  languageReadinessScore  Int?                @map("language_readiness_score")
+  motivationClarityScore  Int?                @map("motivation_clarity_score")
+  timelineUrgencyScore    Int?                @map("timeline_urgency_score")
+  documentReadinessScore  Int?                @map("document_readiness_score")
+  visaComplexityScore     Int?                @map("visa_complexity_score")
+  visaRisk                VisaRisk?           @map("visa_risk")
+  overallReadinessScore   Int?                @map("overall_readiness_score")
+  qualificationScore      Int?                @map("qualification_score")
+  priorityLevel           PriorityLevel?      @map("priority_level")
+  recommendedDisposition  String?             @map("recommended_disposition")
+  programmeLevel          String?             @map("programme_level")
+  recommendedNextStep     String?             @map("recommended_next_step")
+  summaryForTeam          String              @map("summary_for_team") @db.Text
+  housingNeeded           Boolean?            @map("housing_needed")
+  profileCompleteness     Decimal?            @map("profile_completeness") @db.Decimal(3, 2)
+  fieldsCollected         Json?               @map("fields_collected")
+  fieldsMissing           Json?               @map("fields_missing")
+  hardRuleFlags           Json?               @map("hard_rule_flags")
+  rawJson                 Json?               @map("raw_json")
+  createdAt               DateTime            @default(now()) @map("created_at")
+
+  // Relations
+  student                 Student?            @relation("StudentAssessments", fields: [studentId], references: [id])
+  lead                    Lead?               @relation("LeadAssessments", fields: [leadId], references: [id])
+  latestForStudents       Student[]           @relation("StudentLatestAssessment")
+  latestForLeads          Lead[]              @relation("LeadLatestAssessment")
+
+  @@index([studentId])
+  @@index([leadId])
+  @@map("ai_assessments")
+}
+
+model Document {
+  id                  String         @id @default(uuid()) @db.Uuid
+  studentId           String         @map("student_id") @db.Uuid
+  uploadedBy          String         @map("uploaded_by") @db.Uuid
+  type                DocumentType
+  filename            String
+  gcsPath             String         @map("gcs_path")
+  mimeType            String         @map("mime_type")
+  sizeBytes           Int            @map("size_bytes")
+  status              DocumentStatus @default(pending_upload)
+  isCurrent           Boolean        @default(true) @map("is_current")
+  replacesDocumentId  String?        @map("replaces_document_id") @db.Uuid
+  verifiedBy          String?        @map("verified_by") @db.Uuid
+  verifiedAt          DateTime?      @map("verified_at")
+  notes               String?        @db.Text
+  createdAt           DateTime       @default(now()) @map("created_at")
+  deletedAt           DateTime?      @map("deleted_at")
+
+  // Relations
+  student             Student        @relation(fields: [studentId], references: [id])
+  uploader            User           @relation("DocumentUploader", fields: [uploadedBy], references: [id])
+  verifier            User?          @relation("DocumentVerifier", fields: [verifiedBy], references: [id])
+  replacesDocument    Document?      @relation("DocumentReplacement", fields: [replacesDocumentId], references: [id])
+  replacedByDocuments Document[]     @relation("DocumentReplacement")
+  offerLetterApplications Application[] @relation("ApplicationOfferLetter")
+
+  @@index([studentId])
+  @@index([studentId, status])
+  @@map("documents")
+}
+
+model StudentDocumentRequirement {
+  id                String            @id @default(uuid()) @db.Uuid
+  studentId         String            @map("student_id") @db.Uuid
+  documentType      String            @map("document_type")
+  requirementSource RequirementSource @map("requirement_source")
+  required          Boolean           @default(true)
+  status            RequirementStatus @default(missing)
+  notes             String?           @db.Text
+  dueDate           DateTime?         @map("due_date") @db.Date
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  student           Student           @relation(fields: [studentId], references: [id])
+
+  @@map("student_document_requirements")
+}
+
+model CounsellorNote {
+  id        String   @id @default(uuid()) @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  content   String   @db.Text
+  noteType  NoteType @map("note_type") @default(general)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  student   Student  @relation(fields: [studentId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+
+  @@map("counsellor_notes")
+}
+
+model CounsellorActivityLog {
+  id              String            @id @default(uuid()) @db.Uuid
+  counsellorId    String            @map("counsellor_id") @db.Uuid
+  leadId          String?           @map("lead_id") @db.Uuid
+  studentId       String?           @map("student_id") @db.Uuid
+  createdByUserId String            @map("created_by_user_id") @db.Uuid
+  activityType    ActivityType      @map("activity_type")
+  channel         ActivityChannel
+  direction       ActivityDirection
+  outcome         String?
+  summary         String?           @db.Text
+  nextActionDueAt DateTime?         @map("next_action_due_at")
+  durationMinutes Int?              @map("duration_minutes")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  counsellor      User              @relation("ActivityCounsellor", fields: [counsellorId], references: [id])
+  createdByUser   User              @relation("ActivityCreator", fields: [createdByUserId], references: [id])
+  lead            Lead?             @relation("ActivityLead", fields: [leadId], references: [id])
+  student         Student?          @relation("ActivityStudent", fields: [studentId], references: [id])
+
+  @@index([counsellorId, createdAt])
+  @@map("counsellor_activity_log")
+}
+
+model StudentContact {
+  id               String      @id @default(uuid()) @db.Uuid
+  studentId        String      @map("student_id") @db.Uuid
+  type             ContactType
+  name             String
+  relation         String
+  email            String?
+  phone            String?
+  isPrimary        Boolean     @default(false) @map("is_primary")
+  consentToContact Boolean     @default(false) @map("consent_to_contact")
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  student          Student     @relation(fields: [studentId], references: [id])
+
+  @@map("student_contacts")
+}
+
+model ConsentEvent {
+  id               String       @id @default(uuid()) @db.Uuid
+  studentId        String       @map("student_id") @db.Uuid
+  consentType      ConsentType  @map("consent_type")
+  granted          Boolean
+  source           ConsentSource
+  capturedByUserId String?      @map("captured_by_user_id") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  student          Student      @relation(fields: [studentId], references: [id])
+  capturedByUser   User?        @relation(fields: [capturedByUserId], references: [id])
+
+  @@map("consent_events")
+}
+
+// ─── Catalog Models ─────────────────────────────────────────────
+
+model University {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String
+  city          String
+  country       String    @default("France")
+  websiteUrl    String?   @map("website_url")
+  partnerStatus String?   @map("partner_status")
+  notes         String?   @db.Text
+  active        Boolean   @default(true)
+  createdBy     String    @map("created_by") @db.Uuid
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  creator       User      @relation("UniversityCreator", fields: [createdBy], references: [id])
+  updater       User?     @relation("UniversityUpdater", fields: [updatedBy], references: [id])
+  programs      Program[]
+
+  @@map("universities")
+}
+
+model Program {
+  id                    String          @id @default(uuid()) @db.Uuid
+  universityId          String          @map("university_id") @db.Uuid
+  name                  String
+  degreeLevel           String          @map("degree_level")
+  fieldOfStudy          String          @map("field_of_study")
+  language              String          @default("English")
+  durationMonths        Int             @map("duration_months")
+  tuitionAmount         Int             @map("tuition_amount")
+  tuitionCurrency       String          @default("EUR") @map("tuition_currency")
+  minimumGpa            Decimal?        @map("minimum_gpa") @db.Decimal(4, 2)
+  englishRequirementType String?        @map("english_requirement_type")
+  englishMinimumScore   Decimal?        @map("english_minimum_score") @db.Decimal(4, 1)
+  description           String?         @db.Text
+  active                Boolean         @default(true)
+  createdBy             String          @map("created_by") @db.Uuid
+  updatedBy             String?         @map("updated_by") @db.Uuid
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  university            University      @relation(fields: [universityId], references: [id])
+  creator               User            @relation("ProgramCreator", fields: [createdBy], references: [id])
+  updater               User?           @relation("ProgramUpdater", fields: [updatedBy], references: [id])
+  intakes               ProgramIntake[]
+  eligibilityRules      EligibilityRule[]
+  applications          Application[]
+
+  @@map("programs")
+}
+
+model ProgramIntake {
+  id                  String    @id @default(uuid()) @db.Uuid
+  programId           String    @map("program_id") @db.Uuid
+  intakeName          String    @map("intake_name")
+  startMonth          Int       @map("start_month")
+  startYear           Int       @map("start_year")
+  applicationDeadline DateTime? @map("application_deadline") @db.Date
+  active              Boolean   @default(true)
+  createdBy           String    @map("created_by") @db.Uuid
+  updatedBy           String?   @map("updated_by") @db.Uuid
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  program             Program   @relation(fields: [programId], references: [id])
+  creator             User      @relation("IntakeCreator", fields: [createdBy], references: [id])
+  updater             User?     @relation("IntakeUpdater", fields: [updatedBy], references: [id])
+  applications        Application[]
+
+  @@map("program_intakes")
+}
+
+model EligibilityRule {
+  id          String    @id @default(uuid()) @db.Uuid
+  programId   String?   @map("program_id") @db.Uuid
+  ruleName    String    @map("rule_name")
+  field       String
+  operator    String
+  value       String
+  valueType   ValueType @map("value_type")
+  ruleScope   String?   @map("rule_scope")
+  description String?   @db.Text
+  createdBy   String    @map("created_by") @db.Uuid
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  program     Program?  @relation(fields: [programId], references: [id])
+  creator     User      @relation("EligibilityRuleCreator", fields: [createdBy], references: [id])
+  updater     User?     @relation("EligibilityRuleUpdater", fields: [updatedBy], references: [id])
+
+  @@map("eligibility_rules")
+}
+
+model VisaRequirement {
+  id              String  @id @default(uuid()) @db.Uuid
+  title           String
+  description     String  @db.Text
+  documentType    String  @map("document_type")
+  required        Boolean @default(true)
+  countrySpecific String? @map("country_specific")
+  stageApplicable String? @map("stage_applicable")
+  sortOrder       Int     @map("sort_order")
+  createdBy       String  @map("created_by") @db.Uuid
+  updatedBy       String? @map("updated_by") @db.Uuid
+
+  // Relations
+  creator         User    @relation("VisaRequirementCreator", fields: [createdBy], references: [id])
+  updater         User?   @relation("VisaRequirementUpdater", fields: [updatedBy], references: [id])
+
+  @@map("visa_requirements")
+}
+
+model CampusFrancePrep {
+  id        String  @id @default(uuid()) @db.Uuid
+  title     String
+  content   String  @db.Text
+  category  String
+  sortOrder Int     @map("sort_order")
+  active    Boolean @default(true)
+  createdBy String  @map("created_by") @db.Uuid
+  updatedBy String? @map("updated_by") @db.Uuid
+
+  // Relations
+  creator   User    @relation("CampusFrancePrepCreator", fields: [createdBy], references: [id])
+  updater   User?   @relation("CampusFrancePrepUpdater", fields: [updatedBy], references: [id])
+
+  @@map("campus_france_prep")
+}
+
+// ─── Integration Models ─────────────────────────────────────────
+
+model MauticSyncLog {
+  id          String          @id @default(uuid()) @db.Uuid
+  studentId   String?         @map("student_id") @db.Uuid
+  leadId      String?         @map("lead_id") @db.Uuid
+  eventType   MauticEventType @map("event_type")
+  payloadHash String          @map("payload_hash")
+  status      SyncStatus      @default(pending)
+  attempts    Int             @default(0)
+  lastError   String?         @map("last_error") @db.Text
+  createdAt   DateTime        @default(now()) @map("created_at")
+  completedAt DateTime?       @map("completed_at")
+
+  // Relations
+  student     Student?        @relation("MauticSyncStudent", fields: [studentId], references: [id])
+  lead        Lead?           @relation("MauticSyncLead", fields: [leadId], references: [id])
+
+  @@map("mautic_sync_log")
+}
+
+model MauticCampaign {
+  id                String  @id @default(uuid()) @db.Uuid
+  mauticCampaignId  Int     @map("mautic_campaign_id")
+  name              String
+  description       String? @db.Text
+  triggerStage      String? @map("trigger_stage")
+  autoTrigger       Boolean @default(false) @map("auto_trigger")
+  active            Boolean @default(true)
+
+  @@map("mautic_campaigns")
+}
+
+model Booking {
+  id             String        @id @default(uuid()) @db.Uuid
+  studentId      String?       @map("student_id") @db.Uuid
+  leadId         String?       @map("lead_id") @db.Uuid
+  counsellorId   String        @map("counsellor_id") @db.Uuid
+  calcomEventId  String?       @map("calcom_event_id")
+  scheduledAt    DateTime      @map("scheduled_at")
+  status         BookingStatus @default(scheduled)
+  externalStatus String?       @map("external_status")
+  lastSyncedAt   DateTime?     @map("last_synced_at")
+  notes          String?       @db.Text
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  student        Student?      @relation("BookingStudent", fields: [studentId], references: [id])
+  lead           Lead?         @relation("BookingLead", fields: [leadId], references: [id])
+  counsellor     User          @relation(fields: [counsellorId], references: [id])
+
+  @@map("bookings")
+}
+
+model NotificationLog {
+  id                String             @id @default(uuid()) @db.Uuid
+  studentId         String?            @map("student_id") @db.Uuid
+  leadId            String?            @map("lead_id") @db.Uuid
+  recipient         String
+  channel           NotificationChannel
+  provider          String
+  templateKey       String             @map("template_key")
+  externalMessageId String?            @map("external_message_id")
+  payloadJson       Json?              @map("payload_json")
+  status            NotificationStatus @default(pending)
+  errorMessage      String?            @map("error_message") @db.Text
+  sentAt            DateTime?          @map("sent_at")
+  deliveredAt       DateTime?          @map("delivered_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+
+  // Relations
+  student           Student?           @relation("NotificationStudent", fields: [studentId], references: [id])
+  lead              Lead?              @relation("NotificationLead", fields: [leadId], references: [id])
+
+  @@map("notification_log")
+}
+
+// ─── Ops Audit Log ────────────────────────────────────────────────
+
+model OpsAuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  userEmail String   @map("user_email")
+  action    String                                // e.g. queue_pause, queue_resume, retry_all, retry_single
+  target    String                                // e.g. queue name or "ai-processing/job/123"
+  metadata  Json?                                 // extra context (e.g. { retried: 5 })
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@map("ops_audit_log")
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@sturec/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    },
+    "./constants": {
+      "types": "./dist/constants/index.d.ts",
+      "default": "./dist/constants/index.js"
+    },
+    "./validation": {
+      "types": "./dist/validation/index.d.ts",
+      "default": "./dist/validation/index.js"
+    },
+    "./fixtures": {
+      "types": "./dist/fixtures/index.d.ts",
+      "default": "./dist/fixtures/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.0"
+  }
+}
