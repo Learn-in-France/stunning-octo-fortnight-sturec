@@ -1,159 +1,105 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { env } from '@/lib/config/env'
 
 interface Program {
   id: string
-  university: string
+  universityName: string
   name: string
   degreeLevel: string
-  field: string
-  city: string
-  tuitionEur: number
+  fieldOfStudy: string
   language: string
-  duration: string
-  description: string
+  durationMonths: number
+  tuitionAmount: number
+  tuitionCurrency: string
+  description: string | null
 }
 
-const programs: Program[] = [
-  {
-    id: 'sorbonne-llm',
-    university: 'Sorbonne University',
-    name: 'Master in Applied Linguistics',
-    degreeLevel: 'Master',
-    field: 'Humanities',
-    city: 'Paris',
-    tuitionEur: 243,
-    language: 'French & English',
-    duration: '2 years',
-    description:
-      'A research-driven program combining computational and applied linguistics with opportunities in NLP and language education.',
-  },
-  {
-    id: 'sciencespo-ia',
-    university: 'Sciences Po',
-    name: 'Master in International Affairs',
-    degreeLevel: 'Master',
-    field: 'Political Science',
-    city: 'Paris',
-    tuitionEur: 14700,
-    language: 'English',
-    duration: '2 years',
-    description:
-      'Prepare for careers in diplomacy, international organizations, and global policy with a multidisciplinary curriculum.',
-  },
-  {
-    id: 'essec-mba',
-    university: 'ESSEC Business School',
-    name: 'Global BBA',
-    degreeLevel: 'Bachelor',
-    field: 'Business',
-    city: 'Paris',
-    tuitionEur: 16200,
-    language: 'English',
-    duration: '4 years',
-    description:
-      'An international undergraduate business program with mandatory exchange semesters and professional internships.',
-  },
-  {
-    id: 'hec-mim',
-    university: 'HEC Paris',
-    name: 'Master in Management',
-    degreeLevel: 'Master',
-    field: 'Business',
-    city: 'Paris',
-    tuitionEur: 20900,
-    language: 'English',
-    duration: '2 years',
-    description:
-      'Consistently ranked among the top global MiM programs. Combines academic rigor with extensive corporate partnerships.',
-  },
-  {
-    id: 'psl-ds',
-    university: 'Universite PSL',
-    name: 'Master in Data Science',
-    degreeLevel: 'Master',
-    field: 'Computer Science',
-    city: 'Paris',
-    tuitionEur: 243,
-    language: 'English',
-    duration: '2 years',
-    description:
-      'A selective program at the crossroads of mathematics, computer science, and statistics, hosted across PSL member institutions.',
-  },
-  {
-    id: 'insa-lyon-eng',
-    university: 'INSA Lyon',
-    name: 'Engineering Diploma — Computer Science',
-    degreeLevel: 'Bachelor + Master',
-    field: 'Engineering',
-    city: 'Lyon',
-    tuitionEur: 601,
-    language: 'French',
-    duration: '5 years',
-    description:
-      'A prestigious five-year integrated engineering program covering fundamentals through to specialization in computer science.',
-  },
-  {
-    id: 'toulouse-aero',
-    university: 'ISAE-SUPAERO',
-    name: 'Master in Aerospace Engineering',
-    degreeLevel: 'Master',
-    field: 'Engineering',
-    city: 'Toulouse',
-    tuitionEur: 4500,
-    language: 'English',
-    duration: '2 years',
-    description:
-      'Located in the heart of the European aerospace capital, this program offers unmatched industry exposure with Airbus, Thales, and CNES.',
-  },
-  {
-    id: 'bordeaux-wine',
-    university: 'Universite de Bordeaux',
-    name: 'Master in Wine and Vine Sciences',
-    degreeLevel: 'Master',
-    field: 'Sciences',
-    city: 'Bordeaux',
-    tuitionEur: 243,
-    language: 'French & English',
-    duration: '2 years',
-    description:
-      'A unique interdisciplinary program combining biology, chemistry, and agronomy in the world capital of wine.',
-  },
-]
-
-const degreeLevels = ['All', 'Bachelor', 'Master', 'Bachelor + Master']
-const cities = ['All', 'Paris', 'Lyon', 'Toulouse', 'Bordeaux']
-const fields = ['All', 'Business', 'Engineering', 'Computer Science', 'Humanities', 'Political Science', 'Sciences']
+interface UniversityInfo {
+  city: string
+}
 
 function formatTuition(amount: number): string {
-  if (amount < 1000) return `${amount}/yr`
-  return `${(amount / 1000).toFixed(1).replace(/\.0$/, '')}k/yr`
+  if (amount < 1000) return `€${amount}/yr`
+  return `€${(amount / 1000).toFixed(1).replace(/\.0$/, '')}k/yr`
+}
+
+function formatDuration(months: number): string {
+  if (months % 12 === 0) {
+    const years = months / 12
+    return `${years} year${years > 1 ? 's' : ''}`
+  }
+  return `${months} months`
 }
 
 export default function ProgramsPage() {
+  const [programs, setPrograms] = useState<(Program & { city?: string })[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [degreeFilter, setDegreeFilter] = useState('All')
   const [cityFilter, setCityFilter] = useState('All')
   const [fieldFilter, setFieldFilter] = useState('All')
+
+  useEffect(() => {
+    async function fetchPrograms() {
+      try {
+        const res = await fetch(`${env.apiUrl}/api/v1/public/programs?limit=100`)
+        if (!res.ok) throw new Error('Failed to fetch')
+        const data = await res.json()
+        // Also fetch universities to get cities
+        const uniRes = await fetch(`${env.apiUrl}/api/v1/public/universities?limit=100`)
+        const uniData = uniRes.ok ? await uniRes.json() : { items: [] }
+        const uniMap = new Map<string, UniversityInfo>()
+        for (const u of uniData.items ?? []) {
+          uniMap.set(u.name, { city: u.city })
+        }
+        const enriched = (data.items ?? []).map((p: Program) => ({
+          ...p,
+          city: uniMap.get(p.universityName)?.city ?? '',
+        }))
+        setPrograms(enriched)
+      } catch {
+        // API unavailable — leave empty
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPrograms()
+  }, [])
+
+  const cities = useMemo(() => {
+    const set = new Set(programs.map((p) => p.city).filter(Boolean))
+    return ['All', ...Array.from(set).sort()]
+  }, [programs])
+
+  const fields = useMemo(() => {
+    const set = new Set(programs.map((p) => p.fieldOfStudy).filter(Boolean))
+    return ['All', ...Array.from(set).sort()]
+  }, [programs])
+
+  const degreeLevels = useMemo(() => {
+    const set = new Set(programs.map((p) => p.degreeLevel).filter(Boolean))
+    return ['All', ...Array.from(set).sort()]
+  }, [programs])
 
   const filtered = useMemo(() => {
     return programs.filter((p) => {
       const matchesSearch =
         search === '' ||
         p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.university.toLowerCase().includes(search.toLowerCase()) ||
-        p.field.toLowerCase().includes(search.toLowerCase())
+        p.universityName.toLowerCase().includes(search.toLowerCase()) ||
+        p.fieldOfStudy.toLowerCase().includes(search.toLowerCase())
 
       const matchesDegree = degreeFilter === 'All' || p.degreeLevel === degreeFilter
       const matchesCity = cityFilter === 'All' || p.city === cityFilter
-      const matchesField = fieldFilter === 'All' || p.field === fieldFilter
+      const matchesField = fieldFilter === 'All' || p.fieldOfStudy === fieldFilter
 
       return matchesSearch && matchesDegree && matchesCity && matchesField
     })
-  }, [search, degreeFilter, cityFilter, fieldFilter])
+  }, [programs, search, degreeFilter, cityFilter, fieldFilter])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -233,76 +179,92 @@ export default function ProgramsPage() {
         </div>
       </div>
 
-      {/* Results count */}
-      <p className="text-sm text-text-muted mb-6">
-        {filtered.length} {filtered.length === 1 ? 'program' : 'programs'} found
-      </p>
-
-      {/* Program cards */}
-      {filtered.length === 0 ? (
+      {/* Results */}
+      {loading ? (
         <div className="text-center py-16">
-          <p className="text-text-muted">No programs match your filters. Try broadening your search.</p>
+          <div className="inline-block w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-text-muted mt-3">Loading programs...</p>
+        </div>
+      ) : programs.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="text-text-muted">No programs available yet. Check back soon.</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-6">
-          {filtered.map((program) => (
-            <div
-              key={program.id}
-              className="bg-surface-raised rounded-2xl border border-border p-6 hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)] transition-shadow"
-            >
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <div>
-                  <p className="text-xs font-semibold text-primary-600 uppercase tracking-wide">
-                    {program.university}
-                  </p>
-                  <h3 className="mt-1 font-display text-lg font-semibold text-text-primary">
-                    {program.name}
-                  </h3>
-                </div>
-                <Badge variant="primary">{program.degreeLevel}</Badge>
-              </div>
+        <>
+          <p className="text-sm text-text-muted mb-6">
+            {filtered.length} {filtered.length === 1 ? 'program' : 'programs'} found
+          </p>
 
-              <p className="text-sm text-text-muted leading-relaxed mb-4">
-                {program.description}
-              </p>
-
-              <div className="flex flex-wrap gap-3 text-xs text-text-secondary">
-                <span className="flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                  </svg>
-                  {program.city}
-                </span>
-                <span className="flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {program.duration}
-                </span>
-                <span className="flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364V3" />
-                  </svg>
-                  {program.language}
-                </span>
-                <span className="flex items-center gap-1 font-semibold text-text-primary">
-                  &euro;{formatTuition(program.tuitionEur)}
-                </span>
-              </div>
-
-              <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
-                <span className="text-xs text-text-muted">{program.field}</span>
-                <Link
-                  href="/apply"
-                  className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
-                >
-                  Learn more &rarr;
-                </Link>
-              </div>
+          {filtered.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-text-muted">No programs match your filters. Try broadening your search.</p>
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              {filtered.map((program) => (
+                <div
+                  key={program.id}
+                  className="bg-surface-raised rounded-2xl border border-border p-6 hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)] transition-shadow"
+                >
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                      <p className="text-xs font-semibold text-primary-600 uppercase tracking-wide">
+                        {program.universityName}
+                      </p>
+                      <h3 className="mt-1 font-display text-lg font-semibold text-text-primary">
+                        {program.name}
+                      </h3>
+                    </div>
+                    <Badge variant="primary">{program.degreeLevel}</Badge>
+                  </div>
+
+                  {program.description && (
+                    <p className="text-sm text-text-muted leading-relaxed mb-4">
+                      {program.description}
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap gap-3 text-xs text-text-secondary">
+                    {program.city && (
+                      <span className="flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                        </svg>
+                        {program.city}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {formatDuration(program.durationMonths)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364V3" />
+                      </svg>
+                      {program.language}
+                    </span>
+                    <span className="flex items-center gap-1 font-semibold text-text-primary">
+                      {formatTuition(program.tuitionAmount)}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
+                    <span className="text-xs text-text-muted">{program.fieldOfStudy}</span>
+                    <Link
+                      href="/apply"
+                      className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+                    >
+                      Learn more &rarr;
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* CTA */}
