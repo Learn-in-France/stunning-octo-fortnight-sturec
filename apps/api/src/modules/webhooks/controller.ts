@@ -70,10 +70,20 @@ export async function handleMautic(request: FastifyRequest, reply: FastifyReply)
     return reply.code(500).send({ error: 'Webhook not configured' })
   }
 
-  // Verify shared secret in custom header
-  const token = request.headers['x-mautic-webhook-secret'] as string
-  if (token !== secret) {
-    return reply.code(401).send({ error: 'Invalid token' })
+  // Verify Mautic's Webhook-Signature (base64-encoded HMAC-SHA256)
+  const signature = request.headers['webhook-signature'] as string
+  if (!signature) {
+    return reply.code(401).send({ error: 'Missing signature' })
+  }
+
+  const body = JSON.stringify(request.body)
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(body)
+    .digest('base64')
+
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    return reply.code(401).send({ error: 'Invalid signature' })
   }
 
   await webhookService.enqueueMauticEvent(request.body as Record<string, unknown>)
