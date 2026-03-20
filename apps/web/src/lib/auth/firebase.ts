@@ -5,6 +5,7 @@ import {
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  deleteUser,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   type Auth,
@@ -34,6 +35,12 @@ export type { User as FirebaseUser }
 
 const googleProvider = isConfigured ? new GoogleAuthProvider() : null
 
+if (googleProvider) {
+  googleProvider.setCustomParameters({
+    prompt: 'select_account',
+  })
+}
+
 export async function signInWithGoogle() {
   if (!auth || !googleProvider) throw new Error('Firebase not configured')
   return signInWithPopup(auth, googleProvider)
@@ -52,6 +59,11 @@ export async function signUpWithEmail(email: string, password: string) {
 export async function signOut() {
   if (!auth) return
   return firebaseSignOut(auth)
+}
+
+export async function deleteCurrentUser() {
+  if (!auth?.currentUser) return
+  return deleteUser(auth.currentUser)
 }
 
 export async function getIdToken(): Promise<string | null> {

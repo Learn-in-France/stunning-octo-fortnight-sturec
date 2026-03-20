@@ -45,6 +45,7 @@ interface AuthContextType {
   loading: boolean
   authError: AuthErrorCode
   signOut: () => Promise<void>
+  refreshUser: () => Promise<AppUser | null>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -53,6 +54,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   authError: null,
   signOut: async () => {},
+  refreshUser: async () => null,
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -60,6 +62,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState<AuthErrorCode>(null)
+
+  const resolveAppUser = useCallback(async () => {
+    try {
+      const appUser = await api.post('/auth/verify') as unknown as AppUser
+      setUser(appUser)
+      setAuthError(null)
+      return appUser
+    } catch (err: unknown) {
+      const error = err as { code?: string }
+      if (error?.code === 'USER_NOT_FOUND') {
+        setAuthError('USER_NOT_FOUND')
+      } else {
+        setAuthError('VERIFY_FAILED')
+      }
+      setUser(null)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     // If Firebase is not configured, stop loading immediately
@@ -78,31 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setFirebaseUser(fbUser)
-      setAuthError(null)
-
-      try {
-        // Verify Firebase token against backend — returns the backend user if it exists.
-        // This is the ONLY auto-resolution path. No automatic registration.
-        const appUser = await api.post('/auth/verify') as unknown as AppUser
-        setUser(appUser)
-      } catch (err: unknown) {
-        const error = err as { code?: string }
-        if (error?.code === 'USER_NOT_FOUND') {
-          // Firebase account exists but no backend user.
-          // Do NOT auto-register — internal users must accept-invite,
-          // students must use the explicit /auth/register flow.
-          setAuthError('USER_NOT_FOUND')
-        } else {
-          setAuthError('VERIFY_FAILED')
-        }
-        setUser(null)
-      }
-
-      setLoading(false)
+      setLoading(true)
+      await resolveAppUser()
     })
 
     return unsubscribe
-  }, [])
+  }, [resolveAppUser])
 
   const handleSignOut = useCallback(async () => {
     await firebaseSignOut()
@@ -111,9 +114,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthError(null)
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    if (!auth?.currentUser) {
+      setUser(null)
+      setFirebaseUser(null)
+      setAuthError(null)
+      setLoading(false)
+      return null
+    }
+
+    setFirebaseUser(auth.currentUser)
+    setLoading(true)
+    return resolveAppUser()
+  }, [resolveAppUser])
+
   return (
     <AuthContext.Provider
-      value={{ user, firebaseUser, loading, authError, signOut: handleSignOut }}
+      value={{
+        user,
+        firebaseUser,
+        loading,
+        authError,
+        signOut: handleSignOut,
+        refreshUser,
+      }}
     >
       {children}
     </AuthContext.Provider>
