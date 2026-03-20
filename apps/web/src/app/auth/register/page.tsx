@@ -35,12 +35,25 @@ export default function RegisterPage() {
 
   if (!loading && user) return null
 
-  async function registerOnBackend(data?: { firstName?: string; lastName?: string }) {
+  async function registerOnBackend(
+    data?: { firstName?: string; lastName?: string },
+    token?: string,
+  ) {
+    if (token) {
+      await api.post('/auth/register', data ?? {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      return
+    }
+
     await api.post('/auth/register', data ?? {})
   }
 
-  async function finishRegistration(data?: { firstName?: string; lastName?: string }) {
-    await registerOnBackend(data)
+  async function finishRegistration(
+    data?: { firstName?: string; lastName?: string },
+    token?: string,
+  ) {
+    await registerOnBackend(data, token)
     const appUser = await refreshUser()
 
     if (!appUser) {
@@ -113,11 +126,12 @@ export default function RegisterPage() {
       const displayName = result.user.displayName?.trim() ?? ''
       const [googleFirstName = '', ...rest] = displayName.split(/\s+/).filter(Boolean)
       const googleLastName = rest.join(' ')
+      const token = await result.user.getIdToken()
 
       await finishRegistration({
         firstName: googleFirstName || undefined,
         lastName: googleLastName || undefined,
-      })
+      }, token)
     } catch (err: unknown) {
       await signOut()
 
@@ -130,6 +144,10 @@ export default function RegisterPage() {
         setError('An account with this email already exists. Try signing in instead.')
       } else if (apiError?.code === 'USE_ACCEPT_INVITE') {
         setError('This email belongs to an invited team member. Use your invitation link instead.')
+      } else if (apiError?.code === 'MISSING_TOKEN') {
+        setError('Google sign-in completed, but registration could not be verified. Please try again.')
+      } else if (apiError?.code === 'VERIFY_FAILED') {
+        setError('Your Google account was created, but we could not finish setup. Please try again.')
       } else {
         setError('Google sign-up failed. Please try again.')
       }

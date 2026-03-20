@@ -48,7 +48,10 @@ describe('RegisterPage', () => {
     setMockAuth({})
     getMockRefreshUser().mockResolvedValue({ role: 'student' })
     vi.mocked(signInWithGoogle).mockResolvedValue({
-      user: { displayName: 'Awa Diallo' },
+      user: {
+        displayName: 'Awa Diallo',
+        getIdToken: vi.fn().mockResolvedValue('google-token'),
+      },
     } as never)
     vi.mocked(api.post).mockResolvedValue({} as never)
 
@@ -62,7 +65,7 @@ describe('RegisterPage', () => {
     expect(api.post).toHaveBeenCalledWith('/auth/register', {
       firstName: 'Awa',
       lastName: 'Diallo',
-    })
+    }, { headers: { Authorization: 'Bearer google-token' } })
     expect(getMockRefreshUser()).toHaveBeenCalled()
     expect(replaceMock).toHaveBeenCalledWith('/portal')
   })
