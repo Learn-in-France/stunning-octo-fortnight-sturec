@@ -41,6 +41,7 @@ export function startNotificationsWorker() {
         // Create notification log entry
         const notification = await prisma.notificationLog.create({
           data: {
+            userId: user.id ?? undefined,
             studentId: data.studentId as string | undefined,
             leadId: data.leadId as string | undefined,
             recipient,
@@ -259,6 +260,6 @@ async function resolveRecipient(recipientId: string) {
   // UUID recipient — look up user
   return prisma.user.findUnique({
     where: { id: recipientId },
-    select: { email: true, phone: true, firstName: true, lastName: true },
+    select: { id: true, email: true, phone: true, firstName: true, lastName: true },
   })
 }

@@ -284,6 +284,7 @@ model User {
   campusFrancePrepCreated  CampusFrancePrep[] @relation("CampusFrancePrepCreator")
   campusFrancePrepUpdated  CampusFrancePrep[] @relation("CampusFrancePrepUpdater")
   opsAuditLogs             OpsAuditLog[]
+  notifications            NotificationLog[]      @relation("NotificationUser")
 
   @@map("users")
 }
@@ -860,6 +861,7 @@ model Booking {
 
 model NotificationLog {
   id                String             @id @default(uuid()) @db.Uuid
+  userId            String?            @map("user_id") @db.Uuid
   studentId         String?            @map("student_id") @db.Uuid
   leadId            String?            @map("lead_id") @db.Uuid
   recipient         String
@@ -872,9 +874,11 @@ model NotificationLog {
   errorMessage      String?            @map("error_message") @db.Text
   sentAt            DateTime?          @map("sent_at")
   deliveredAt       DateTime?          @map("delivered_at")
+  readAt            DateTime?          @map("read_at")
   createdAt         DateTime           @default(now()) @map("created_at")
 
   // Relations
+  user              User?              @relation("NotificationUser", fields: [userId], references: [id])
   student           Student?           @relation("NotificationStudent", fields: [studentId], references: [id])
   lead              Lead?              @relation("NotificationLead", fields: [leadId], references: [id])
 
