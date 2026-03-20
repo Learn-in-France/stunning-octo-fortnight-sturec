@@ -37,7 +37,7 @@ export function AuthShell({
     <div className="public-page min-h-screen">
       <div className="public-shell py-6 sm:py-8">
         <div className="flex items-center justify-between gap-4">
-          <BrandLogo href="/" variant="inline" markClassName="h-14 w-14 shrink-0" />
+          <BrandLogo href="/" variant="inline" markClassName="h-14 w-auto shrink-0" />
           <Link
             href="/"
             className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-[var(--color-public-navy)] shadow-[0_10px_26px_rgba(10,22,41,0.06)] transition-colors hover:bg-white"

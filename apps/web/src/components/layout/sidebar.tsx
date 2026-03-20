@@ -164,7 +164,7 @@ export function Sidebar() {
     <aside className="fixed top-0 left-0 bottom-0 z-30 flex w-[260px] flex-col bg-sidebar shadow-[16px_0_48px_rgba(10,22,41,0.22)]">
       {/* Logo */}
       <div className="flex h-16 items-center border-b border-sidebar-border px-6">
-        <BrandLogo href="/dashboard" variant="compact" inverse markClassName="h-9 w-9 shrink-0" />
+        <BrandLogo href="/dashboard" variant="compact" inverse markClassName="h-9 w-auto shrink-0" />
       </div>
 
       {/* Navigation */}

@@ -44,7 +44,7 @@ function Header() {
           <BrandLogo
             href="/"
             variant="inline"
-            markClassName="h-14 w-14 shrink-0"
+            markClassName="h-14 w-auto shrink-0"
             textClassName="tracking-tight"
           />
 
@@ -170,7 +170,7 @@ function Footer() {
               href="/"
               variant="inline"
               inverse
-              markClassName="h-16 w-16 shrink-0"
+              markClassName="h-16 w-auto shrink-0"
               subtitleClassName="text-white/55"
               showTagline
             />

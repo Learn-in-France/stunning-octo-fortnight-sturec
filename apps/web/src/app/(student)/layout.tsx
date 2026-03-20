@@ -168,7 +168,7 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
           >
             {/* Logo */}
             <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-              <BrandLogo href="/portal" variant="compact" inverse markClassName="h-8 w-8 shrink-0" />
+              <BrandLogo href="/portal" variant="compact" inverse markClassName="h-8 w-auto shrink-0" />
               {/* Mobile close */}
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -285,7 +285,7 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
                   <path d="M3 5H17M3 10H17M3 15H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               </button>
-              <BrandLogo href="/portal" variant="compact" markClassName="h-7 w-7 shrink-0" />
+              <BrandLogo href="/portal" variant="compact" markClassName="h-7 w-auto shrink-0" />
               <div className="w-9" /> {/* spacer for centering */}
             </header>
 

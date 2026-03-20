@@ -19,9 +19,9 @@ function BrandMark({ className }: { className?: string }) {
     <Image
       src="/logo.png"
       alt="Learn in France"
-      width={128}
-      height={128}
-      className={className}
+      width={512}
+      height={279}
+      className={`object-contain ${className}`}
       priority
     />
   )
@@ -42,13 +42,13 @@ export function BrandLogo({
 
   const content = (() => {
     if (variant === 'mark') {
-      return <BrandMark className={markClassName || 'h-10 w-10'} />
+      return <BrandMark className={markClassName || 'h-10 w-auto'} />
     }
 
     if (variant === 'stacked') {
       return (
         <div className={`flex flex-col items-center text-center ${className}`}>
-          <BrandMark className={markClassName || 'h-24 w-24'} />
+          <BrandMark className={markClassName || 'h-20 w-auto'} />
           <div className="mt-4">
             <p className={`font-display font-bold tracking-tight text-2xl ${textColor} ${textClassName}`}>
               LEARN IN FRANCE
@@ -66,7 +66,7 @@ export function BrandLogo({
     if (variant === 'compact') {
       return (
         <div className={`flex items-center gap-2.5 ${className}`}>
-          <BrandMark className={markClassName || 'h-9 w-9 shrink-0'} />
+          <BrandMark className={markClassName || 'h-9 w-auto shrink-0'} />
           <div className="leading-none">
             <p className={`font-display font-bold text-[11px] tracking-[0.22em] ${textColor} ${textClassName}`}>
               LEARN IN
@@ -81,7 +81,7 @@ export function BrandLogo({
 
     return (
       <div className={`flex items-center gap-3 ${className}`}>
-        <BrandMark className={markClassName || 'h-10 w-10 shrink-0'} />
+        <BrandMark className={markClassName || 'h-10 w-auto shrink-0'} />
         <div className="leading-none">
           <p className={`font-display font-bold text-lg tracking-tight ${textColor} ${textClassName}`}>
             LEARN IN FRANCE
