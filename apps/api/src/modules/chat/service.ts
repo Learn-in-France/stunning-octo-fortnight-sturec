@@ -301,7 +301,7 @@ async function saveAssessmentFromStructured(
     priorityLevel: qualification.priorityLevel as any,
     recommendedDisposition: output.recommended_disposition,
     recommendedNextStep: output.recommended_next_step,
-    summaryForTeam: output.summary_for_team,
+    summaryForTeam: output.summary_for_team || 'Assessment completed',
     housingNeeded: output.housing_needed,
     profileCompleteness: output.profile_completeness,
     fieldsCollected: output.fields_collected ?? undefined,
