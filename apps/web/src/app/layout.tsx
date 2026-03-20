@@ -24,11 +24,23 @@ const jetbrains = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Learn in France — Overseas Education & Student Recruitment',
-  description: 'AI-powered student recruitment for studying in France',
+  title: 'Learn in France — Overseas Education & Admissions Guidance',
+  description: 'Specialist guidance for international students planning to study in France',
   icons: {
     icon: '/favicon.png',
     apple: '/logo-128.png',
+  },
+  openGraph: {
+    title: 'Learn in France — Overseas Education & Admissions Guidance',
+    description: 'Specialist guidance for international students planning to study in France',
+    images: [{ url: '/images/og-brand.webp', width: 1200, height: 630 }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Learn in France — Overseas Education & Admissions Guidance',
+    description: 'Specialist guidance for international students planning to study in France',
+    images: ['/images/og-brand.webp'],
   },
 }
 

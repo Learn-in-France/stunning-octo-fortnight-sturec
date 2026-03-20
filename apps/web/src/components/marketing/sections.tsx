@@ -132,7 +132,7 @@ export function EditorialCard({
         : 'bg-white/88 text-[var(--color-public-navy)] shadow-[0_20px_60px_rgba(10,22,41,0.08)]'
 
   return (
-    <div className={`rounded-[28px] p-7 backdrop-blur-sm ${toneClasses} ${className}`}>
+    <div className={`rounded-[28px] p-7 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_28px_70px_rgba(10,22,41,0.12)] ${toneClasses} ${className}`}>
       <h3 className="text-2xl font-semibold tracking-[-0.03em]">{title}</h3>
       <div className="mt-4 text-sm leading-7 text-inherit/80">{children}</div>
     </div>

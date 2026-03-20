@@ -35,7 +35,7 @@ export default function CampusFrancePage() {
       <MarketingHero
         label="Campus France"
         title={<>Campus France is a workflow, not a box to tick.</>}
-        description="For students in CEF countries, the Campus France process is one of the defining operational layers of the move to France. The dossier, timing, and interview all influence how smooth the rest of the journey becomes."
+        description="For students in CEF countries, the Campus France process is one of the most important steps in moving to France. The dossier, timing, and interview all influence how smooth the rest of the journey becomes."
         actions={[
           { href: '/apply', label: 'Get guided support' },
           { href: '/chat', label: 'Ask a question first', variant: 'secondary' },

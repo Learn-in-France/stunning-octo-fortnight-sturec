@@ -10,7 +10,7 @@ const channels = [
   {
     title: 'Universities and institutional partners',
     description:
-      'Reach out if you are exploring recruitment, partnerships, or a structured admissions support relationship for France-focused pipelines.',
+      'Reach out if you are exploring partnerships, admissions collaboration, or a structured support relationship for students heading to France.',
     detail: 'partners@learninfrance.com',
   },
   {
@@ -62,7 +62,7 @@ export default function ContactPage() {
       </section>
 
       <MarketingCTA
-        label="Start in product"
+        label="For students"
         title="If you are a student, the platform is the best first contact."
         description="Create an account to access the AI advisor, save your progress, and move into structured support when you are ready."
         primary={{ href: '/auth/register', label: 'Create account' }}

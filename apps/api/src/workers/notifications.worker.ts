@@ -243,7 +243,7 @@ async function sendSms(
 
 // ─── Recipient resolution ─────────────────────────────────
 
-const SYSTEM_RECIPIENTS: Record<string, { email: string; phone: string | null; firstName: string; lastName: string }> = {
+const SYSTEM_RECIPIENTS: Record<string, { id?: string; email: string; phone: string | null; firstName: string; lastName: string }> = {
   'support-team': {
     email: process.env.SUPPORT_EMAIL || 'support@sturec.com',
     phone: null,

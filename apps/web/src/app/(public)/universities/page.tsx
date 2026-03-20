@@ -46,7 +46,7 @@ export default function UniversitiesPage() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-[color:var(--color-public-slate)]">
             France offers a wide spread of public universities, specialized schools, and private
-            institutions. This list shows the active university dataset exposed on the public side.
+            institutions. Browse the universities and schools we actively support.
           </p>
         </div>
         <div className="public-panel p-6">
@@ -83,10 +83,7 @@ export default function UniversitiesPage() {
               <p className="mt-4 text-sm leading-7 text-[color:var(--color-public-slate)]">
                 {university.city}, {university.country}
               </p>
-              <div className="mt-6 flex items-center justify-between gap-4">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--color-public-muted)]">
-                  {university.active ? 'Active listing' : 'Inactive'}
-                </span>
+              <div className="mt-6 flex items-center justify-end gap-4">
                 {university.websiteUrl ? (
                   <a
                     href={university.websiteUrl}

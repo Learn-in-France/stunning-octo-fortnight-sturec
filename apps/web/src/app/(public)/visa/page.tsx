@@ -77,7 +77,7 @@ export default function VisaPage() {
       <MarketingCTA
         label="Next move"
         title="Get your visa readiness reviewed before the deadline gets close."
-        description="Use the student flow to keep evidence organized and visible, or book a consultation if you need a human review of your situation."
+        description="Use your student account to keep documents organised and visible, or book a consultation if you need a human review of your situation."
         primary={{ href: '/auth/register', label: 'Create student account' }}
         secondary={{ href: '/book', label: 'Book a consultation' }}
       />

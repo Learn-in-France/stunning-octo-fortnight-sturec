@@ -113,11 +113,11 @@ export default function ProgramsPage() {
         <div>
           <span className="public-label">Programs</span>
           <h1 className="mt-6 text-5xl font-semibold leading-[0.96] tracking-[-0.04em] text-[var(--color-public-navy)] sm:text-6xl">
-            Search the live France catalog.
+            Find the right program in France.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-[color:var(--color-public-slate)]">
-            Explore active programs across universities and schools in France. Use the catalog to
-            narrow your shortlist before moving into a student account and guided workflow.
+            Explore programs across universities and schools in France. Use the filters to
+            narrow your shortlist, then create an account when you are ready for personal guidance.
           </p>
         </div>
         <div className="public-panel p-6">
@@ -127,7 +127,7 @@ export default function ProgramsPage() {
           <div className="mt-4 space-y-3 text-sm leading-7 text-[color:var(--color-public-slate)]">
             <p>Filter by degree, city, and field before evaluating cost and duration.</p>
             <p>Use the AI advisor when you need help translating interest into a realistic shortlist.</p>
-            <p>Register when you want your search to become a tracked student journey.</p>
+            <p>Create an account when you are ready to save your progress and get personal guidance.</p>
           </div>
         </div>
       </div>
@@ -248,7 +248,7 @@ export default function ProgramsPage() {
                   <div className="mt-6 flex items-center justify-between gap-4">
                     <span className="text-sm text-[color:var(--color-public-muted)]">{program.fieldOfStudy}</span>
                     <Link href="/apply" className="text-sm font-semibold text-[var(--color-public-teal)]">
-                      Continue with guidance
+                      Get started
                     </Link>
                   </div>
                 </div>

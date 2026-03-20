@@ -9,7 +9,7 @@ const benefits = [
   'Get a structured profile instead of scattered notes',
   'Receive guidance on program fit and admissions timing',
   'Track documents, requirements, bookings, and next actions',
-  'Move from public exploration into a real student workflow',
+  'Get personal guidance tailored to your situation',
 ]
 
 export default function ApplyPage() {
@@ -41,9 +41,9 @@ export default function ApplyPage() {
   return (
     <>
       <MarketingHero
-        label="Apply"
-        title={<>Start with a student account that can actually carry the process.</>}
-        description="Registration is where curiosity turns into structure. Once you create an account, Learn in France can save your context, guide your next steps, and keep the process visible over time."
+        label="Get started"
+        title={<>Start with a student account that carries the whole process.</>}
+        description="Creating an account is where exploration becomes action. Once you register, Learn in France can save your progress, guide your next steps, and keep everything visible as you move forward."
         actions={[
           { href: '/auth/register', label: 'Create free account' },
           { href: '/auth/login', label: 'I already have one', variant: 'secondary' },
@@ -65,8 +65,8 @@ export default function ApplyPage() {
       <div className="public-shell pb-20">
         <div className="public-panel max-w-3xl p-8 sm:p-10">
           <p className="text-sm leading-7 text-[color:var(--color-public-slate)]">
-            Students can register with email and password or Google. Internal team members do not
-            self-register here; they use the invite flow provided by an admin.
+            You can register with email and password or Google. Once inside, you will have access
+            to the AI advisor, document uploads, and counsellor booking.
           </p>
         </div>
       </div>

@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 import { EditorialCard, MarketingCTA, MarketingHero, SectionHeading } from '@/components/marketing/sections'
 
 const reasons = [
@@ -42,6 +44,16 @@ export default function StudyInFrancePage() {
         ]}
         aside={
           <div className="grid gap-4">
+            <div className="overflow-hidden rounded-[28px] shadow-[0_20px_60px_rgba(10,22,41,0.08)]">
+              <Image
+                src="/images/france-seine.webp"
+                alt="Student reading by the Seine river in Paris at golden hour"
+                width={1600}
+                height={900}
+                className="h-auto w-full object-cover"
+                priority
+              />
+            </div>
             <EditorialCard title="What to weigh early" tone="tinted">
               <div className="space-y-3">
                 {realityCheck.map((item) => (
@@ -77,10 +89,35 @@ export default function StudyInFrancePage() {
         </div>
       </section>
 
+      <section className="py-10 sm:py-14">
+        <div className="public-shell">
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="overflow-hidden rounded-[28px] shadow-[0_20px_60px_rgba(10,22,41,0.08)]">
+              <Image
+                src="/images/france-tram.webp"
+                alt="Tram passing through a sunlit square in a French city"
+                width={1600}
+                height={900}
+                className="h-[260px] w-full object-cover sm:h-[300px]"
+              />
+            </div>
+            <div className="overflow-hidden rounded-[28px] shadow-[0_20px_60px_rgba(10,22,41,0.08)]">
+              <Image
+                src="/images/france-boulangerie.webp"
+                alt="Student at a French boulangerie"
+                width={1600}
+                height={900}
+                className="h-[260px] w-full object-cover sm:h-[300px]"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       <MarketingCTA
         label="Start exploring"
         title="Move from broad interest to an actual shortlist."
-        description="Use the public catalog if you are still comparing options, or create an account if you want the platform to start tracking your journey properly."
+        description="Use the catalog if you are still comparing options, or create an account to get guidance tailored to your profile."
         primary={{ href: '/programs', label: 'Explore programs' }}
         secondary={{ href: '/chat', label: 'Ask the AI advisor' }}
       />

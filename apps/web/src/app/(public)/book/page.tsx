@@ -13,7 +13,7 @@ export default function BookPage() {
       <MarketingHero
         label="Book a consultation"
         title={<>Speak with a counsellor before you commit to a route.</>}
-        description="Some students already know they need a human conversation. The consultation is the right place to pressure-test goals, shortlist logic, and the operational shape of the move to France."
+        description="Some students already know they need a human conversation. A consultation is the right place to review your goals, shortlist, and the practical steps ahead for your move to France."
         actions={[
           { href: '/apply', label: 'Create account to book' },
           { href: '/auth/login', label: 'Sign in to schedule', variant: 'secondary' },
@@ -35,7 +35,7 @@ export default function BookPage() {
       <MarketingCTA
         label="Before booking"
         title="Create your account first so the consultation has context."
-        description="Scheduling is connected to the product workflow. Once you are inside, the team can align the conversation with your profile and next actions."
+        description="When you have a profile, the counsellor can prepare in advance and make the conversation more useful from the first minute."
         primary={{ href: '/auth/register', label: 'Create account' }}
         secondary={{ href: '/contact', label: 'General contact' }}
       />

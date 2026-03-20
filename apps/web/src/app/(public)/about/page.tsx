@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 import { EditorialCard, MarketingCTA, MarketingHero, SectionHeading } from '@/components/marketing/sections'
 
 const principles = [
@@ -18,11 +20,11 @@ const principles = [
   },
 ]
 
-const operatingModel = [
-  'Public discovery for students still comparing cities, degrees, and budget ranges',
-  'A registration and guidance path that turns interest into a qualified student profile',
-  'Internal workflows for leads, students, documents, bookings, and analytics',
-  'Operational tooling for queues, integrations, alerts, and audit history',
+const whatWeOffer = [
+  'Guides and tools for students still comparing cities, degrees, and budget ranges',
+  'A personal student account that organises your profile, documents, and next steps',
+  'Counsellor support for applications, shortlisting, and admissions strategy',
+  'AI advisor available around the clock for common questions and exploration',
 ]
 
 export default function AboutPage() {
@@ -30,23 +32,35 @@ export default function AboutPage() {
     <>
       <MarketingHero
         label="About"
-        title={<>A specialist platform for students choosing France.</>}
-        description="Learn in France exists because the hard part of studying abroad is rarely inspiration. It is translating interest into an executable plan. We built the platform to make that transition explicit, trackable, and supported."
+        title={<>A specialist service for students choosing France.</>}
+        description="Learn in France exists because the hard part of studying abroad is rarely inspiration. It is translating interest into a concrete plan. We help students make that transition with clear guidance, structured support, and honest expectations."
         actions={[
           { href: '/apply', label: 'Start your plan' },
           { href: '/contact', label: 'Talk to us', variant: 'secondary' },
         ]}
         aside={
-          <EditorialCard title="What we are building" tone="dark">
-            <div className="space-y-3">
-              {operatingModel.map((item) => (
-                <div key={item} className="flex items-start gap-3">
-                  <span className="mt-1 h-2.5 w-2.5 rounded-full bg-white/75" />
-                  <p>{item}</p>
-                </div>
-              ))}
+          <div className="grid gap-4">
+            <div className="overflow-hidden rounded-[28px] shadow-[0_20px_60px_rgba(10,22,41,0.08)]">
+              <Image
+                src="/images/about-counsellor.webp"
+                alt="Education counsellor reviewing documents with a student"
+                width={1600}
+                height={900}
+                className="h-auto w-full object-cover"
+                priority
+              />
             </div>
-          </EditorialCard>
+            <EditorialCard title="What we offer" tone="dark">
+              <div className="space-y-3">
+                {whatWeOffer.map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <span className="mt-1 h-2.5 w-2.5 rounded-full bg-white/75" />
+                    <p>{item}</p>
+                  </div>
+                ))}
+              </div>
+            </EditorialCard>
+          </div>
         }
       />
 
@@ -54,7 +68,7 @@ export default function AboutPage() {
         <div className="public-shell">
           <SectionHeading
             label="Principles"
-            title="The product is grounded in admissions reality."
+            title="Grounded in admissions reality."
             description="Everything on the site should make a student feel more oriented, not more overwhelmed."
             align="center"
           />
@@ -70,20 +84,31 @@ export default function AboutPage() {
 
       <section className="pb-8 pt-4 sm:pb-14">
         <div className="public-shell">
-          <EditorialCard title="How we work" tone="tinted" className="max-w-5xl">
-            <p className="text-base leading-8 text-[color:var(--color-public-slate)]">
-              Students can begin in whichever mode suits them best: reading guides, exploring the
-              catalog, booking a consultation, or starting with the AI advisor. From there, the
-              platform moves them into a structured support environment where counsellors and
-              automation work together instead of competing for attention.
-            </p>
-          </EditorialCard>
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center">
+            <EditorialCard title="How we work" tone="tinted">
+              <p className="text-base leading-8 text-[color:var(--color-public-slate)]">
+                Students can begin in whichever mode suits them best: reading guides, exploring the
+                catalog, booking a consultation, or starting with the AI advisor. From there, we
+                help them move into a structured support environment where counsellors and
+                technology work together to keep the process on track.
+              </p>
+            </EditorialCard>
+            <div className="overflow-hidden rounded-[28px] shadow-[0_20px_60px_rgba(10,22,41,0.08)]">
+              <Image
+                src="/images/about-brochure.webp"
+                alt="Reviewing a university program brochure"
+                width={1600}
+                height={900}
+                className="h-auto w-full object-cover"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
       <MarketingCTA
-        label="Work with us"
-        title="If France is your destination, start in the right system."
+        label="Get started"
+        title="If France is your destination, we can help you get there."
         description="Create a profile, explore programs, or speak to the team if you want to understand how the process works before committing."
         primary={{ href: '/auth/register', label: 'Create account' }}
         secondary={{ href: '/contact', label: 'Contact Learn in France' }}

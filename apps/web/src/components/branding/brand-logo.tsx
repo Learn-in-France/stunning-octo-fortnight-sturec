@@ -55,7 +55,7 @@ export function BrandLogo({
             </p>
             {showTagline && (
               <p className={`mt-1 text-xs font-semibold uppercase tracking-[0.18em] ${mutedColor} ${subtitleClassName}`}>
-                Overseas Education & Student Recruitment
+                Overseas Education & Admissions Guidance
               </p>
             )}
           </div>
@@ -88,7 +88,7 @@ export function BrandLogo({
           </p>
           {showTagline && (
             <p className={`mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${mutedColor} ${subtitleClassName}`}>
-              Overseas Education & Student Recruitment
+              Overseas Education & Admissions Guidance
             </p>
           )}
         </div>

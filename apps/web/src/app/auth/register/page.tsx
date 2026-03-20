@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-import { signInWithGoogle, signUpWithEmail } from '@/lib/auth/firebase'
+import { deleteCurrentUser, signInWithGoogle, signUpWithEmail } from '@/lib/auth/firebase'
 import { useAuth } from '@/providers/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,7 @@ import api from '@/lib/api/client'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { user, loading, signOut } = useAuth()
+  const { user, loading, signOut, refreshUser } = useAuth()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -39,9 +39,21 @@ export default function RegisterPage() {
     await api.post('/auth/register', data ?? {})
   }
 
+  async function finishRegistration(data?: { firstName?: string; lastName?: string }) {
+    await registerOnBackend(data)
+    const appUser = await refreshUser()
+
+    if (!appUser) {
+      throw { code: 'VERIFY_FAILED' }
+    }
+
+    router.replace(appUser.role === 'student' ? '/portal' : '/dashboard')
+  }
+
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    let createdFirebaseAccount = false
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
@@ -57,19 +69,29 @@ export default function RegisterPage() {
     try {
       // 1. Create Firebase account
       await signUpWithEmail(email, password)
+      createdFirebaseAccount = true
 
       // 2. Register student on backend
-      await registerOnBackend({
+      await finishRegistration({
         firstName,
         lastName,
       })
-
-      // 3. Redirect to student portal
-      router.push('/portal')
     } catch (err: unknown) {
+      if (createdFirebaseAccount) {
+        try {
+          await deleteCurrentUser()
+        } catch {
+          await signOut()
+        }
+      }
+
       const apiError = err as { code?: string; message?: string }
       if (apiError?.code === 'auth/email-already-in-use' || apiError?.code === 'EMAIL_EXISTS') {
         setError('An account with this email already exists. Try signing in instead.')
+      } else if (apiError?.code === 'USE_VERIFY') {
+        setError('An account with this email already exists. Try signing in instead.')
+      } else if (apiError?.code === 'USE_ACCEPT_INVITE') {
+        setError('This email belongs to an invited team member. Use your invitation link instead.')
       } else if (apiError?.code === 'auth/weak-password') {
         setError('Password is too weak. Please use at least 8 characters.')
       } else if (apiError?.code === 'auth/invalid-email') {
@@ -92,12 +114,10 @@ export default function RegisterPage() {
       const [googleFirstName = '', ...rest] = displayName.split(/\s+/).filter(Boolean)
       const googleLastName = rest.join(' ')
 
-      await registerOnBackend({
+      await finishRegistration({
         firstName: googleFirstName || undefined,
         lastName: googleLastName || undefined,
       })
-
-      router.push('/portal')
     } catch (err: unknown) {
       await signOut()
 
@@ -106,6 +126,10 @@ export default function RegisterPage() {
         setError('Google sign-up was cancelled.')
       } else if (apiError?.code === 'auth/account-exists-with-different-credential') {
         setError('An account already exists with this email. Try signing in instead.')
+      } else if (apiError?.code === 'USE_VERIFY') {
+        setError('An account with this email already exists. Try signing in instead.')
+      } else if (apiError?.code === 'USE_ACCEPT_INVITE') {
+        setError('This email belongs to an invited team member. Use your invitation link instead.')
       } else {
         setError('Google sign-up failed. Please try again.')
       }
@@ -118,9 +142,9 @@ export default function RegisterPage() {
     <AuthShell
       eyebrow="Register"
       title="Create a student account that can carry the whole process."
-      description="Registration is where public interest becomes a real Learn in France journey. Once inside, the platform can track progress, documents, chat, bookings, and next actions."
+      description="Once you create an account, Learn in France can save your progress, guide your next steps, and keep everything organised as you move forward."
       sideTitle="What you unlock"
-      sideCopy="The student account is not just a login. It is the handoff from marketing into the actual product workflow."
+      sideCopy="Your student account is more than a login. It connects your profile, documents, and conversations into one place so nothing gets lost."
       sidePoints={[
         'Save program research and return to it later.',
         'Talk to the AI advisor with your own context attached.',
