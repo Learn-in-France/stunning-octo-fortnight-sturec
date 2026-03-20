@@ -10,31 +10,21 @@ export function Topbar() {
   const router = useRouter()
 
   return (
-    <header className="h-16 bg-surface-raised border-b border-border flex items-center justify-between px-6 sticky top-0 z-20">
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/45 bg-[rgba(255,250,243,0.78)] px-6 backdrop-blur-xl">
       <div className="flex items-center gap-3">
         {/* Breadcrumb slot — pages inject via PageHeader */}
+        <span className="hidden rounded-full bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-700 lg:inline-flex">
+          Learn in France workspace
+        </span>
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Notifications bell */}
-        <button className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-sunken transition-colors">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path
-              d="M4.5 7C4.5 4.515 6.515 2.5 9 2.5C11.485 2.5 13.5 4.515 13.5 7V10.5L15 13H3L4.5 10.5V7Z"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-            />
-            <path d="M7.5 13V14C7.5 14.828 8.172 15.5 9 15.5C9.828 15.5 10.5 14.828 10.5 14V13" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-        </button>
-
         {/* User menu */}
         {user && (
           <DropdownMenu
             trigger={
-              <div className="flex items-center gap-2.5 pl-3 pr-2 py-1.5 rounded-lg hover:bg-surface-sunken transition-colors cursor-pointer">
-                <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-semibold">
+              <div className="flex cursor-pointer items-center gap-2.5 rounded-full bg-white/78 py-1.5 pl-3 pr-2 transition-colors hover:bg-white">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">
                   {user.firstName?.[0]}{user.lastName?.[0]}
                 </div>
                 <span className="text-sm font-medium text-text-primary max-w-[120px] truncate">

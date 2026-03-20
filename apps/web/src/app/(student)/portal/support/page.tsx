@@ -5,7 +5,6 @@ import Link from 'next/link'
 
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/providers/auth-provider'
 import { useSubmitSupportRequest } from '@/features/student-portal/hooks/use-student-portal'
 
 // ─── FAQ data ───────────────────────────────────────────────────
@@ -46,7 +45,6 @@ const CATEGORIES = [
 ] as const
 
 export default function SupportPage() {
-  const { user } = useAuth()
   const submitSupport = useSubmitSupportRequest()
 
   const [subject, setSubject] = useState('')
@@ -69,11 +67,7 @@ export default function SupportPage() {
       setMessage('')
       setCategory('general')
     } catch {
-      // Fallback: open mailto if API call fails
-      const mailtoUrl = `mailto:support@sturec.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
-        `From: ${user?.firstName ?? ''} ${user?.lastName ?? ''} (${user?.email ?? ''})\n\n${message}`
-      )}`
-      window.open(mailtoUrl, '_blank')
+      // Error is shown via submitSupport.isError below
     }
   }
 
@@ -177,9 +171,13 @@ export default function SupportPage() {
                     Send Message
                   </Button>
                   {submitSupport.isError && (
-                    <p className="text-xs text-rose-600">
-                      Could not submit your request. Your email client has been opened as a fallback.
-                    </p>
+                    <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+                      <p>Something went wrong. Please try again, or email us directly at{' '}
+                        <a href="mailto:support@learninfrance.com" className="font-medium underline hover:no-underline">
+                          support@learninfrance.com
+                        </a>
+                      </p>
+                    </div>
                   )}
                 </form>
               </>
