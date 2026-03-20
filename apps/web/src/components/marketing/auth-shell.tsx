@@ -68,7 +68,7 @@ export function AuthShell({
               <div className="mt-6 space-y-3">
                 {sidePoints.map((point) => (
                   <div key={point} className="flex items-start gap-3">
-                    <span className="mt-1 h-2.5 w-2.5 rounded-full bg-white/70" />
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-white/70" />
                     <p className="text-sm leading-7 text-white/78">{point}</p>
                   </div>
                 ))}

@@ -98,7 +98,7 @@ export default function StudyInFrancePage() {
                 alt="Tram passing through a sunlit square in a French city"
                 width={1600}
                 height={900}
-                className="h-[260px] w-full object-cover sm:h-[300px]"
+                className="aspect-[4/3] w-full object-cover"
               />
             </div>
             <div className="overflow-hidden rounded-[28px] shadow-[0_20px_60px_rgba(10,22,41,0.08)]">
@@ -107,7 +107,7 @@ export default function StudyInFrancePage() {
                 alt="Student at a French boulangerie"
                 width={1600}
                 height={900}
-                className="h-[260px] w-full object-cover sm:h-[300px]"
+                className="aspect-[4/3] w-full object-cover"
               />
             </div>
           </div>

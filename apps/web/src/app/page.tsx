@@ -109,7 +109,7 @@ export default function HomePage() {
               <div className="space-y-3">
                 {whatYouGet.map((point) => (
                   <div key={point} className="flex items-start gap-3">
-                    <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[var(--color-public-teal)]" />
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-public-teal)]" />
                     <p>{point}</p>
                   </div>
                 ))}
@@ -158,7 +158,7 @@ export default function HomePage() {
               alt="Paris rooftops at golden hour seen from a university window"
               width={1600}
               height={600}
-              className="h-[280px] w-full object-cover sm:h-[360px]"
+              className="aspect-[21/9] w-full object-cover"
             />
           </div>
         </div>
@@ -205,7 +205,7 @@ export default function HomePage() {
                 alt="International students walking through a French university campus"
                 width={1600}
                 height={900}
-                className="h-[240px] w-full object-cover"
+                className="aspect-[4/3] w-full object-cover"
               />
             </div>
             <EditorialCard title="For students choosing France on purpose" tone="dark">

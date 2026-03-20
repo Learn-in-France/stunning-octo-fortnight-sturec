@@ -23,7 +23,10 @@ const jetbrains = JetBrains_Mono({
   display: 'swap',
 })
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://learninfrance.com'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'Learn in France — Overseas Education & Admissions Guidance',
   description: 'Specialist guidance for international students planning to study in France',
   icons: {
@@ -35,12 +38,20 @@ export const metadata: Metadata = {
     description: 'Specialist guidance for international students planning to study in France',
     images: [{ url: '/images/og-brand.webp', width: 1200, height: 630 }],
     type: 'website',
+    siteName: 'Learn in France',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Learn in France — Overseas Education & Admissions Guidance',
     description: 'Specialist guidance for international students planning to study in France',
     images: ['/images/og-brand.webp'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: '/',
   },
 }
 

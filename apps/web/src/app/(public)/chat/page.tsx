@@ -51,7 +51,7 @@ export default function ChatPage() {
             <div className="space-y-3">
               {capabilities.slice(0, 4).map((item) => (
                 <div key={item} className="flex items-start gap-3">
-                  <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[var(--color-public-teal)]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-public-teal)]" />
                   <p>{item}</p>
                 </div>
               ))}

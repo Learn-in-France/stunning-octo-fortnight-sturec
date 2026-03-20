@@ -45,7 +45,7 @@ export default function CampusFrancePage() {
             <div className="space-y-3">
               {mistakes.map((mistake) => (
                 <div key={mistake} className="flex items-start gap-3">
-                  <span className="mt-1 h-2.5 w-2.5 rounded-full bg-white/75" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-white/75" />
                   <p>{mistake}</p>
                 </div>
               ))}
