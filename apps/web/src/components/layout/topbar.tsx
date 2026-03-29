@@ -138,7 +138,7 @@ export function Topbar() {
       <div className="flex items-center gap-3">
         {/* Breadcrumb slot — pages inject via PageHeader */}
         <span className="hidden rounded-full bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-700 lg:inline-flex">
-          Learn in France workspace
+          Learn in <span className="text-public-red">France</span> workspace
         </span>
       </div>
 

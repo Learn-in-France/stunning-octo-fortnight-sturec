@@ -7,8 +7,8 @@ import { BrandLogo } from '@/components/branding/brand-logo'
 
 interface AuthShellProps {
   eyebrow: string
-  title: string
-  description: string
+  title: ReactNode
+  description: ReactNode
   children: ReactNode
   footer?: ReactNode
   sideTitle: string
@@ -30,8 +30,8 @@ export function AuthShell({
 }: AuthShellProps) {
   const accentClass =
     mode === 'team'
-      ? 'bg-[linear-gradient(140deg,rgba(10,22,41,1),rgba(91,30,38,0.88),rgba(0,106,98,0.7))]'
-      : 'bg-[linear-gradient(140deg,rgba(10,22,41,1),rgba(0,106,98,0.88),rgba(91,30,38,0.72))]'
+      ? 'bg-[image:var(--gradient-cta)]'
+      : 'bg-[image:var(--gradient-cta)]'
 
   return (
     <div className="public-page min-h-screen">

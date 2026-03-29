@@ -187,10 +187,10 @@ export function Sidebar() {
                       href={item.href}
                     className={`
                         group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium
-                        transition-all duration-150
+                        transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-accent
                         ${
                           active
-                            ? 'bg-[linear-gradient(135deg,rgba(23,48,80,1),rgba(0,106,98,0.34))] text-sidebar-text-active shadow-[0_16px_30px_rgba(0,0,0,0.18)]'
+                            ? 'bg-[linear-gradient(135deg,rgba(23,48,80,1),rgba(26,58,122,0.4))] text-sidebar-text-active shadow-[0_16px_30px_rgba(0,0,0,0.18)]'
                             : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active'
                         }
                       `}

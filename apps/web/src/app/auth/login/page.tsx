@@ -9,6 +9,7 @@ import { useAuth } from '@/providers/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AuthShell } from '@/components/marketing/auth-shell'
+import { BrandName } from '@/components/branding/brand-logo'
 import api from '@/lib/api/client'
 
 export default function LoginPage() {
@@ -121,7 +122,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       eyebrow="Sign in"
-      title="Return to your Learn in France workspace."
+      title={<>Return to your <BrandName inverse /> workspace.</>}
       description="Students come back here to continue their plan. Team members use the same sign-in page after accepting an invitation."
       sideTitle="Before you sign in"
       sideCopy="The login page supports two very different paths, and the copy should make that distinction obvious."
@@ -229,7 +230,7 @@ export default function LoginPage() {
       <div className="mt-6 space-y-2 text-center text-xs text-text-muted">
         <p>
           New student?{' '}
-          <Link href="/auth/register" className="text-primary-700 hover:underline">
+          <Link href="/auth/register" className="text-public-blue hover:underline">
             Create an account
           </Link>
         </p>

@@ -9,6 +9,7 @@ import { useAuth } from '@/providers/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AuthShell } from '@/components/marketing/auth-shell'
+import { BrandName } from '@/components/branding/brand-logo'
 import api from '@/lib/api/client'
 
 export default function RegisterPage() {
@@ -160,7 +161,7 @@ export default function RegisterPage() {
     <AuthShell
       eyebrow="Register"
       title="Create a student account that can carry the whole process."
-      description="Once you create an account, Learn in France can save your progress, guide your next steps, and keep everything organised as you move forward."
+      description={<>Once you create an account, <BrandName inverse /> can save your progress, guide your next steps, and keep everything organised as you move forward.</>}
       sideTitle="What you unlock"
       sideCopy="Your student account is more than a login. It connects your profile, documents, and conversations into one place so nothing gets lost."
       sidePoints={[

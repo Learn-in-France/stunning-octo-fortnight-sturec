@@ -14,13 +14,28 @@ interface BrandLogoProps {
   inverse?: boolean
 }
 
+/**
+ * Inline brand name with French tricolore coloring.
+ * Use in sentences: "Welcome to <BrandName />".
+ * - Light bg: "Learn in" = navy, "France" = red
+ * - Dark bg (inverse): "Learn in" = white, "France" = red
+ */
+export function BrandName({ inverse = false, className = '' }: { inverse?: boolean; className?: string }) {
+  return (
+    <span className={`${inverse ? 'text-white' : 'text-public-navy'} ${className}`}>
+      Learn in{' '}
+      <span className="text-public-red">France</span>
+    </span>
+  )
+}
+
 function BrandMark({ className }: { className?: string }) {
   return (
     <Image
-      src="/logo.png"
+      src="/images/brand-crest-tight.webp"
       alt="Learn in France"
-      width={512}
-      height={279}
+      width={1300}
+      height={1380}
       className={`object-contain ${className}`}
       priority
     />
@@ -37,7 +52,8 @@ export function BrandLogo({
   showTagline = false,
   inverse = false,
 }: BrandLogoProps) {
-  const textColor = inverse ? 'text-white' : 'text-text-primary'
+  const baseColor = inverse ? 'text-white' : 'text-public-navy'
+  const accentColor = 'text-public-red'
   const mutedColor = inverse ? 'text-white/80' : 'text-text-muted'
 
   const content = (() => {
@@ -50,8 +66,9 @@ export function BrandLogo({
         <div className={`flex flex-col items-center text-center ${className}`}>
           <BrandMark className={markClassName || 'h-20 w-auto'} />
           <div className="mt-4">
-            <p className={`font-display font-bold tracking-tight text-2xl ${textColor} ${textClassName}`}>
-              LEARN IN FRANCE
+            <p className={`font-display font-bold tracking-tight text-2xl ${textClassName}`}>
+              <span className={baseColor}>LEARN IN </span>
+              <span className={accentColor}>FRANCE</span>
             </p>
             {showTagline && (
               <p className={`mt-1 text-xs font-semibold uppercase tracking-[0.18em] ${mutedColor} ${subtitleClassName}`}>
@@ -68,10 +85,10 @@ export function BrandLogo({
         <div className={`flex items-center gap-2.5 ${className}`}>
           <BrandMark className={markClassName || 'h-9 w-auto shrink-0'} />
           <div className="leading-none">
-            <p className={`font-display font-bold text-[11px] tracking-[0.22em] ${textColor} ${textClassName}`}>
+            <p className={`font-display font-bold text-[11px] tracking-[0.22em] ${baseColor} ${textClassName}`}>
               LEARN IN
             </p>
-            <p className={`font-display font-bold text-[14px] tracking-tight ${textColor} ${textClassName}`}>
+            <p className={`font-display font-bold text-[14px] tracking-tight ${accentColor} ${textClassName}`}>
               FRANCE
             </p>
           </div>
@@ -83,8 +100,9 @@ export function BrandLogo({
       <div className={`flex items-center gap-3 ${className}`}>
         <BrandMark className={markClassName || 'h-10 w-auto shrink-0'} />
         <div className="leading-none">
-          <p className={`font-display font-bold text-lg tracking-tight ${textColor} ${textClassName}`}>
-            LEARN IN FRANCE
+          <p className={`font-display font-bold text-lg tracking-tight ${textClassName}`}>
+            <span className={baseColor}>LEARN IN </span>
+            <span className={accentColor}>FRANCE</span>
           </p>
           {showTagline && (
             <p className={`mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${mutedColor} ${subtitleClassName}`}>

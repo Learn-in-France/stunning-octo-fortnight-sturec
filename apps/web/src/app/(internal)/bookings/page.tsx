@@ -87,7 +87,7 @@ export default function BookingsPage() {
       {stats && (
         <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-3">
           <MetricCard label="Scheduled" value={stats.scheduled} accent="bg-sky-500" />
-          <MetricCard label="Completed" value={stats.completed} accent="bg-emerald-500" />
+          <MetricCard label="Completed" value={stats.completed} accent="bg-primary-500" />
           <MetricCard label="Total" value={stats.scheduled + stats.completed} />
         </div>
       )}

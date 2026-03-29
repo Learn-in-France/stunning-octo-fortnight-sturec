@@ -7,18 +7,15 @@ import Link from 'next/link'
 import { BrandLogo } from '@/components/branding/brand-logo'
 
 export const publicNavLinks = [
-  { href: '/study-in-france', label: 'Why France' },
-  { href: '/programs', label: 'Programs' },
-  { href: '/universities', label: 'Universities' },
-  { href: '/campus-france', label: 'Campus France' },
-  { href: '/visa', label: 'Visa' },
-  { href: '/about', label: 'About' },
+  { href: '/why-france', label: 'Why France' },
+  { href: '/your-journey', label: 'Your Journey' },
+  { href: '/advisor', label: 'AI Advisor' },
 ]
 
 function MobileMenuIcon({ open }: { open: boolean }) {
   return (
     <svg
-      className="h-5 w-5 text-[var(--color-public-navy)]"
+      className="h-5 w-5 text-public-navy"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -38,7 +35,7 @@ function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/40 bg-[rgba(246,240,229,0.74)] backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-white/40 bg-public-cream/74 backdrop-blur-xl">
       <div className="public-shell">
         <div className="flex min-h-[84px] items-center justify-between gap-6 py-4">
           <BrandLogo
@@ -55,10 +52,10 @@ function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-white text-[var(--color-public-navy)] shadow-[0_10px_26px_rgba(10,22,41,0.08)]'
-                      : 'text-[color:var(--color-public-slate)] hover:bg-white/70 hover:text-[var(--color-public-navy)]'
+                      ? 'text-public-red font-bold border-b-2 border-public-red'
+                      : 'text-public-slate hover:text-public-navy'
                   }`}
                 >
                   {link.label}
@@ -70,18 +67,18 @@ function Header() {
           <div className="hidden items-center gap-3 lg:flex">
             <Link
               href="/auth/login"
-              className="rounded-full px-4 py-2 text-sm font-semibold text-[color:var(--color-public-navy)] transition-colors hover:bg-white/70"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-public-navy transition-colors hover:bg-white/70"
             >
               Sign in
             </Link>
-            <Link href="/apply" className="public-button-primary">
-              Start your plan
+            <Link href="/auth/register" className="public-button-primary">
+              Talk to AI advisor
             </Link>
           </div>
 
           <button
             type="button"
-            className="rounded-full bg-white/80 p-3 shadow-[0_10px_30px_rgba(10,22,41,0.08)] lg:hidden"
+            className="rounded-full bg-white/80 p-3 shadow-card lg:hidden"
             aria-label="Toggle menu"
             onClick={() => setMobileOpen((value) => !value)}
           >
@@ -101,8 +98,8 @@ function Header() {
                     onClick={() => setMobileOpen(false)}
                     className={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${
                       isActive
-                        ? 'bg-[var(--color-public-navy)] text-white'
-                        : 'bg-white/70 text-[color:var(--color-public-slate)]'
+                        ? 'bg-public-navy text-white'
+                        : 'bg-white/70 text-public-slate'
                     }`}
                   >
                     {link.label}
@@ -119,11 +116,11 @@ function Header() {
                 Sign in
               </Link>
               <Link
-                href="/apply"
+                href="/auth/register"
                 onClick={() => setMobileOpen(false)}
                 className="public-button-primary text-center"
               >
-                Start your plan
+                Talk to AI advisor
               </Link>
             </div>
           </div>
@@ -138,33 +135,24 @@ function Footer() {
     {
       title: 'Explore',
       links: [
-        { href: '/study-in-france', label: 'Why France' },
-        { href: '/programs', label: 'Programs' },
-        { href: '/universities', label: 'Universities' },
-      ],
-    },
-    {
-      title: 'Process',
-      links: [
-        { href: '/campus-france', label: 'Campus France' },
-        { href: '/visa', label: 'Visa' },
-        { href: '/accommodation', label: 'Accommodation' },
+        { href: '/why-france', label: 'Why France' },
+        { href: '/your-journey', label: 'Your Journey' },
+        { href: '/advisor', label: 'AI Advisor' },
       ],
     },
     {
       title: 'Get started',
       links: [
-        { href: '/apply', label: 'Create account' },
-        { href: '/book', label: 'Book consultation' },
-        { href: '/chat', label: 'AI advisor' },
+        { href: '/auth/register', label: 'Talk to AI advisor' },
+        { href: '/auth/login', label: 'Sign in' },
       ],
     },
   ]
 
   return (
-    <footer className="mt-auto overflow-hidden bg-[var(--color-public-navy)] text-white">
+    <footer className="mt-auto overflow-hidden bg-public-navy text-white">
       <div className="public-shell py-16">
-        <div className="grid gap-12 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
+        <div className="grid gap-12 lg:grid-cols-[1.6fr_repeat(2,1fr)]">
           <div>
             <BrandLogo
               href="/"
@@ -175,14 +163,14 @@ function Footer() {
               showTagline
             />
             <p className="mt-6 max-w-md text-sm leading-7 text-white/72">
-              Learn in France combines grounded admissions guidance, live program discovery,
-              Campus France support, and ongoing counsellor help for students planning a move
-              to France.
+              A specialist agency with a team on the ground in France. We help international
+              students find the right program, manage applications and visa, and settle in
+              after arrival.
             </p>
             <div className="mt-8 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/55">
-              <span className="rounded-full bg-white/8 px-3 py-2">AI advisor</span>
-              <span className="rounded-full bg-white/8 px-3 py-2">Counsellor support</span>
-              <span className="rounded-full bg-white/8 px-3 py-2">France only</span>
+              <span className="rounded-full bg-white/8 px-3 py-2">France specialist</span>
+              <span className="rounded-full bg-white/8 px-3 py-2">Team in France</span>
+              <span className="rounded-full bg-white/8 px-3 py-2">Full journey support</span>
             </div>
           </div>
 
@@ -208,15 +196,15 @@ function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col gap-4 border-t border-white/12 pt-6 text-xs text-white/52 sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {new Date().getFullYear()} Learn in France. Built for real student journeys.</p>
+          <p>&copy; {new Date().getFullYear()} Learn in <span className="text-public-red">France</span>. Built for real student journeys.</p>
           <div className="flex items-center gap-5">
-            <Link href="/contact" className="transition-colors hover:text-white">
+            <Link href="mailto:hello@learninfrance.com" className="transition-colors hover:text-white">
               Contact
             </Link>
-            <Link href="/contact" className="transition-colors hover:text-white">
+            <Link href="/privacy" className="transition-colors hover:text-white">
               Privacy
             </Link>
-            <Link href="/contact" className="transition-colors hover:text-white">
+            <Link href="/terms" className="transition-colors hover:text-white">
               Terms
             </Link>
           </div>

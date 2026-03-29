@@ -113,7 +113,7 @@ export default function ApplicationsPage() {
         <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-4">
           <MetricCard label="Total" value={stats.total} />
           <MetricCard label="Submitted" value={stats.submitted} accent="bg-sky-500" />
-          <MetricCard label="Offers" value={stats.offers} accent="bg-emerald-500" />
+          <MetricCard label="Offers" value={stats.offers} accent="bg-primary-500" />
           <MetricCard label="Enrolled" value={stats.enrolled} accent="bg-primary-500" />
         </div>
       )}

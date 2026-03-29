@@ -59,7 +59,7 @@ export default function UniversitiesPage() {
 
       {loading ? (
         <div className="py-20 text-center">
-          <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-[var(--color-public-teal)] border-t-transparent" />
+          <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-[var(--color-public-blue)] border-t-transparent" />
           <p className="mt-4 text-sm text-[color:var(--color-public-muted)]">Loading universities...</p>
         </div>
       ) : universities.length === 0 ? (
@@ -75,7 +75,7 @@ export default function UniversitiesPage() {
                   {university.name}
                 </h2>
                 {university.partnerStatus && (
-                  <span className="rounded-full bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-public-burgundy)]">
+                  <span className="rounded-full bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-public-red">
                     {university.partnerStatus}
                   </span>
                 )}
@@ -89,7 +89,7 @@ export default function UniversitiesPage() {
                     href={university.websiteUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-semibold text-[var(--color-public-teal)]"
+                    className="text-sm font-semibold text-[var(--color-public-blue)]"
                   >
                     Visit website
                   </a>
@@ -106,11 +106,11 @@ export default function UniversitiesPage() {
             Need help translating institutions into a shortlist?
           </p>
           <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link href="/programs" className="public-button-primary">
-              Explore programs
+            <Link href="/auth/register" className="public-button-primary">
+              Talk to AI advisor
             </Link>
-            <Link href="/chat" className="public-button-secondary">
-              Ask the AI advisor
+            <Link href="/your-journey" className="public-button-secondary">
+              See the journey
             </Link>
           </div>
         </div>

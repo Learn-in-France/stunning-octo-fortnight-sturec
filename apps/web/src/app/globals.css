@@ -5,17 +5,17 @@
   --font-display: var(--font-bricolage), serif;
   --font-mono: var(--font-jetbrains), monospace;
 
-  --color-primary-50: #eef7f5;
-  --color-primary-100: #d8ece7;
-  --color-primary-200: #b5dcd4;
-  --color-primary-300: #7cc1b3;
-  --color-primary-400: #40a694;
-  --color-primary-500: #168a79;
-  --color-primary-600: #006a62;
-  --color-primary-700: #0c5b55;
-  --color-primary-800: #104945;
-  --color-primary-900: #103b39;
-  --color-primary-950: #072726;
+  --color-primary-50: #f0f4fb;
+  --color-primary-100: #dce5f4;
+  --color-primary-200: #b9cbe9;
+  --color-primary-300: #8fabd9;
+  --color-primary-400: #6589c5;
+  --color-primary-500: #3d65ad;
+  --color-primary-600: #1a3a7a;
+  --color-primary-700: #163067;
+  --color-primary-800: #122654;
+  --color-primary-900: #0e1d41;
+  --color-primary-950: #09132e;
 
   --color-surface: #f4efe5;
   --color-surface-raised: #fffaf3;
@@ -26,7 +26,7 @@
   --color-sidebar-active: #173050;
   --color-sidebar-text: #93a7bf;
   --color-sidebar-text-active: #f6f0e5;
-  --color-sidebar-accent: #53c4b1;
+  --color-sidebar-accent: #6589c5;
   --color-sidebar-border: #213655;
 
   --color-border: #ddd3c3;
@@ -44,21 +44,41 @@
 
   --color-status-new: #3b82f6;
   --color-status-nurturing: #8b5cf6;
-  --color-status-qualified: #10b981;
+  --color-status-qualified: #3b82f6;
   --color-status-disqualified: #ef4444;
-  --color-status-converted: #0d9488;
+  --color-status-converted: #1a3a7a;
 
-  --color-score-high: #10b981;
+  --color-score-high: #3b82f6;
   --color-score-mid: #f59e0b;
   --color-score-low: #ef4444;
 
+  /* ── Public site palette ── */
   --color-public-navy: #0a1629;
-  --color-public-teal: #006a62;
-  --color-public-burgundy: #5b1e26;
+  --color-public-blue: #1a3a7a;
+  --color-public-red: #c8102e;
   --color-public-cream: #f6f0e5;
-  --color-public-mist: #e5efeb;
+  --color-public-mist: #e8eef6;
   --color-public-slate: #415468;
-  --color-public-muted: #708191;
+  --color-public-muted: #5a6d7e;
+
+  /* ── Public site shadows ── */
+  --shadow-card: 0 20px 60px rgba(10, 22, 41, 0.08);
+  --shadow-card-dark: 0 28px 80px rgba(10, 22, 41, 0.24);
+  --shadow-card-hover: 0 28px 70px rgba(10, 22, 41, 0.12);
+  --shadow-hero-image: 0 25px 50px -12px rgba(10, 22, 41, 0.08);
+  --shadow-cta: 0 28px 90px rgba(10, 22, 41, 0.28);
+
+  /* ── Public site radii ── */
+  --radius-card: 24px;
+  --radius-cta: 28px;
+}
+
+/* ── Public site design tokens (non-theme) ── */
+:root {
+  --gradient-dark: linear-gradient(140deg, rgba(10, 22, 41, 1), rgba(24, 39, 64, 0.96));
+  --gradient-tinted: linear-gradient(140deg, rgba(255, 255, 255, 0.9), rgba(228, 238, 235, 0.88));
+  --gradient-cta: linear-gradient(140deg, rgba(10, 22, 41, 1), rgba(26, 58, 122, 0.95), rgba(200, 16, 46, 0.85));
+  --gradient-button-primary: linear-gradient(140deg, var(--color-public-red), #e0122e);
 }
 
 body {
@@ -83,12 +103,50 @@ body {
   background: var(--color-border-strong);
 }
 
+/* ── Material Symbols fallback ── */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-size: 24px;
+  line-height: 1;
+  overflow: hidden;
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+}
+
+/* Hide text until icon font loads */
+@supports not (font-tech(color-COLRv1)) {
+  .material-symbols-outlined {
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Public page backgrounds ── */
+
 .public-page {
   background:
-    radial-gradient(circle at top left, rgba(0, 106, 98, 0.14), transparent 24%),
-    radial-gradient(circle at top right, rgba(91, 30, 38, 0.1), transparent 28%),
+    radial-gradient(circle at top left, rgba(26, 58, 122, 0.10), transparent 24%),
+    radial-gradient(circle at top right, rgba(200, 16, 46, 0.07), transparent 28%),
     linear-gradient(180deg, var(--color-public-cream) 0%, #f7f4ee 42%, #f3efe7 100%);
 }
+
+.internal-app-shell {
+  background:
+    radial-gradient(circle at top right, rgba(26, 58, 122, 0.08), transparent 26%),
+    radial-gradient(circle at top left, rgba(200, 16, 46, 0.06), transparent 28%),
+    linear-gradient(180deg, #f5f1e8 0%, #f1ece3 100%);
+}
+
+/* ── Public layout primitives ── */
 
 .public-shell {
   max-width: 84rem;
@@ -108,6 +166,8 @@ body {
   }
 }
 
+/* ── Public labels & panels ── */
+
 .public-label {
   display: inline-flex;
   align-items: center;
@@ -119,7 +179,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-public-teal);
+  color: var(--color-public-blue);
   box-shadow: 0 10px 30px rgba(10, 22, 41, 0.05);
 }
 
@@ -127,20 +187,22 @@ body {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(16px);
-  box-shadow: 0 16px 48px rgba(10, 22, 41, 0.07);
+  box-shadow: var(--shadow-card);
 }
+
+/* ── Public buttons ── */
 
 .public-button-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: linear-gradient(140deg, var(--color-public-teal), #0f857d);
+  background: var(--gradient-button-primary);
   padding: 0.7rem 1.3rem;
   font-size: 0.85rem;
   font-weight: 700;
   color: white;
-  box-shadow: 0 14px 28px rgba(0, 106, 98, 0.22);
+  box-shadow: 0 14px 28px rgba(200, 16, 46, 0.22);
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -149,7 +211,7 @@ body {
 
 .public-button-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 20px 40px rgba(0, 106, 98, 0.3);
+  box-shadow: 0 20px 40px rgba(200, 16, 46, 0.3);
 }
 
 .public-button-secondary {
@@ -173,9 +235,192 @@ body {
   background: white;
 }
 
-.internal-app-shell {
-  background:
-    radial-gradient(circle at top right, rgba(0, 106, 98, 0.08), transparent 26%),
-    radial-gradient(circle at top left, rgba(91, 30, 38, 0.08), transparent 28%),
-    linear-gradient(180deg, #f5f1e8 0%, #f1ece3 100%);
+/* ── Public card styles ── */
+
+.public-card {
+  border-radius: var(--radius-card);
+  padding: 1.75rem;
+  backdrop-filter: blur(4px);
+  transition: all 200ms ease;
+}
+
+.public-card:hover {
+  transform: translateY(-2px);
+}
+
+@media (min-width: 640px) {
+  .public-card {
+    padding: 2.5rem;
+  }
+}
+
+.public-card-light {
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--color-public-navy);
+  box-shadow: var(--shadow-card);
+}
+
+.public-card-light:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.public-card-dark {
+  background: var(--gradient-dark);
+  color: white;
+  box-shadow: var(--shadow-card-dark);
+}
+
+.public-card-tinted {
+  background: var(--gradient-tinted);
+  color: var(--color-public-navy);
+  box-shadow: var(--shadow-card);
+}
+
+.public-card-tinted:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ── Card padding variants ── */
+
+.public-card-lg {
+  padding: 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .public-card-lg {
+    padding: 3rem;
+  }
+}
+
+/* ── Public hero image wrapper ── */
+
+.public-hero-image {
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-hero-image);
+}
+
+.public-hero-image img {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* ── Public watermark number ── */
+
+.public-watermark {
+  position: absolute;
+  right: -0.5rem;
+  top: -0.5rem;
+  pointer-events: none;
+  font-family: var(--font-display);
+  font-size: 7rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-public-red);
+  opacity: 0.08;
+}
+
+@media (min-width: 640px) {
+  .public-watermark {
+    font-size: 8rem;
+  }
+}
+
+/* ── Public typography ── */
+
+.public-heading-section {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--color-public-navy);
+}
+
+@media (min-width: 640px) {
+  .public-heading-section {
+    font-size: 3rem;
+  }
+}
+
+.public-heading-card {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 640px) {
+  .public-heading-card {
+    font-size: 1.5rem;
+  }
+}
+
+.public-body {
+  font-size: 0.9375rem;
+  line-height: 1.75rem;
+  color: var(--color-public-slate);
+}
+
+.public-body-dark {
+  font-size: 0.9375rem;
+  line-height: 1.75rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.public-phase-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-public-red);
+}
+
+/* ── Public section divider ── */
+
+.public-divider {
+  margin-inline: auto;
+  margin-top: 1rem;
+  height: 0.25rem;
+  width: 5rem;
+  border-radius: 9999px;
+  background: var(--color-public-red);
+}
+
+/* ── Public bullet dot ── */
+
+.public-dot {
+  margin-top: 0.5rem;
+  height: 0.5rem;
+  width: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: var(--color-public-blue);
+}
+
+.public-dot-red {
+  margin-top: 0.5rem;
+  height: 0.5rem;
+  width: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: var(--color-public-red);
+}
+
+/* ── Public icon ── */
+
+.public-icon {
+  font-size: 2.25rem;
+  color: var(--color-public-blue);
+}
+
+.public-icon-accent {
+  font-size: 2.25rem;
+  color: var(--color-public-red);
+}
+
+/* ── Public accent text ── */
+
+.public-accent {
+  color: var(--color-public-red);
 }

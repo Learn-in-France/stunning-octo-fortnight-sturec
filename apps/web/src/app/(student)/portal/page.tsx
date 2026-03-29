@@ -17,8 +17,17 @@ export default function PortalPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <LoadingSpinner size="lg" />
+      <div className="space-y-6">
+        <div className="rounded-[28px] bg-surface-sunken/50 p-8 animate-pulse">
+          <div className="h-4 w-24 rounded bg-surface-sunken mb-4" />
+          <div className="h-8 w-64 rounded bg-surface-sunken mb-3" />
+          <div className="h-4 w-80 rounded bg-surface-sunken" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-[24px] bg-surface-sunken/30 p-5 animate-pulse h-28" />
+          ))}
+        </div>
       </div>
     )
   }
@@ -29,7 +38,7 @@ export default function PortalPage() {
 
   return (
     <div>
-      <div className="mb-6 rounded-[28px] bg-[linear-gradient(140deg,rgba(10,22,41,1),rgba(0,106,98,0.88),rgba(91,30,38,0.78))] p-6 text-white shadow-[0_24px_60px_rgba(10,22,41,0.22)] sm:p-8">
+      <div className="mb-6 rounded-[28px] bg-[linear-gradient(140deg,rgba(10,22,41,1),rgba(26,58,122,0.85),rgba(91,30,38,0.78))] p-6 text-white shadow-[0_24px_60px_rgba(10,22,41,0.22)] sm:p-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">
           Student Portal
         </p>
@@ -42,13 +51,13 @@ export default function PortalPage() {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link
             href="/portal/chat"
-            className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-[var(--color-public-navy)] shadow-[0_16px_34px_rgba(255,255,255,0.18)] transition-transform hover:-translate-y-0.5"
+            className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-public-navy shadow-[0_16px_34px_rgba(255,255,255,0.18)] cursor-pointer transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             Open AI Advisor
           </Link>
           <Link
             href="/portal/bookings"
-            className="inline-flex items-center justify-center rounded-full border border-white/18 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            className="inline-flex items-center justify-center rounded-full border border-white/18 px-5 py-3 text-sm font-semibold text-white cursor-pointer transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             Book counsellor session
           </Link>
@@ -178,7 +187,7 @@ export default function PortalPage() {
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
           <Link
             href="/portal/chat"
-            className="group rounded-[24px] bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(229,239,235,0.92))] p-5 shadow-[0_18px_45px_rgba(10,22,41,0.08)] transition-transform hover:-translate-y-0.5"
+            className="group rounded-[24px] bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,238,246,0.92))] p-5 shadow-[0_18px_45px_rgba(10,22,41,0.08)] cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(10,22,41,0.12)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -200,16 +209,19 @@ export default function PortalPage() {
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Applications', href: '/portal/applications' },
-              { label: 'Documents', href: '/portal/documents' },
-              { label: 'Checklist', href: '/portal/checklist' },
-              { label: 'Bookings', href: '/portal/bookings' },
+              { label: 'Applications', href: '/portal/applications', icon: 'description' },
+              { label: 'Documents', href: '/portal/documents', icon: 'folder_open' },
+              { label: 'Checklist', href: '/portal/checklist', icon: 'checklist' },
+              { label: 'Bookings', href: '/portal/bookings', icon: 'calendar_month' },
             ].map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="rounded-[20px] border border-white/55 bg-[rgba(255,250,243,0.86)] p-4 text-center text-sm font-medium text-text-primary shadow-[0_12px_28px_rgba(10,22,41,0.06)] transition-colors hover:bg-white"
+                className="group flex flex-col items-center justify-center gap-2 rounded-[20px] border border-white/55 bg-[rgba(255,250,243,0.86)] p-4 text-sm font-medium text-text-primary shadow-[0_12px_28px_rgba(10,22,41,0.06)] cursor-pointer transition-all duration-200 hover:bg-white hover:shadow-[0_16px_40px_rgba(10,22,41,0.10)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
               >
+                <span className="material-symbols-outlined text-primary-400 transition-colors group-hover:text-primary-600" style={{ fontSize: 22 }}>
+                  {link.icon}
+                </span>
                 {link.label}
               </Link>
             ))}

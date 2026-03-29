@@ -9,6 +9,7 @@ import { signUpWithEmail } from '@/lib/auth/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AuthShell } from '@/components/marketing/auth-shell'
+import { BrandName } from '@/components/branding/brand-logo'
 import api from '@/lib/api/client'
 import type { AuthUserResponse } from '@sturec/shared'
 
@@ -105,7 +106,7 @@ function InviteForm() {
   return (
     <AuthShell
       eyebrow="Team invite"
-      title="Accept your invitation to the Learn in France workspace."
+      title={<>Accept your invitation to the <BrandName inverse /> workspace.</>}
       description="This flow is only for invited internal users. Students should use the public registration path instead."
       sideTitle="Internal access"
       sideCopy="Invite acceptance links a pre-created team user to a Firebase account and sends the user into the internal workspace."
@@ -120,7 +121,7 @@ function InviteForm() {
         Accept your invitation
       </h2>
       <p className="mt-3 text-sm leading-7 text-text-secondary">
-        Set up your account to join the Learn in France team.
+        Set up your account to join the <BrandName /> team.
       </p>
 
       {error && (

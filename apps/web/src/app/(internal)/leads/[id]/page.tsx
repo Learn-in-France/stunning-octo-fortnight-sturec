@@ -243,7 +243,7 @@ function TimelineEntry({ item, isLast }: { item: TimelineItem; isLast: boolean }
     assessment: { color: 'bg-violet-100 text-violet-700', symbol: '◉' },
     activity: { color: 'bg-amber-100 text-amber-700', symbol: '◆' },
     note: { color: 'bg-gray-100 text-gray-600', symbol: '✎' },
-    document: { color: 'bg-emerald-100 text-emerald-700', symbol: '⊞' },
+    document: { color: 'bg-blue-100 text-blue-700', symbol: '⊞' },
   }
 
   const cfg = icons[item.type] ?? icons.note

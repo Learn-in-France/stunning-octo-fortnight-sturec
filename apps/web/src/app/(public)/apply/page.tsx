@@ -3,6 +3,7 @@
 import Link from 'next/link'
 
 import { EditorialCard, MarketingHero } from '@/components/marketing/sections'
+import { BrandName } from '@/components/branding/brand-logo'
 import { useAuth } from '@/providers/auth-provider'
 
 const benefits = [
@@ -43,7 +44,7 @@ export default function ApplyPage() {
       <MarketingHero
         label="Get started"
         title={<>Start with a student account that carries the whole process.</>}
-        description="Creating an account is where exploration becomes action. Once you register, Learn in France can save your progress, guide your next steps, and keep everything visible as you move forward."
+        description={<>Creating an account is where exploration becomes action. Once you register, <BrandName /> can save your progress, guide your next steps, and keep everything visible as you move forward.</>}
         actions={[
           { href: '/auth/register', label: 'Create free account' },
           { href: '/auth/login', label: 'I already have one', variant: 'secondary' },
@@ -53,7 +54,7 @@ export default function ApplyPage() {
             <div className="space-y-3">
               {benefits.map((benefit) => (
                 <div key={benefit} className="flex items-start gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-public-teal)]" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-public-blue)]" />
                   <p>{benefit}</p>
                 </div>
               ))}
