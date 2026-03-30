@@ -1,4 +1,4 @@
-# STUREC - Student Recruitment Operating System
+# STUREC - Student Recruitment Operating System :
 
 AI-powered student recruitment platform for international students pursuing higher education in France. Manages the full 13-stage lifecycle from lead capture to alumni, with AI-driven qualification, counsellor-managed pipeline, and student self-service portal.
 
