@@ -173,8 +173,8 @@ export default function SupportPage() {
                   {submitSupport.isError && (
                     <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
                       <p>Something went wrong. Please try again, or email us directly at{' '}
-                        <a href="mailto:support@learninfrance.com" className="font-medium underline hover:no-underline">
-                          support@learninfrance.com
+                        <a href="mailto:info@learninfrance.com" className="font-medium underline hover:no-underline">
+                          info@learninfrance.com
                         </a>
                       </p>
                     </div>

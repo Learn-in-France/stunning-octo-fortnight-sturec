@@ -204,7 +204,7 @@ function Footer() {
         <div className="mt-14 flex flex-col gap-4 border-t border-white/12 pt-6 text-xs text-white/52 sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; {new Date().getFullYear()} Learn in <span className="text-public-red">France</span>. Built for real student journeys.</p>
           <div className="flex items-center gap-5">
-            <Link href="mailto:hello@learninfrance.com" className="transition-colors hover:text-white">
+            <Link href="mailto:info@learninfrance.com" className="transition-colors hover:text-white">
               Contact
             </Link>
             <Link href="/privacy" className="transition-colors hover:text-white">
