@@ -112,6 +112,13 @@ function Header() {
                   </Link>
                 )
               })}
+              <Link
+                href="/partners/burgundy-school-of-business"
+                onClick={() => setMobileOpen(false)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-public-navy/[0.05] px-4 py-3 text-[11px] font-bold tracking-wide text-public-navy"
+              >
+                LIF <span className="text-public-red">&bull;</span> BSB Partner
+              </Link>
             </nav>
             <div className="mt-4 grid gap-2">
               <Link
