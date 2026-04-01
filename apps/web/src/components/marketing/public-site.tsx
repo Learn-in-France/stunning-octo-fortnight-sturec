@@ -62,6 +62,12 @@ function Header() {
                 </Link>
               )
             })}
+            <Link
+              href="/partners/burgundy-school-of-business"
+              className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-public-navy/[0.05] px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-public-navy transition-colors hover:bg-public-navy/[0.10]"
+            >
+              LIF <span className="text-public-red">&bull;</span> BSB
+            </Link>
           </nav>
 
           <div className="hidden items-center gap-3 lg:flex">
