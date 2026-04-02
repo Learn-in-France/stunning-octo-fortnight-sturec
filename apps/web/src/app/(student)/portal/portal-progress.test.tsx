@@ -5,15 +5,45 @@ import PortalPage from './page'
 
 // Mock shared constants
 vi.mock('@sturec/shared', () => ({
-  STAGE_ORDER: ['lead', 'contacted', 'admitted', 'enrolled', 'alumni'],
+  STAGE_ORDER: [
+    'lead_created', 'intake_completed', 'qualified', 'counsellor_consultation',
+    'application_started', 'offer_confirmed', 'campus_france_readiness',
+    'visa_file_readiness', 'visa_submitted', 'visa_decision',
+    'arrival_onboarding', 'arrived_france', 'alumni',
+  ],
+  STAGE_STUDENT_LABELS: {
+    lead_created: 'Getting started',
+    intake_completed: 'Profile reviewed',
+    qualified: 'Matched with counsellor',
+    counsellor_consultation: 'In consultation',
+    application_started: 'Applications in progress',
+    offer_confirmed: 'Offer received',
+    campus_france_readiness: 'Campus France prep',
+    visa_file_readiness: 'Visa preparation',
+    visa_submitted: 'Visa submitted',
+    visa_decision: 'Visa decision',
+    arrival_onboarding: 'Preparing to arrive',
+    arrived_france: 'Welcome to France',
+    alumni: 'Alumni',
+  },
+  STAGE_NEXT_STEP: {
+    lead_created: 'Talk to our AI advisor to explore your options for studying in France.',
+    intake_completed: 'Your profile is being reviewed. A counsellor will be assigned shortly.',
+    qualified: 'Your counsellor will reach out to schedule an introductory meeting.',
+    counsellor_consultation: 'Work with your counsellor to select programs and prepare applications.',
+    application_started: 'Your applications are being prepared and submitted.',
+    offer_confirmed: 'Great news — you have an offer! Next step: Campus France registration.',
+    campus_france_readiness: 'Complete your Campus France dossier and prepare for the interview.',
+    visa_file_readiness: 'Gather your visa documents.',
+    visa_submitted: 'Your visa application is being processed. No action needed from you right now.',
+    visa_decision: 'Visa decision received. Your counsellor will discuss next steps with you.',
+    arrival_onboarding: 'Prepare for your move — housing, banking, insurance.',
+    arrived_france: 'Welcome! Our team is here to help you settle in.',
+    alumni: 'You are part of the Learn in France community.',
+  },
 }))
 
-// Mock StageBadge which uses shared constants internally
-vi.mock('@/components/shared/stage-badge', () => ({
-  StageBadge: ({ stage }: { stage: string }) => <span data-testid="stage-badge">{stage}</span>,
-}))
-
-describe('PortalPage (student progress)', () => {
+describe('PortalPage (student dashboard)', () => {
   beforeEach(() => {
     setMockAuth({ user: makeUser({ firstName: 'Omar', role: 'student' }) })
   })
@@ -22,15 +52,13 @@ describe('PortalPage (student progress)', () => {
     setMockAuth({})
   })
 
-  it('renders greeting with student name and progress data', async () => {
+  it('renders greeting and stage progress with student-facing labels', async () => {
     vi.mocked(api.get).mockResolvedValueOnce({
-      stage: 'admitted',
-      progressPercent: 60,
-      applications: { total: 3, offers: 1 },
-      documentChecklist: { completed: 5, total: 10 },
-      visa: { status: 'not_started' },
+      stage: 'counsellor_consultation',
+      progressPercent: 30,
+      assignedCounsellorId: 'c-123',
       nextActions: ['Upload passport copy'],
-      completedMilestones: ['Profile completed', 'First application submitted'],
+      completedMilestones: [],
     })
 
     renderWithProviders(<PortalPage />)
@@ -39,55 +67,74 @@ describe('PortalPage (student progress)', () => {
       expect(screen.getByText(/Omar/)).toBeInTheDocument()
     })
 
-    // Stage displayed
-    expect(screen.getByTestId('stage-badge')).toHaveTextContent('admitted')
+    // Student-facing stage label, not internal name
+    expect(screen.getByText('In consultation')).toBeInTheDocument()
 
-    // Progress percent
-    expect(screen.getByText('60%')).toBeInTheDocument()
+    // Next step description (appears in banner + stage card)
+    expect(screen.getAllByText(/Work with your counsellor/).length).toBeGreaterThanOrEqual(1)
 
-    // Application stats
-    expect(screen.getByText('3')).toBeInTheDocument()
-    expect(screen.getByText(/1 offer received/)).toBeInTheDocument()
-
-    // Document stats
-    expect(screen.getByText('5')).toBeInTheDocument()
-
-    // Next actions
+    // Pending actions
     expect(screen.getByText('Upload passport copy')).toBeInTheDocument()
 
-    // Milestones
-    expect(screen.getByText('Profile completed')).toBeInTheDocument()
-    expect(screen.getByText('First application submitted')).toBeInTheDocument()
+    // Counsellor assigned state
+    expect(screen.getByText('Counsellor assigned')).toBeInTheDocument()
   })
 
-  it('shows quick links to portal sections', async () => {
+  it('shows awaiting counsellor when not assigned', async () => {
     vi.mocked(api.get).mockResolvedValueOnce({
-      stage: 'lead',
-      progressPercent: 10,
-      applications: { total: 0, offers: 0 },
-      documentChecklist: { completed: 0, total: 5 },
-      visa: { status: null },
+      stage: 'lead_created',
+      progressPercent: 0,
+      assignedCounsellorId: null,
       nextActions: [],
       completedMilestones: [],
     })
 
     renderWithProviders(<PortalPage />)
 
-    // Quick links are <a> tags — verify by href
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'Applications' })).toHaveAttribute('href', '/portal/applications')
+      expect(screen.getByText(/Omar/)).toBeInTheDocument()
     })
-    expect(screen.getByRole('link', { name: 'Documents' })).toHaveAttribute('href', '/portal/documents')
-    expect(screen.getByRole('link', { name: 'Checklist' })).toHaveAttribute('href', '/portal/checklist')
-    expect(screen.getByRole('link', { name: 'Bookings' })).toHaveAttribute('href', '/portal/bookings')
+
+    expect(screen.getByText('Getting started')).toBeInTheDocument()
+    expect(screen.getByText('Awaiting counsellor')).toBeInTheDocument()
   })
 
-  it('shows loading state', () => {
+  it('shows quick links to documents and bookings only', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      stage: 'lead_created',
+      progressPercent: 0,
+      assignedCounsellorId: null,
+      nextActions: [],
+      completedMilestones: [],
+    })
+
+    renderWithProviders(<PortalPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'Open AI Advisor' })).toHaveAttribute('href', '/portal/chat')
+    })
+
+    // Only Documents and Bookings as quick links — not Applications or Checklist
+    const quickLinks = screen
+      .getAllByText(/Documents|Bookings/)
+      .map((node) => node.closest('a'))
+      .filter((node): node is HTMLAnchorElement => Boolean(node))
+
+    const hrefs = quickLinks.map((link) => link.getAttribute('href'))
+    expect(hrefs).toContain('/portal/documents')
+    expect(hrefs).toContain('/portal/bookings')
+
+    // These should NOT be in quick links anymore
+    expect(screen.queryByRole('link', { name: /Applications/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Checklist/i })).toBeNull()
+  })
+
+  it('shows loading skeleton', () => {
     vi.mocked(api.get).mockReturnValueOnce(new Promise(() => {}))
 
     renderWithProviders(<PortalPage />)
 
-    const svg = document.querySelector('.animate-spin')
-    expect(svg).toBeInTheDocument()
+    const skeleton = document.querySelector('.animate-pulse')
+    expect(skeleton).toBeInTheDocument()
   })
 })

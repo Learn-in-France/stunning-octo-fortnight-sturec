@@ -21,7 +21,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    label: 'Portal',
+    label: 'Dashboard',
     href: '/portal',
     icon: (
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -29,6 +29,17 @@ const NAV_ITEMS: NavItem[] = [
         <rect x="10" y="1" width="7" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
         <rect x="1" y="10" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
         <rect x="10" y="7" width="7" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    ),
+  },
+  {
+    label: 'AI Advisor',
+    href: '/portal/chat',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M3 3H15C15.828 3 16.5 3.672 16.5 4.5V12C16.5 12.828 15.828 13.5 15 13.5H6L3 16.5V4.5C3 3.672 3.672 3 4.5 3H15" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <path d="M6.5 7.5H11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M6.5 10H9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -43,55 +54,12 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    label: 'Applications',
-    href: '/portal/applications',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <rect x="2" y="1.5" width="14" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M5.5 6H12.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M5.5 9H12.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M5.5 12H9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
     label: 'Documents',
     href: '/portal/documents',
     icon: (
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
         <path d="M10.5 1.5H4.5C3.672 1.5 3 2.172 3 3V15C3 15.828 3.672 16.5 4.5 16.5H13.5C14.328 16.5 15 15.828 15 15V6L10.5 1.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
         <path d="M10.5 1.5V6H15" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Checklist',
-    href: '/portal/checklist',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <rect x="2" y="2" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M6 9L8 11L12 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Progress',
-    href: '/portal/analytics',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <path d="M2 14.5L6.5 10L9.5 13L16 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M12.5 6.5H16V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Chat',
-    href: '/portal/chat',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <path d="M3 3H15C15.828 3 16.5 3.672 16.5 4.5V12C16.5 12.828 15.828 13.5 15 13.5H6L3 16.5V4.5C3 3.672 3.672 3 4.5 3H15" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-        <path d="M6.5 7.5H11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M6.5 10H9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -114,17 +82,6 @@ const NAV_ITEMS: NavItem[] = [
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
         <path d="M4.5 7C4.5 4.515 6.515 2.5 9 2.5C11.485 2.5 13.5 4.515 13.5 7V10.5L15 13H3L4.5 10.5V7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
         <path d="M7.5 13V14C7.5 14.828 8.172 15.5 9 15.5C9.828 15.5 10.5 14.828 10.5 14V13" stroke="currentColor" strokeWidth="1.5" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Support',
-    href: '/portal/support',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <circle cx="9" cy="9" r="7.5" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M6.5 7C6.5 5.619 7.619 4.5 9 4.5C10.381 4.5 11.5 5.619 11.5 7C11.5 8.105 10.605 9 9.5 9H9V10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="9" cy="13" r="0.75" fill="currentColor" />
       </svg>
     ),
   },

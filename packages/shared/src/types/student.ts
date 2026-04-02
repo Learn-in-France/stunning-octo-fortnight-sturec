@@ -15,6 +15,10 @@ export type StudentStage =
 
 export type VisaRisk = 'low' | 'medium' | 'high'
 
+export type LeadHeat = 'hot' | 'warm' | 'cold' | 'needs_follow_up'
+
+export type BookingStatus = 'awaiting_assignment' | 'assigned' | 'completed' | 'cancelled'
+
 export type ConsentType = 'whatsapp' | 'email' | 'parent_contact'
 
 export type EnglishTestType = 'ielts' | 'toefl' | 'duolingo' | 'none'
