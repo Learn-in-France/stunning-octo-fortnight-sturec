@@ -112,29 +112,6 @@ export function buildProfileMemory(assessment: {
 - Summary: ${assessment.summaryForTeam}`
 }
 
-export function buildProgramContext(programs: Array<{
-  name: string
-  universityName: string
-  degreeLevel: string
-  tuitionAmount: number
-  tuitionCurrency: string
-  durationMonths: number
-  language: string
-  minimumGpa: number | null
-  englishMinimumScore: number | null
-}>): string {
-  if (programs.length === 0) return ''
-
-  const list = programs.map((p) =>
-    `- ${p.name} at ${p.universityName} (${p.degreeLevel}, ${p.durationMonths}mo, ${p.tuitionAmount} ${p.tuitionCurrency}/yr, taught in ${p.language}${p.minimumGpa ? `, min GPA ${p.minimumGpa}` : ''}${p.englishMinimumScore ? `, min English ${p.englishMinimumScore}` : ''})`,
-  ).join('\n')
-
-  return `## Matching programs from our database
-${list}
-
-Present these naturally in conversation. Do not add programs not listed here.`
-}
-
 /**
  * Prompt for batch assessment of imported leads (no chat context).
  */

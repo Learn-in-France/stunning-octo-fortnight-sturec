@@ -51,7 +51,7 @@ export async function createBooking(
   // Notify admin about new booking awaiting assignment
   if (!data.counsellorId) {
     getNotificationsQueue().add('booking-awaiting-assignment', {
-      recipientRole: 'admin',
+      recipientId: 'admin-team',
       channel: 'email',
       templateKey: 'booking_created',
       data: {

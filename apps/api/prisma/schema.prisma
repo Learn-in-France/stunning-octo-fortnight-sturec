@@ -123,6 +123,7 @@ enum AssessmentSourceType {
   lead_form
   manual_review
   import
+  booking
 }
 
 enum ApplicationStatus {
@@ -204,6 +205,7 @@ enum BookingStatus {
   completed
   cancelled
   no_show
+  awaiting_assignment
 }
 
 enum NotificationChannel {
@@ -530,6 +532,7 @@ model AiAssessment {
   fieldsCollected         Json?               @map("fields_collected")
   fieldsMissing           Json?               @map("fields_missing")
   hardRuleFlags           Json?               @map("hard_rule_flags")
+  leadHeat                String?             @map("lead_heat") @db.VarChar(20)
   rawJson                 Json?               @map("raw_json")
   createdAt               DateTime            @default(now()) @map("created_at")
 
@@ -842,10 +845,11 @@ model Booking {
   id             String        @id @default(uuid()) @db.Uuid
   studentId      String?       @map("student_id") @db.Uuid
   leadId         String?       @map("lead_id") @db.Uuid
-  counsellorId   String        @map("counsellor_id") @db.Uuid
+  counsellorId   String?       @map("counsellor_id") @db.Uuid
   calcomEventId  String?       @map("calcom_event_id")
   scheduledAt    DateTime      @map("scheduled_at")
   status         BookingStatus @default(scheduled)
+  source         String?       @db.VarChar(20)
   externalStatus String?       @map("external_status")
   lastSyncedAt   DateTime?     @map("last_synced_at")
   notes          String?       @db.Text
@@ -854,7 +858,7 @@ model Booking {
   // Relations
   student        Student?      @relation("BookingStudent", fields: [studentId], references: [id])
   lead           Lead?         @relation("BookingLead", fields: [leadId], references: [id])
-  counsellor     User          @relation(fields: [counsellorId], references: [id])
+  counsellor     User?         @relation(fields: [counsellorId], references: [id])
 
   @@map("bookings")
 }

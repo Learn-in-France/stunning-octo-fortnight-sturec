@@ -19,6 +19,7 @@ export function createBooking(data: {
   scheduledAt: Date
   notes?: string
   status?: string
+  source?: string
 }) {
   return prisma.booking.create({
     data: {
@@ -27,6 +28,7 @@ export function createBooking(data: {
       counsellorId: data.counsellorId ?? undefined,
       scheduledAt: data.scheduledAt,
       notes: data.notes,
+      source: data.source,
       ...(data.status && { status: data.status as BookingStatus }),
     },
   })

@@ -13,7 +13,7 @@ import { getRedisConnection } from './connection.js'
 export interface AiProcessingJobData {
   entityType: 'lead' | 'student'
   entityId: string
-  sourceType: 'chat' | 'document' | 'import' | 'manual_review' | 'form_submission'
+  sourceType: 'chat' | 'document' | 'import' | 'manual_review' | 'form_submission' | 'booking'
   sourceId: string
   profileData?: Record<string, unknown>
 }

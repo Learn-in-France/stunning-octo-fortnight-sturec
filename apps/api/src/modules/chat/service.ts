@@ -312,6 +312,7 @@ async function saveAssessmentFromStructured(
     profileCompleteness: output.profile_completeness,
     fieldsCollected: output.fields_collected ?? undefined,
     fieldsMissing: output.fields_missing ?? undefined,
+    leadHeat: output.lead_heat,
     rawJson: output as any,
   })
 

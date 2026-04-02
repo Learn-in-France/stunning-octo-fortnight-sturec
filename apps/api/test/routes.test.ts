@@ -712,6 +712,40 @@ describe('Route-level smoke tests', () => {
       expect(body.status).toBe('scheduled')
     })
 
+    it('POST /bookings creates unassigned booking without counsellorId', async () => {
+      authAs(ADMIN_USER)
+
+      const newBooking = {
+        id: '00000000-0000-0000-0000-000000000061',
+        studentId: '00000000-0000-0000-0000-000000000010',
+        leadId: null,
+        counsellorId: null,
+        scheduledAt: new Date('2026-04-01T10:00:00Z'),
+        status: 'awaiting_assignment',
+        source: 'portal',
+        notes: null,
+        createdAt: new Date('2026-03-17'),
+      }
+
+      db.booking.create.mockResolvedValue(newBooking)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/bookings',
+        headers: authHeaders(),
+        payload: {
+          studentId: '00000000-0000-0000-0000-000000000010',
+          scheduledAt: '2026-04-01T10:00:00Z',
+          source: 'portal',
+        },
+      })
+
+      expect(response.statusCode).toBe(201)
+      const body = JSON.parse(response.body)
+      expect(body.status).toBe('awaiting_assignment')
+      expect(body.counsellorId).toBeNull()
+    })
+
     it('PATCH /bookings/:id returns 404 for missing booking', async () => {
       authAs(ADMIN_USER)
       db.booking.findUnique.mockResolvedValue(null)
