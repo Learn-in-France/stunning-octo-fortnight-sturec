@@ -206,6 +206,7 @@ enum BookingStatus {
   cancelled
   no_show
   awaiting_assignment
+  assigned
 }
 
 enum NotificationChannel {

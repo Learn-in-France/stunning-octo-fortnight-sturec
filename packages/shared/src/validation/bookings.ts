@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const bookingStatusSchema = z.enum(['scheduled', 'completed', 'cancelled', 'no_show', 'awaiting_assignment'])
+export const bookingStatusSchema = z.enum(['scheduled', 'completed', 'cancelled', 'no_show', 'awaiting_assignment', 'assigned'])
 
 export const bookingListItemSchema = z.object({
   id: z.string().uuid(),

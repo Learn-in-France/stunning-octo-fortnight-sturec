@@ -323,7 +323,7 @@ export interface ConsentEventItem {
 
 // ─── Booking Responses ────────────────────────────────────────
 
-export type BookingStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show' | 'awaiting_assignment'
+export type BookingStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show' | 'awaiting_assignment' | 'assigned'
 
 export interface BookingListItem {
   id: string

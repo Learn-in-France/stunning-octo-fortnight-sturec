@@ -117,6 +117,12 @@ export function startAiProcessingWorker() {
                   select: { firstName: true, lastName: true, email: true, phone: true, notes: true, source: true },
                 })
                 if (lead) await assessImportedLead(entityId, lead as Record<string, unknown>)
+              } else if (entityType === 'student') {
+                const student = await prisma.student.findUnique({
+                  where: { id: entityId },
+                  select: { id: true, source: true, sourcePartner: true, stage: true, userId: true },
+                })
+                if (student) await assessStudent(entityId, student as Record<string, unknown>, 'booking', sourceId)
               }
             }
             return { status: 'completed' as const, entityId }
