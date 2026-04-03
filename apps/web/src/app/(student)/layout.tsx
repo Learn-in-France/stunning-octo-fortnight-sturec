@@ -10,7 +10,7 @@ import { RoleGuard } from '@/lib/guards/role-guard'
 import { useAuth } from '@/providers/auth-provider'
 import { useStudentProgress } from '@/features/student-portal/hooks/use-student-portal'
 import { BrandLogo } from '@/components/branding/brand-logo'
-import { STAGE_DISPLAY_NAMES } from '@sturec/shared'
+import { STAGE_STUDENT_LABELS } from '@sturec/shared'
 
 // ─── Nav config ─────────────────────────────────────────────────
 interface NavItem {
@@ -94,7 +94,7 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
   const { data: progress } = useStudentProgress()
 
   const stageName = progress
-    ? (STAGE_DISPLAY_NAMES[progress.stage as keyof typeof STAGE_DISPLAY_NAMES] ?? progress.stage)
+    ? (STAGE_STUDENT_LABELS[progress.stage as keyof typeof STAGE_STUDENT_LABELS] ?? progress.stage)
     : null
 
   function isActive(href: string) {

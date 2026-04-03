@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type {
   ChatSessionItem,
   ChatMessageItem,
@@ -8,9 +9,11 @@ import * as repo from './repository.js'
 import { chatCompletion, type GroqMessage } from '../../integrations/groq/index.js'
 import {
   ADVISOR_SYSTEM_PROMPT,
+  CHAT_TURN_ASSESSMENT_PROMPT,
   buildProfileMemory,
 } from '../../integrations/groq/prompts.js'
 import { computeQualification } from '../../lib/qualification.js'
+import { deriveCumulativeIntakeCapture, type IntakeAssessmentLike } from '../../lib/intake.js'
 import { getAiProcessingQueue } from '../../lib/queue/index.js'
 
 // ─── Types ──────────────────────────────────────────────────
@@ -34,6 +37,133 @@ interface AiStructuredOutput {
   lead_heat: string | null
   should_suggest_booking?: boolean
   options: string[] | null
+}
+
+const scoreFieldNames = [
+  'academic_fit_score',
+  'financial_readiness_score',
+  'language_readiness_score',
+  'motivation_clarity_score',
+  'timeline_urgency_score',
+  'document_readiness_score',
+  'visa_complexity_score',
+] as const
+
+type ScoreFieldName = (typeof scoreFieldNames)[number]
+
+function normalizeScore(value: unknown): number | null {
+  if (value == null || value === '') return null
+  const numeric = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(numeric)) return null
+  const scaled = numeric >= 0 && numeric <= 1 ? numeric * 10 : numeric
+  return Math.max(0, Math.min(10, Math.round(scaled)))
+}
+
+function normalizeProfileCompleteness(value: unknown): number | null {
+  if (value == null || value === '') return null
+  const numeric = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(numeric)) return null
+  const scaled = numeric > 1 && numeric <= 100 ? numeric / 100 : numeric
+  return Math.max(0, Math.min(1, Number(scaled.toFixed(2))))
+}
+
+function normalizeStringArray(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null
+  const items = value.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)
+  return items.length ? items : []
+}
+
+function normalizeVisaRisk(value: unknown): 'low' | 'medium' | 'high' | null {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toLowerCase()
+  return normalized === 'low' || normalized === 'medium' || normalized === 'high' ? normalized : null
+}
+
+function normalizeLeadHeat(value: unknown): 'hot' | 'warm' | 'cold' | 'needs_follow_up' | null {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (normalized === 'hot' || normalized === 'warm' || normalized === 'cold' || normalized === 'needs_follow_up') {
+      return normalized as 'hot' | 'warm' | 'cold' | 'needs_follow_up'
+    }
+    return null
+  }
+
+  const numeric = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(numeric)) return null
+  if (numeric >= 0 && numeric <= 1) {
+    if (numeric >= 0.8) return 'hot'
+    if (numeric >= 0.5) return 'warm'
+    return 'cold'
+  }
+  if (numeric >= 8) return 'hot'
+  if (numeric >= 5) return 'warm'
+  return 'cold'
+}
+
+const assessmentBaseSchema = z.object({
+  profile_completeness: z.unknown().nullable().optional(),
+  fields_collected: z.unknown().nullable().optional(),
+  fields_missing: z.unknown().nullable().optional(),
+  academic_fit_score: z.unknown().nullable().optional(),
+  financial_readiness_score: z.unknown().nullable().optional(),
+  language_readiness_score: z.unknown().nullable().optional(),
+  motivation_clarity_score: z.unknown().nullable().optional(),
+  timeline_urgency_score: z.unknown().nullable().optional(),
+  document_readiness_score: z.unknown().nullable().optional(),
+  visa_complexity_score: z.unknown().nullable().optional(),
+  visa_risk: z.unknown().nullable().optional(),
+  housing_needed: z.union([z.boolean(), z.string(), z.number(), z.null()]).optional(),
+  recommended_next_step: z.union([z.string(), z.null()]).optional(),
+  recommended_disposition: z.union([z.string(), z.null()]).optional(),
+  summary_for_team: z.union([z.string(), z.null()]).optional(),
+  lead_heat: z.unknown().nullable().optional(),
+  should_suggest_booking: z.union([z.boolean(), z.string(), z.number(), z.null()]).optional(),
+  options: z.unknown().nullable().optional(),
+})
+
+export function normalizeAiStructuredOutput(raw: unknown): AiStructuredOutput | null {
+  const parsed = assessmentBaseSchema.safeParse(raw)
+  if (!parsed.success) return null
+
+  const data = parsed.data
+  const normalizedScores = Object.fromEntries(
+    scoreFieldNames.map((field) => [field, normalizeScore(data[field])]),
+  ) as Record<ScoreFieldName, number | null>
+
+  return {
+    profile_completeness: normalizeProfileCompleteness(data.profile_completeness),
+    fields_collected: normalizeStringArray(data.fields_collected),
+    fields_missing: normalizeStringArray(data.fields_missing),
+    academic_fit_score: normalizedScores.academic_fit_score,
+    financial_readiness_score: normalizedScores.financial_readiness_score,
+    language_readiness_score: normalizedScores.language_readiness_score,
+    motivation_clarity_score: normalizedScores.motivation_clarity_score,
+    timeline_urgency_score: normalizedScores.timeline_urgency_score,
+    document_readiness_score: normalizedScores.document_readiness_score,
+    visa_complexity_score: normalizedScores.visa_complexity_score,
+    visa_risk: normalizeVisaRisk(data.visa_risk),
+    housing_needed: typeof data.housing_needed === 'boolean'
+      ? data.housing_needed
+      : typeof data.housing_needed === 'string'
+        ? data.housing_needed.trim().toLowerCase() === 'true'
+        : typeof data.housing_needed === 'number'
+          ? data.housing_needed > 0
+          : null,
+    recommended_next_step: typeof data.recommended_next_step === 'string' ? data.recommended_next_step : null,
+    recommended_disposition: typeof data.recommended_disposition === 'string' ? data.recommended_disposition : null,
+    summary_for_team: typeof data.summary_for_team === 'string' && data.summary_for_team.trim().length > 0
+      ? data.summary_for_team.trim()
+      : 'Assessment completed',
+    lead_heat: normalizeLeadHeat(data.lead_heat),
+    should_suggest_booking: typeof data.should_suggest_booking === 'boolean'
+      ? data.should_suggest_booking
+      : typeof data.should_suggest_booking === 'string'
+        ? data.should_suggest_booking.trim().toLowerCase() === 'true'
+        : typeof data.should_suggest_booking === 'number'
+          ? data.should_suggest_booking >= 0.5
+          : false,
+    options: normalizeStringArray(data.options),
+  }
 }
 
 // ─── Session Mappers ────────────────────────────────────────
@@ -162,11 +292,11 @@ export async function sendMessage(
   // Add current user message
   messages.push({ role: 'user', content })
 
-  // Call Groq
+  // Call Groq for the visible conversational reply only.
   const result = await chatCompletion(messages, { temperature: 0.7, maxTokens: 2048 })
 
-  // Parse structured output and conversation text
-  const { text, structured } = parseAiResponse(result.content)
+  // Strip any accidental internal JSON from the visible assistant text.
+  const { text } = parseAiResponse(result.content)
 
   // Save assistant message (clean text without JSON block)
   const assistantMsg = await repo.createMessage({
@@ -175,21 +305,31 @@ export async function sendMessage(
     content: text,
   })
 
-  // If structured output exists, save assessment
+  let shouldSuggestBooking = false
+  let options: string[] | null = null
+
+  const structured = await requestStructuredAssessment(session)
   if (structured) {
     await saveAssessmentFromStructured(structured, session.leadId, session.studentId, sessionId)
+    const assessments = await repo.findAssessments({
+      studentId: session.studentId ?? undefined,
+      leadId: session.leadId,
+    })
+    shouldSuggestBooking = shouldSuggestBookingFromAssessments(assessments)
+    options = structured.options ?? null
   }
 
   return {
     message: mapMessage(assistantMsg),
-    options: structured?.options ?? null,
-    shouldSuggestBooking: structured?.should_suggest_booking === true,
+    options,
+    shouldSuggestBooking,
   }
 }
 
 // ─── AI Context Building ────────────────────────────────────
 
 async function buildAiContext(session: {
+  id: string
   leadId: string
   studentId: string | null
 }): Promise<GroqMessage[]> {
@@ -218,7 +358,7 @@ async function buildAiContext(session: {
   messages.push({ role: 'system', content: profileMemory })
 
   // Last 6-8 conversation messages
-  const recentMessages = await repo.findRecentMessages(session.leadId, 8)
+  const recentMessages = await repo.findRecentMessages(session.id, 8)
   // Reverse because findRecentMessages returns DESC
   const ordered = recentMessages.reverse()
   for (const msg of ordered) {
@@ -230,40 +370,113 @@ async function buildAiContext(session: {
   return messages
 }
 
+
+async function buildAssessmentContext(session: {
+  id: string
+  leadId: string
+  studentId: string | null
+}): Promise<GroqMessage[]> {
+  const latestAssessment = await repo.findLatestAssessment({
+    studentId: session.studentId ?? undefined,
+    leadId: session.leadId,
+  })
+  const profileMemory = buildProfileMemory(
+    latestAssessment
+      ? {
+          profileCompleteness: latestAssessment.profileCompleteness
+            ? Number(latestAssessment.profileCompleteness)
+            : null,
+          fieldsCollected: latestAssessment.fieldsCollected as string[] | null,
+          fieldsMissing: latestAssessment.fieldsMissing as string[] | null,
+          summaryForTeam: latestAssessment.summaryForTeam,
+        }
+      : null,
+  )
+
+  const recentMessages = await repo.findRecentMessages(session.id, 8)
+  const ordered = recentMessages
+    .reverse()
+    .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
+    .map((msg) => ({ role: msg.role as 'user' | 'assistant', content: msg.content }))
+
+  return [
+    { role: 'system', content: CHAT_TURN_ASSESSMENT_PROMPT },
+    { role: 'system', content: profileMemory },
+    { role: 'user', content: JSON.stringify({ recent_conversation: ordered }) },
+  ]
+}
+
+async function requestStructuredAssessment(session: {
+  id: string
+  leadId: string
+  studentId: string | null
+}): Promise<AiStructuredOutput | null> {
+  try {
+    const assessmentMessages = await buildAssessmentContext(session)
+    const result = await chatCompletion(assessmentMessages, {
+      temperature: 0.2,
+      maxTokens: 1024,
+      jsonMode: true,
+    })
+    return parseStructuredAssessment(result.content)
+  } catch {
+    return null
+  }
+}
+
+function parseStructuredAssessment(raw: string): AiStructuredOutput | null {
+  try {
+    return normalizeAiStructuredOutput(JSON.parse(raw))
+  } catch {
+    return normalizeAiStructuredOutput(parseAiResponse(raw).structured)
+  }
+}
+
 // ─── Response Parsing ───────────────────────────────────────
 
-function parseAiResponse(raw: string): {
+export function parseAiResponse(raw: string): {
   text: string
   structured: AiStructuredOutput | null
 } {
-  // Try fenced ```json ... ``` first
-  const fencedMatch = raw.match(/```json\s*([\s\S]*?)```/)
   let structured: AiStructuredOutput | null = null
   let text = raw
 
+  // Strip any fenced internal JSON from visible text even if parsing fails.
+  const fencedMatch = raw.match(/```json\s*([\s\S]*?)(?:```|$)/i)
   if (fencedMatch) {
+    const candidate = fencedMatch[1].trim()
     try {
-      structured = JSON.parse(fencedMatch[1].trim())
+      structured = JSON.parse(candidate)
     } catch {
-      // If JSON parsing fails, keep structured as null
+      // Malformed fenced JSON should still never leak to the student.
     }
-    text = raw.replace(/```json[\s\S]*?```/, '').trim()
+    text = raw.replace(/```json[\s\S]*?(?:```|$)/i, '').trim()
   }
 
-  // Fallback: find unfenced JSON block containing assessment fields
+  // Fallback: strip a trailing unfenced assessment object if present.
   if (!structured) {
     const unfencedMatch = raw.match(/(\{[\s\S]*?"profile_completeness"[\s\S]*?\})\s*(?:—\s*)?$/)
     if (unfencedMatch) {
       try {
         structured = JSON.parse(unfencedMatch[1].trim())
-        text = raw.slice(0, unfencedMatch.index).replace(/\s*—\s*$/, '').trim()
       } catch {
-        // Not valid JSON, leave as-is
+        // Even malformed trailing JSON-like blocks are internal-only content.
       }
+      text = raw.slice(0, unfencedMatch.index).replace(/\s*—\s*$/, '').trim()
     }
   }
 
   return { text, structured }
+}
+
+export function shouldSuggestBookingFromStructured(structured: AiStructuredOutput | null): boolean {
+  if (!structured) return false
+  return deriveCumulativeIntakeCapture([{ fieldsCollected: structured.fields_collected }]).bookingReady
+    || structured.should_suggest_booking === true
+}
+
+export function shouldSuggestBookingFromAssessments(assessments: IntakeAssessmentLike[]): boolean {
+  return deriveCumulativeIntakeCapture(assessments).bookingReady
 }
 
 // ─── Assessment Persistence ─────────────────────────────────
@@ -330,32 +543,14 @@ export async function generateAssessment(
   leadId: string,
   studentId: string | null,
 ) {
-  // Get all messages for a final assessment
   const messages = await repo.findMessages(sessionId)
-  if (messages.length < 2) return // Not enough conversation
+  if (messages.length < 2) return
 
-  // Build messages for assessment-only call
-  const aiMessages: GroqMessage[] = [
-    {
-      role: 'system',
-      content: `${ADVISOR_SYSTEM_PROMPT}\n\nThis is the end of the conversation. Produce ONLY the JSON assessment block — no conversation text. Wrap in \`\`\`json ... \`\`\`.`,
-    },
-  ]
-
-  // Include last 8 messages
-  const recent = messages.slice(-8)
-  for (const msg of recent) {
-    if (msg.role === 'user' || msg.role === 'assistant') {
-      aiMessages.push({ role: msg.role, content: msg.content })
-    }
-  }
+  const structured = await requestStructuredAssessment({ id: sessionId, leadId, studentId })
+  if (!structured) return
 
   try {
-    const result = await chatCompletion(aiMessages, { temperature: 0.3, maxTokens: 1024 })
-    const { structured } = parseAiResponse(result.content)
-    if (structured) {
-      await saveAssessmentFromStructured(structured, leadId, studentId, sessionId)
-    }
+    await saveAssessmentFromStructured(structured, leadId, studentId, sessionId)
   } catch {
     // Assessment generation failure is non-fatal — log but don't break session end
   }
@@ -380,12 +575,13 @@ export async function assessImportedLead(
     jsonMode: true,
   })
 
-  let output: AiStructuredOutput
+  let output: AiStructuredOutput | null = null
   try {
-    output = JSON.parse(result.content)
+    output = normalizeAiStructuredOutput(JSON.parse(result.content))
   } catch {
     return // Non-fatal — batch assessment failure logged but doesn't block
   }
+  if (!output) return // Non-fatal — batch assessment failure logged but doesn't block
 
   const qualification = computeQualification(
     {
@@ -455,12 +651,13 @@ export async function assessStudent(
     jsonMode: true,
   })
 
-  let output: AiStructuredOutput
+  let output: AiStructuredOutput | null = null
   try {
-    output = JSON.parse(result.content)
+    output = normalizeAiStructuredOutput(JSON.parse(result.content))
   } catch {
     return
   }
+  if (!output) return
 
   const qualification = computeQualification(
     {

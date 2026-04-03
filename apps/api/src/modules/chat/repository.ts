@@ -87,6 +87,20 @@ export function findLatestAssessment(opts: { studentId?: string; leadId?: string
   })
 }
 
+export function findAssessments(opts: { studentId?: string; leadId?: string }) {
+  const filters = [
+    ...(opts.studentId ? [{ studentId: opts.studentId }] : []),
+    ...(opts.leadId ? [{ leadId: opts.leadId }] : []),
+  ]
+
+  if (filters.length === 0) return Promise.resolve([])
+
+  return prisma.aiAssessment.findMany({
+    where: filters.length === 1 ? filters[0] : { OR: filters },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
 export function createAssessment(data: Prisma.AiAssessmentUncheckedCreateInput) {
   return prisma.aiAssessment.create({ data })
 }

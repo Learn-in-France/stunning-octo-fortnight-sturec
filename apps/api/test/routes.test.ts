@@ -538,6 +538,30 @@ describe('Route-level smoke tests', () => {
       expect(response.statusCode).toBe(200)
       expect(JSON.parse(response.body)).toEqual([])
     })
+
+
+    it('GET /students/:id/ai-assessments includes converted lead assessments', async () => {
+      authAs(COUNSELLOR_USER)
+      db.aiAssessment.findMany.mockResolvedValue([])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/ai-assessments',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(JSON.parse(response.body)).toEqual([])
+      expect(db.aiAssessment.findMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { studentId: '00000000-0000-0000-0000-000000000010' },
+            { lead: { convertedStudentId: '00000000-0000-0000-0000-000000000010' } },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    })
   })
 
   // ─── Team ──────────────────────────────────────────────────
@@ -1158,12 +1182,17 @@ describe('Route-level smoke tests', () => {
       expect(response.statusCode).toBe(403)
     })
 
-    it('GET /students/me/progress returns progress for student', async () => {
+    it('GET /students/me/progress returns cumulative intake capture for student', async () => {
       authAs(STUDENT_USER)
       db.student.findFirst.mockResolvedValue(STUDENT_RECORD)
+      db.lead.findFirst.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000020' })
       db.document.groupBy.mockResolvedValue([])
       db.studentDocumentRequirement.count.mockResolvedValue(0)
       db.application.groupBy.mockResolvedValue([])
+      db.aiAssessment.findMany.mockResolvedValue([
+        { fieldsCollected: ['language_level', 'source'] },
+        { fieldsCollected: ['nationality', 'education_level', 'field_of_interest', 'timeline', 'budget_awareness'] },
+      ])
 
       const response = await app.inject({
         method: 'GET',
@@ -1177,6 +1206,12 @@ describe('Route-level smoke tests', () => {
       expect(body).toHaveProperty('progressPercent')
       expect(body).toHaveProperty('completedMilestones')
       expect(body).toHaveProperty('nextActions')
+      expect(body.bookingReady).toBe(true)
+      expect(body.intakeCapture).toEqual({
+        captured: 7,
+        total: 7,
+        missing: [],
+      })
     })
 
     it('GET /students/me/applications returns applications list', async () => {
