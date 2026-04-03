@@ -33,6 +33,7 @@ vi.mock('../src/integrations/groq/index.js', () => ({
 vi.mock('../src/integrations/groq/prompts.js', () => ({
   BATCH_ASSESSMENT_PROMPT: 'test-prompt',
   ADVISOR_SYSTEM_PROMPT: 'test',
+  CHAT_TURN_ASSESSMENT_PROMPT: 'test-assessment',
   buildProfileMemory: () => '',
   buildProgramContext: () => '',
 }))

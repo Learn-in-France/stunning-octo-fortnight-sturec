@@ -231,13 +231,24 @@ export function createConsent(data: Prisma.ConsentEventUncheckedCreateInput) {
 
 export function findStudentAssessments(studentId: string) {
   return prisma.aiAssessment.findMany({
-    where: { studentId },
+    where: {
+      OR: [
+        { studentId },
+        { lead: { convertedStudentId: studentId } },
+      ],
+    },
     orderBy: { createdAt: 'desc' },
   })
 }
 
 export function findStudentAssessmentById(studentId: string, assessmentId: string) {
   return prisma.aiAssessment.findFirst({
-    where: { id: assessmentId, studentId },
+    where: {
+      id: assessmentId,
+      OR: [
+        { studentId },
+        { lead: { convertedStudentId: studentId } },
+      ],
+    },
   })
 }

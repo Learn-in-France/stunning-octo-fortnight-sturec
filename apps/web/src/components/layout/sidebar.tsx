@@ -38,6 +38,7 @@ const NAV_SECTIONS: { label?: string; items: NavItem[] }[] = [
       {
         label: 'Leads',
         href: '/leads',
+        roles: ['admin'],
         icon: (
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M9 1.5L16.5 5.25V12.75L9 16.5L1.5 12.75V5.25L9 1.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
@@ -88,6 +89,7 @@ const NAV_SECTIONS: { label?: string; items: NavItem[] }[] = [
       {
         label: 'Analytics',
         href: '/analytics',
+        roles: ['admin'],
         icon: (
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M2 14.5L6.5 10L9.5 13L16 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -103,6 +105,7 @@ const NAV_SECTIONS: { label?: string; items: NavItem[] }[] = [
       {
         label: 'Catalog',
         href: '/catalog',
+        roles: ['admin'],
         icon: (
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M2 3.5H6.5L9 5.5H16V14.5H2V3.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />

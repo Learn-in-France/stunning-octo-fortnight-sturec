@@ -12,8 +12,8 @@ export function findLeadByUserId(userId: string) {
   })
 }
 
-export function findLatestAssessment(studentId: string, leadId?: string) {
-  return prisma.aiAssessment.findFirst({
+export function findAssessments(studentId: string, leadId?: string) {
+  return prisma.aiAssessment.findMany({
     where: {
       OR: [
         { studentId },
@@ -21,7 +21,7 @@ export function findLatestAssessment(studentId: string, leadId?: string) {
       ],
     },
     orderBy: { createdAt: 'desc' },
-    select: { fieldsCollected: true, fieldsMissing: true },
+    select: { fieldsCollected: true },
   })
 }
 

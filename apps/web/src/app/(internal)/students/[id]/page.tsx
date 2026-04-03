@@ -362,6 +362,19 @@ function DocumentsTab({ studentId }: { studentId: string }) {
   const verify = useVerifyDocument(studentId)
   const reject = useRejectDocument(studentId)
 
+  const documents = Array.isArray(docsData)
+    ? docsData
+    : (docsData?.items ?? [])
+  const documentTotal = Array.isArray(docsData)
+    ? docsData.length
+    : (docsData?.total ?? documents.length)
+  const requirements = Array.isArray(reqsData)
+    ? reqsData
+    : (reqsData?.items ?? [])
+  const requirementTotal = Array.isArray(reqsData)
+    ? reqsData.length
+    : (reqsData?.total ?? requirements.length)
+
   const docColumns: Column<DocumentListItem>[] = [
     {
       key: 'filename',
@@ -475,13 +488,13 @@ function DocumentsTab({ studentId }: { studentId: string }) {
       <Card>
         <CardHeader>
           <CardTitle>Uploaded Documents</CardTitle>
-          {docsData && <Badge variant="muted">{docsData.total}</Badge>}
+          <Badge variant="muted">{documentTotal}</Badge>
         </CardHeader>
-        {!docsData?.items.length ? (
+        {!documents.length ? (
           <p className="text-sm text-text-muted">No documents uploaded yet.</p>
         ) : (
           <div className="rounded-lg border border-border overflow-hidden">
-            <Table columns={docColumns} data={docsData.items} rowKey={(row) => row.id} />
+            <Table columns={docColumns} data={documents} rowKey={(row) => row.id} />
           </div>
         )}
       </Card>
@@ -490,13 +503,13 @@ function DocumentsTab({ studentId }: { studentId: string }) {
       <Card>
         <CardHeader>
           <CardTitle>Requirements Checklist</CardTitle>
-          {reqsData && <Badge variant="muted">{reqsData.total}</Badge>}
+          <Badge variant="muted">{requirementTotal}</Badge>
         </CardHeader>
-        {!reqsData?.items.length ? (
+        {!requirements.length ? (
           <p className="text-sm text-text-muted">No document requirements set.</p>
         ) : (
           <div className="rounded-lg border border-border overflow-hidden">
-            <Table columns={reqColumns} data={reqsData.items} rowKey={(row) => row.id} />
+            <Table columns={reqColumns} data={requirements} rowKey={(row) => row.id} />
           </div>
         )}
       </Card>
@@ -1154,6 +1167,8 @@ function formatDate(iso: string): string {
 function MeetingPrepBlock({ studentId, student }: { studentId: string; student: ReturnType<typeof useStudent>['data'] }) {
   const { data: assessments } = useStudentAssessments(studentId)
   const latestAssessment = assessments?.[0]
+  const summaryForTeam = latestAssessment?.summaryForTeam?.trim()
+  const summaryFallback = 'No AI intake summary available yet. Use the student profile, booking notes, and the first consultation to complete intake.'
 
   if (!student) return null
 
@@ -1198,12 +1213,10 @@ function MeetingPrepBlock({ studentId, student }: { studentId: string; student: 
           </Badge>
         </div>
       </div>
-      {latestAssessment?.summaryForTeam && (
-        <div className="mt-4 pt-3 border-t border-border">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">AI Summary</p>
-          <p className="text-sm leading-7 text-text-secondary">{latestAssessment.summaryForTeam}</p>
-        </div>
-      )}
+      <div className="mt-4 border-t border-border pt-3">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-text-muted">AI Summary</p>
+        <p className="text-sm leading-7 text-text-secondary">{summaryForTeam || summaryFallback}</p>
+      </div>
     </Card>
   )
 }

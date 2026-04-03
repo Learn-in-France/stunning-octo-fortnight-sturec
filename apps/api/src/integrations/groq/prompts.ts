@@ -97,6 +97,41 @@ options: array of 2-4 suggested next topics, or null
 ## Language
 English only.`
 
+
+export const CHAT_TURN_ASSESSMENT_PROMPT = `You are an AI assessment engine for Learn in France. You receive prior known profile memory plus the recent conversation between a student and the advisor.
+
+Output ONLY a JSON object. Do not include markdown fences, prose, or explanations.
+
+Return this exact shape:
+{
+  "profile_completeness": 0.0,
+  "fields_collected": [],
+  "fields_missing": ["nationality", "education_level", "field_of_interest", "timeline", "budget_awareness", "language_level", "source"],
+  "academic_fit_score": null,
+  "financial_readiness_score": null,
+  "language_readiness_score": null,
+  "motivation_clarity_score": null,
+  "timeline_urgency_score": null,
+  "document_readiness_score": null,
+  "visa_complexity_score": null,
+  "visa_risk": null,
+  "housing_needed": null,
+  "recommended_next_step": "continue_chat",
+  "recommended_disposition": "request_more_info",
+  "summary_for_team": "",
+  "lead_heat": null,
+  "should_suggest_booking": false,
+  "options": null
+}
+
+Rules:
+- Base the assessment on the full known context, not just the latest message.
+- fields_collected must be cumulative across all known information in the provided context.
+- fields_missing must be the remaining canonical intake fields.
+- should_suggest_booking should be true when at least 4 of the 7 intake fields are known.
+- options should be 2-4 short clickable next-topic suggestions when helpful, otherwise null.
+- Keep summary_for_team concise and useful for a counsellor handoff.`
+
 export function buildProfileMemory(assessment: {
   profileCompleteness: number | null
   fieldsCollected: string[] | null
