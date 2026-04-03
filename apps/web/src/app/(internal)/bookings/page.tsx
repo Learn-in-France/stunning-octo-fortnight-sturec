@@ -12,6 +12,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useBookings, useBookingStats, type BookingListItemView } from '@/features/bookings/hooks/use-bookings'
 
 const STATUS_VARIANTS: Record<BookingStatus, 'muted' | 'info' | 'warning' | 'success' | 'danger'> = {
+  awaiting_assignment: 'warning',
+  assigned: 'info',
   scheduled: 'info',
   completed: 'success',
   cancelled: 'muted',
@@ -19,6 +21,8 @@ const STATUS_VARIANTS: Record<BookingStatus, 'muted' | 'info' | 'warning' | 'suc
 }
 
 const STATUS_LABELS: Record<BookingStatus, string> = {
+  awaiting_assignment: 'Awaiting Assignment',
+  assigned: 'Assigned',
   scheduled: 'Scheduled',
   completed: 'Completed',
   cancelled: 'Cancelled',
@@ -98,6 +102,8 @@ export default function BookingsPage() {
           <Select
             options={[
               { value: '', label: 'All statuses' },
+              { value: 'awaiting_assignment', label: 'Awaiting Assignment' },
+              { value: 'assigned', label: 'Assigned' },
               { value: 'scheduled', label: 'Scheduled' },
               { value: 'completed', label: 'Completed' },
               { value: 'cancelled', label: 'Cancelled' },

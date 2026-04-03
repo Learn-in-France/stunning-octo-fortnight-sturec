@@ -267,6 +267,7 @@ model User {
   assignmentsMade      StudentAssignment[]    @relation("AssignmentAssigner")
   documentsUploaded    Document[]             @relation("DocumentUploader")
   documentsVerified    Document[]             @relation("DocumentVerifier")
+  documentsSharedWith  Document[]             @relation("DocumentSharedWith")
   counsellorNotes      CounsellorNote[]
   activityLogs         CounsellorActivityLog[] @relation("ActivityCounsellor")
   activityLogsCreated  CounsellorActivityLog[] @relation("ActivityCreator")
@@ -549,27 +550,31 @@ model AiAssessment {
 }
 
 model Document {
-  id                  String         @id @default(uuid()) @db.Uuid
-  studentId           String         @map("student_id") @db.Uuid
-  uploadedBy          String         @map("uploaded_by") @db.Uuid
-  type                DocumentType
-  filename            String
-  gcsPath             String         @map("gcs_path")
-  mimeType            String         @map("mime_type")
-  sizeBytes           Int            @map("size_bytes")
-  status              DocumentStatus @default(pending_upload)
-  isCurrent           Boolean        @default(true) @map("is_current")
-  replacesDocumentId  String?        @map("replaces_document_id") @db.Uuid
-  verifiedBy          String?        @map("verified_by") @db.Uuid
-  verifiedAt          DateTime?      @map("verified_at")
-  notes               String?        @db.Text
-  createdAt           DateTime       @default(now()) @map("created_at")
-  deletedAt           DateTime?      @map("deleted_at")
+  id                      String         @id @default(uuid()) @db.Uuid
+  studentId               String         @map("student_id") @db.Uuid
+  uploadedBy              String         @map("uploaded_by") @db.Uuid
+  type                    DocumentType
+  filename                String
+  gcsPath                 String         @map("gcs_path")
+  mimeType                String         @map("mime_type")
+  sizeBytes               Int            @map("size_bytes")
+  status                  DocumentStatus @default(pending_upload)
+  isCurrent               Boolean        @default(true) @map("is_current")
+  replacesDocumentId      String?        @map("replaces_document_id") @db.Uuid
+  verifiedBy              String?        @map("verified_by") @db.Uuid
+  verifiedAt              DateTime?      @map("verified_at")
+  sharedAt                DateTime?      @map("shared_at")
+  sharedWithCounsellorId  String?        @map("shared_with_counsellor_id") @db.Uuid
+  revokedAt               DateTime?      @map("revoked_at")
+  notes                   String?        @db.Text
+  createdAt               DateTime       @default(now()) @map("created_at")
+  deletedAt               DateTime?      @map("deleted_at")
 
   // Relations
   student             Student        @relation(fields: [studentId], references: [id])
   uploader            User           @relation("DocumentUploader", fields: [uploadedBy], references: [id])
   verifier            User?          @relation("DocumentVerifier", fields: [verifiedBy], references: [id])
+  sharedWithCounsellor User?         @relation("DocumentSharedWith", fields: [sharedWithCounsellorId], references: [id])
   replacesDocument    Document?      @relation("DocumentReplacement", fields: [replacesDocumentId], references: [id])
   replacedByDocuments Document[]     @relation("DocumentReplacement")
   offerLetterApplications Application[] @relation("ApplicationOfferLetter")

@@ -123,6 +123,8 @@ export async function getProgress(userId: string): Promise<StudentProgress | nul
   return {
     stage: student.stage,
     progressPercent,
+    assignedCounsellorId: student.assignedCounsellorId,
+
     completedMilestones,
     nextActions,
     documentChecklist: { completed: verifiedDocs, total: totalReqs },
@@ -227,6 +229,23 @@ export async function getDocuments(userId: string): Promise<DocumentListItem[] |
   if (!student) return null
   const docs = await repo.findStudentDocuments(student.id)
   return docs.map(mapDocument)
+}
+
+export async function shareDocument(userId: string, documentId: string): Promise<DocumentListItem | null> {
+  const student = await repo.findStudentByUserId(userId)
+  if (!student) return null
+  if (!student.assignedCounsellorId) return null
+
+  const { shareDocument: share } = await import('../documents/service.js')
+  return share(documentId, student.id, student.assignedCounsellorId)
+}
+
+export async function revokeDocument(userId: string, documentId: string): Promise<DocumentListItem | null> {
+  const student = await repo.findStudentByUserId(userId)
+  if (!student) return null
+
+  const { revokeDocument: revoke } = await import('../documents/service.js')
+  return revoke(documentId, student.id)
 }
 
 // ─── Requirements ───────────────────────────────────────────

@@ -74,6 +74,46 @@ export function rejectDocument(id: string, verifiedBy: string, notes?: string) {
   })
 }
 
+export function shareDocument(id: string, counsellorId: string) {
+  return prisma.document.update({
+    where: { id },
+    data: {
+      sharedAt: new Date(),
+      sharedWithCounsellorId: counsellorId,
+      revokedAt: null,
+    },
+  })
+}
+
+export function revokeDocumentShare(id: string) {
+  return prisma.document.update({
+    where: { id },
+    data: {
+      revokedAt: new Date(),
+    },
+  })
+}
+
+export function findSharedDocuments(studentId: string, counsellorId: string) {
+  return prisma.document.findMany({
+    where: {
+      studentId,
+      deletedAt: null,
+      sharedAt: { not: null },
+      sharedWithCounsellorId: counsellorId,
+      revokedAt: null,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export function findAllDocumentsForAdmin(studentId: string) {
+  return prisma.document.findMany({
+    where: { studentId, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
 export function softDeleteDocument(id: string) {
   return prisma.document.update({
     where: { id },

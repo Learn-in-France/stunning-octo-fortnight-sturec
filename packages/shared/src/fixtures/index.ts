@@ -224,6 +224,7 @@ export const FIXTURE_STUDENT_OWN_PROFILE: StudentOwnProfile = {
 export const FIXTURE_STUDENT_PROGRESS: StudentProgress = {
   stage: 'counsellor_consultation',
   progressPercent: 31,
+  assignedCounsellorId: '550e8400-e29b-41d4-a716-446655440001',
   completedMilestones: [
     'Account created',
     'AI intake completed',
@@ -287,6 +288,9 @@ export const FIXTURE_DOCUMENTS: DocumentListItem[] = [
     filename: 'passport_scan.pdf',
     status: 'verified',
     isCurrent: true,
+    sharedAt: null,
+    sharedWithCounsellorId: null,
+    revokedAt: null,
     createdAt: '2026-02-25T10:00:00.000Z',
   },
   {
@@ -295,6 +299,9 @@ export const FIXTURE_DOCUMENTS: DocumentListItem[] = [
     filename: 'btech_transcript.pdf',
     status: 'pending',
     isCurrent: true,
+    sharedAt: null,
+    sharedWithCounsellorId: null,
+    revokedAt: null,
     createdAt: '2026-03-02T15:30:00.000Z',
   },
 ]

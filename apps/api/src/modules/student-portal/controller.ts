@@ -40,6 +40,24 @@ export async function getDocuments(request: FastifyRequest, reply: FastifyReply)
   return reply.send(result)
 }
 
+export async function shareDocument(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const result = await portalService.shareDocument(request.user.id, request.params.id)
+  if (!result) return reply.code(404).send({ error: 'Document not found or cannot be shared', code: 'NOT_FOUND' })
+  return reply.send(result)
+}
+
+export async function revokeDocument(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const result = await portalService.revokeDocument(request.user.id, request.params.id)
+  if (!result) return reply.code(404).send({ error: 'Document not found', code: 'NOT_FOUND' })
+  return reply.send(result)
+}
+
 export async function getRequirements(request: FastifyRequest, reply: FastifyReply) {
   const result = await portalService.getRequirements(request.user.id)
   if (!result) return reply.code(404).send({ error: 'Student profile not found', code: 'STUDENT_NOT_FOUND' })

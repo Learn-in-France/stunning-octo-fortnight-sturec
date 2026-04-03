@@ -174,6 +174,7 @@ export interface StudentOwnProfile {
 export interface StudentProgress {
   stage: StudentStage
   progressPercent: number
+  assignedCounsellorId: string | null
   completedMilestones: string[]
   nextActions: string[]
   documentChecklist: { completed: number; total: number }
@@ -205,6 +206,9 @@ export interface DocumentListItem {
   filename: string
   status: DocumentStatus
   isCurrent: boolean
+  sharedAt: string | null
+  sharedWithCounsellorId: string | null
+  revokedAt: string | null
   createdAt: string
 }
 

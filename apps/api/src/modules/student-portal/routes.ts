@@ -24,6 +24,14 @@ export async function studentPortalRoutes(server: FastifyInstance) {
     handler: ctrl.getApplicationDetail,
   })
   server.get('/students/me/documents', { preHandler, handler: ctrl.getDocuments })
+  server.post('/students/me/documents/:id/share', {
+    preHandler: [...preHandler, validateParams(idParamSchema)],
+    handler: ctrl.shareDocument,
+  })
+  server.post('/students/me/documents/:id/revoke', {
+    preHandler: [...preHandler, validateParams(idParamSchema)],
+    handler: ctrl.revokeDocument,
+  })
   server.get('/students/me/requirements', { preHandler, handler: ctrl.getRequirements })
   server.get('/students/me/bookings', { preHandler, handler: ctrl.getBookings })
   server.get('/students/me/notifications', { preHandler, handler: ctrl.getNotifications })

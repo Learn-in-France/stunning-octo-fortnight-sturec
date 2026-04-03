@@ -105,6 +105,43 @@ export async function rejectDocument(
   return mapDocument(updated)
 }
 
+export async function shareDocument(
+  documentId: string,
+  studentId: string,
+  counsellorId: string,
+): Promise<DocumentListItem | null> {
+  const doc = await repo.findDocumentById(documentId)
+  if (!doc || doc.studentId !== studentId) return null
+  if (doc.status === 'pending_upload') return null
+
+  const updated = await repo.shareDocument(documentId, counsellorId)
+  return mapDocument(updated)
+}
+
+export async function revokeDocument(
+  documentId: string,
+  studentId: string,
+): Promise<DocumentListItem | null> {
+  const doc = await repo.findDocumentById(documentId)
+  if (!doc || doc.studentId !== studentId) return null
+
+  const updated = await repo.revokeDocumentShare(documentId)
+  return mapDocument(updated)
+}
+
+export async function listSharedDocuments(
+  studentId: string,
+  counsellorId: string,
+): Promise<DocumentListItem[]> {
+  const docs = await repo.findSharedDocuments(studentId, counsellorId)
+  return docs.map(mapDocument)
+}
+
+export async function listAllDocumentsForAdmin(studentId: string): Promise<DocumentListItem[]> {
+  const docs = await repo.findAllDocumentsForAdmin(studentId)
+  return docs.map(mapDocument)
+}
+
 export async function deleteDocument(id: string): Promise<boolean> {
   const doc = await repo.findDocumentById(id)
   if (!doc) return false

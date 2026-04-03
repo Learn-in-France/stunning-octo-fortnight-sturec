@@ -498,6 +498,9 @@ export function mapDocument(doc: PrismaDocument): DocumentListItem {
     filename: doc.filename,
     status: doc.status as DocumentListItem['status'],
     isCurrent: doc.isCurrent,
+    sharedAt: doc.sharedAt?.toISOString() ?? null,
+    sharedWithCounsellorId: doc.sharedWithCounsellorId ?? null,
+    revokedAt: doc.revokedAt?.toISOString() ?? null,
     createdAt: doc.createdAt.toISOString(),
   }
 }

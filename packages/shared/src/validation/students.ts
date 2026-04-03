@@ -125,6 +125,7 @@ export const updateOwnProfileSchema = z.object({
 export const studentProgressSchema = z.object({
   stage: studentStageSchema,
   progressPercent: z.number(),
+  assignedCounsellorId: z.string().uuid().nullable(),
   completedMilestones: z.array(z.string()),
   nextActions: z.array(z.string()),
   documentChecklist: z.object({
