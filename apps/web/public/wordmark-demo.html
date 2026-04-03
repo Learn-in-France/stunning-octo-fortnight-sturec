@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Learn in France — Wordmark Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Bricolage Grotesque', serif; -webkit-font-smoothing: antialiased; }
+
+    .wordmark {
+      font-family: 'Bricolage Grotesque', serif;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .wordmark .navy { color: #0a1629; }
+    .wordmark .red { color: #c8102e; }
+    .wordmark .white-text { color: #ffffff; }
+
+    .label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.4;
+      margin-bottom: 16px;
+    }
+
+    section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 64px;
+      padding: 80px 24px;
+    }
+
+    .group { text-align: center; }
+
+    /* Sizes */
+    .size-12 { font-size: 12px; }
+    .size-14 { font-size: 14px; }
+    .size-18 { font-size: 18px; }
+    .size-24 { font-size: 24px; }
+    .size-36 { font-size: 36px; }
+    .size-48 { font-size: 48px; }
+    .size-64 { font-size: 64px; }
+    .size-80 { font-size: 80px; }
+  </style>
+</head>
+<body>
+
+  <!-- WHITE BACKGROUND -->
+  <section style="background: #ffffff;">
+    <div class="label" style="color: #415468;">On White</div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Favicon / 12px</p>
+      <div class="wordmark size-12"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Nav / 14px</p>
+      <div class="wordmark size-14"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Subheading / 18px</p>
+      <div class="wordmark size-18"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Medium / 24px</p>
+      <div class="wordmark size-24"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Large / 48px</p>
+      <div class="wordmark size-48"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Hero / 80px</p>
+      <div class="wordmark size-80"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+  </section>
+
+  <!-- CREAM BACKGROUND -->
+  <section style="background: #f6f0e5;">
+    <div class="label" style="color: #415468;">On Cream (#f6f0e5)</div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Nav / 14px</p>
+      <div class="wordmark size-14"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Large / 48px</p>
+      <div class="wordmark size-48"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Hero / 80px</p>
+      <div class="wordmark size-80"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+  </section>
+
+  <!-- DARK NAVY BACKGROUND -->
+  <section style="background: #0a1629;">
+    <div class="label" style="color: rgba(255,255,255,0.4);">On Navy (#0a1629)</div>
+
+    <div class="group">
+      <p class="label" style="color: rgba(255,255,255,0.4);">Nav / 14px</p>
+      <div class="wordmark size-14"><span class="white-text">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: rgba(255,255,255,0.4);">Large / 48px</p>
+      <div class="wordmark size-48"><span class="white-text">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: rgba(255,255,255,0.4);">Hero / 80px</p>
+      <div class="wordmark size-80"><span class="white-text">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+  </section>
+
+  <!-- COMPARISON: TRACKING VARIANTS -->
+  <section style="background: #ffffff;">
+    <div class="label" style="color: #415468;">Tracking Comparison @ 48px</div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Tight (-0.05em)</p>
+      <div class="wordmark size-48" style="letter-spacing: -0.05em;"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Default (-0.03em)</p>
+      <div class="wordmark size-48" style="letter-spacing: -0.03em;"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Normal (0em)</p>
+      <div class="wordmark size-48" style="letter-spacing: 0em;"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+
+    <div class="group">
+      <p class="label" style="color: #415468;">Wide (0.04em)</p>
+      <div class="wordmark size-48" style="letter-spacing: 0.04em;"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    </div>
+  </section>
+
+  <!-- SPECS FOOTER -->
+  <footer style="background: #f3ede2; padding: 48px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px;">
+    <div class="wordmark size-18"><span class="navy">LEARN IN </span><span class="red">FRANCE</span></div>
+    <div style="text-align: right;">
+      <p style="font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #415468; opacity: 0.6;">Visual Identity Specs</p>
+      <div style="display: flex; gap: 16px; margin-top: 8px;">
+        <span style="font-size: 12px; text-transform: uppercase; color: #0a1629;">Bricolage Grotesque 800</span>
+        <span style="font-size: 12px; text-transform: uppercase; color: #0a1629;">Tracking -0.03em</span>
+        <span style="font-size: 12px; text-transform: uppercase; color: #0a1629;">Navy #0a1629 + Red #c8102e</span>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
