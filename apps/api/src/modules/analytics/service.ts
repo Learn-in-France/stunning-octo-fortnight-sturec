@@ -95,6 +95,8 @@ export async function getOverview(from?: string, to?: string): Promise<Analytics
       bookings: {
         scheduled: bookingCounts['scheduled'] || 0,
         completed: bookingCounts['completed'] || 0,
+        awaitingAssignment: bookingCounts['awaiting_assignment'] || 0,
+        assigned: bookingCounts['assigned'] || 0,
       },
     },
   }

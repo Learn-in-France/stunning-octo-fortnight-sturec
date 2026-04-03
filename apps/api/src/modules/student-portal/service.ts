@@ -96,10 +96,13 @@ export async function getProgress(userId: string): Promise<StudentProgress | nul
   const student = await repo.findStudentByUserId(userId)
   if (!student) return null
 
-  const [docsByStatus, totalReqs, appsByStatus] = await Promise.all([
+  const lead = await repo.findLeadByUserId(userId)
+
+  const [docsByStatus, totalReqs, appsByStatus, latestAssessment] = await Promise.all([
     repo.countStudentDocumentsByStatus(student.id),
     repo.countStudentRequirements(student.id),
     repo.countStudentApplicationsByStatus(student.id),
+    repo.findLatestAssessment(student.id, lead?.id),
   ])
 
   const stageIndex = STAGE_ORDER.indexOf(student.stage)
@@ -120,10 +123,19 @@ export async function getProgress(userId: string): Promise<StudentProgress | nul
   ) as Record<string, number>
   const totalApps = Object.values(appMap).reduce((s, c) => s + c, 0)
 
+  const capturedFields = Array.isArray(latestAssessment?.fieldsCollected)
+    ? latestAssessment.fieldsCollected.length
+    : 0
+  const missingFields = Array.isArray(latestAssessment?.fieldsMissing)
+    ? latestAssessment.fieldsMissing.filter((field): field is string => typeof field === 'string')
+    : []
+
   return {
     stage: student.stage,
     progressPercent,
     assignedCounsellorId: student.assignedCounsellorId,
+    bookingReady: capturedFields >= 4,
+    intakeCapture: { captured: capturedFields, total: 7, missing: missingFields },
 
     completedMilestones,
     nextActions,

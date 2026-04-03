@@ -140,6 +140,21 @@ enum NoteType {
   academic
   finance
   risk
+  meeting_outcome
+  student_visible
+}
+
+enum MeetingOutcome {
+  qualified
+  needs_follow_up
+  not_ready
+  disqualified
+}
+
+enum ReminderStatus {
+  pending
+  completed
+  dismissed
 }
 
 enum ActivityType {
@@ -269,6 +284,8 @@ model User {
   documentsVerified    Document[]             @relation("DocumentVerifier")
   documentsSharedWith  Document[]             @relation("DocumentSharedWith")
   counsellorNotes      CounsellorNote[]
+  meetingOutcomes      MeetingOutcomeLog[]     @relation("MeetingOutcomeCounsellor")
+  reminders            CounsellorReminder[]    @relation("ReminderCounsellor")
   activityLogs         CounsellorActivityLog[] @relation("ActivityCounsellor")
   activityLogsCreated  CounsellorActivityLog[] @relation("ActivityCreator")
   consentsCaptured     ConsentEvent[]
@@ -400,6 +417,8 @@ model Student {
   documents             Document[]
   documentRequirements  StudentDocumentRequirement[]
   counsellorNotes       CounsellorNote[]
+  meetingOutcomes       MeetingOutcomeLog[]
+  reminders             CounsellorReminder[]
   activityLogs          CounsellorActivityLog[] @relation("ActivityStudent")
   contacts              StudentContact[]
   consentEvents         ConsentEvent[]
@@ -616,6 +635,49 @@ model CounsellorNote {
   author    User     @relation(fields: [authorId], references: [id])
 
   @@map("counsellor_notes")
+}
+
+model MeetingOutcomeLog {
+  id                  String          @id @default(uuid()) @db.Uuid
+  bookingId           String          @map("booking_id") @db.Uuid
+  studentId           String          @map("student_id") @db.Uuid
+  counsellorId        String          @map("counsellor_id") @db.Uuid
+  outcome             MeetingOutcome
+  nextAction          String          @map("next_action") @db.Text
+  followUpDueAt       DateTime?       @map("follow_up_due_at")
+  privateNote         String?         @map("private_note") @db.Text
+  studentVisibleNote  String?         @map("student_visible_note") @db.Text
+  stageAfter          String?         @map("stage_after") @db.VarChar(50)
+  createdAt           DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  booking             Booking         @relation(fields: [bookingId], references: [id])
+  student             Student         @relation(fields: [studentId], references: [id])
+  counsellor          User            @relation("MeetingOutcomeCounsellor", fields: [counsellorId], references: [id])
+
+  @@index([studentId])
+  @@index([counsellorId])
+  @@map("meeting_outcome_logs")
+}
+
+model CounsellorReminder {
+  id              String          @id @default(uuid()) @db.Uuid
+  counsellorId    String          @map("counsellor_id") @db.Uuid
+  studentId       String          @map("student_id") @db.Uuid
+  title           String          @db.VarChar(255)
+  dueAt           DateTime        @map("due_at")
+  status          ReminderStatus  @default(pending)
+  source          String          @db.VarChar(30) // meeting_outcome, manual, system
+  completedAt     DateTime?       @map("completed_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  counsellor      User            @relation("ReminderCounsellor", fields: [counsellorId], references: [id])
+  student         Student         @relation(fields: [studentId], references: [id])
+
+  @@index([counsellorId, status, dueAt])
+  @@index([studentId])
+  @@map("counsellor_reminders")
 }
 
 model CounsellorActivityLog {
@@ -865,6 +927,7 @@ model Booking {
   student        Student?      @relation("BookingStudent", fields: [studentId], references: [id])
   lead           Lead?         @relation("BookingLead", fields: [leadId], references: [id])
   counsellor     User?         @relation(fields: [counsellorId], references: [id])
+  meetingOutcomes MeetingOutcomeLog[]
 
   @@map("bookings")
 }

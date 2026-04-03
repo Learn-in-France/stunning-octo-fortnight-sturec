@@ -24,6 +24,7 @@ export const createBookingSchema = z.object({
 
 export const updateBookingSchema = z.object({
   status: bookingStatusSchema.optional(),
+  counsellorId: z.string().uuid().nullable().optional(),
   notes: z.string().optional(),
   scheduledAt: z.string().optional(),
 })

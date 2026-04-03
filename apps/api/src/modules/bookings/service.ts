@@ -35,6 +35,7 @@ export async function createBooking(
     counsellorId: data.counsellorId ?? null,
     scheduledAt: new Date(data.scheduledAt),
     notes: data.notes,
+    source: data.source,
     status: data.counsellorId ? 'assigned' : 'awaiting_assignment',
   })
 
@@ -84,15 +85,32 @@ export async function createBooking(
 
 export async function updateBooking(
   id: string,
-  data: { status?: string; notes?: string; scheduledAt?: string },
+  data: { status?: string; counsellorId?: string | null; notes?: string; scheduledAt?: string },
 ): Promise<BookingListItem | null> {
   const existing = await repo.findBookingById(id)
   if (!existing) return null
 
   const booking = await repo.updateBooking(id, {
-    status: data.status,
+    status: data.status ?? (data.counsellorId ? 'assigned' : undefined),
+    counsellorId: data.counsellorId,
     notes: data.notes,
     scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
   })
+
+  if (data.counsellorId && existing.counsellorId !== data.counsellorId) {
+    getNotificationsQueue().add('booking-assigned', {
+      recipientId: data.counsellorId,
+      channel: 'email',
+      templateKey: 'booking_created',
+      data: {
+        studentId: booking.studentId,
+        leadId: booking.leadId,
+        scheduledAt: booking.scheduledAt.toISOString(),
+        triggeringActionId: booking.id,
+        status: booking.status,
+      },
+    }).catch((err) => console.error('[bookings] Failed to enqueue assignment notification:', err))
+  }
+
   return mapBooking(booking)
 }

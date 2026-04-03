@@ -126,6 +126,12 @@ export const studentProgressSchema = z.object({
   stage: studentStageSchema,
   progressPercent: z.number(),
   assignedCounsellorId: z.string().uuid().nullable(),
+  bookingReady: z.boolean(),
+  intakeCapture: z.object({
+    captured: z.number(),
+    total: z.number(),
+    missing: z.array(z.string()),
+  }),
   completedMilestones: z.array(z.string()),
   nextActions: z.array(z.string()),
   documentChecklist: z.object({

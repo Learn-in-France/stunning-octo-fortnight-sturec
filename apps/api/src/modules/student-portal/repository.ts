@@ -4,6 +4,27 @@ export function findStudentByUserId(userId: string) {
   return prisma.student.findFirst({ where: { userId, deletedAt: null } })
 }
 
+export function findLeadByUserId(userId: string) {
+  return prisma.lead.findFirst({
+    where: { userId, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true },
+  })
+}
+
+export function findLatestAssessment(studentId: string, leadId?: string) {
+  return prisma.aiAssessment.findFirst({
+    where: {
+      OR: [
+        { studentId },
+        ...(leadId ? [{ leadId }] : []),
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { fieldsCollected: true, fieldsMissing: true },
+  })
+}
+
 export function findStudentDocuments(studentId: string) {
   return prisma.document.findMany({
     where: { studentId, deletedAt: null },

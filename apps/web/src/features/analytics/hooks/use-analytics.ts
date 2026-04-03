@@ -13,6 +13,7 @@ import api from '@/lib/api/client'
 // ─── Overview hook ──────────────────────────────────────────────
 
 interface DateRangeParams {
+
   from?: string
   to?: string
 }
@@ -24,9 +25,10 @@ function dateParams(p: DateRangeParams): Record<string, string> {
   return qp
 }
 
-export function useAnalyticsOverview(params: DateRangeParams = {}) {
+export function useAnalyticsOverview(params: DateRangeParams = {}, opts: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['analytics', 'overview', params],
+    enabled: opts.enabled ?? true,
     queryFn: () =>
       api.get('/analytics/overview', { params: dateParams(params) }) as unknown as AnalyticsOverview,
   })
@@ -44,9 +46,10 @@ export function usePipelineMetrics(params: DateRangeParams = {}) {
 
 // ─── Counsellor analytics hooks ─────────────────────────────────
 
-export function useCounsellorAnalytics() {
+export function useCounsellorAnalytics(opts: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['analytics', 'counsellors'],
+    enabled: opts.enabled ?? true,
     queryFn: () =>
       api.get('/analytics/counsellors') as unknown as CounsellorAnalyticsItem[],
   })

@@ -225,6 +225,8 @@ export const FIXTURE_STUDENT_PROGRESS: StudentProgress = {
   stage: 'counsellor_consultation',
   progressPercent: 31,
   assignedCounsellorId: '550e8400-e29b-41d4-a716-446655440001',
+  bookingReady: true,
+  intakeCapture: { captured: 5, total: 7, missing: ['budget awareness', 'source tracking'] },
   completedMilestones: [
     'Account created',
     'AI intake completed',
@@ -260,6 +262,7 @@ export const FIXTURE_AI_ASSESSMENT: AiAssessmentSummary = {
   recommendedDisposition: 'assign_priority_queue',
   summaryForTeam: 'Strong academic profile, good English scores, clear motivation. Financial proof pending. Recommend immediate counsellor assignment.',
   profileCompleteness: 0.85,
+  leadHeat: 'hot',
   createdAt: '2026-03-01T14:22:00.000Z',
 }
 
@@ -475,7 +478,8 @@ export const FIXTURE_CHAT_MESSAGE_RESPONSE: ChatMessageResponse = {
     content: 'That\'s a great foundation! A 7.5 GPA opens up several MSc options in France.',
     timestamp: '2026-03-01T14:01:15.000Z',
   },
-  options: ['Explore programs', 'Understand visa process', 'Estimate living costs', 'Speak with an advisor'],
+  options: ['Understand timelines', 'Talk about budget', 'Prepare for a counsellor call', 'Speak with an advisor'],
+  shouldSuggestBooking: true,
 }
 
 // ─── Notification Fixtures ────────────────────────────────────

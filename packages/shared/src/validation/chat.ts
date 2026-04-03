@@ -20,6 +20,7 @@ export const chatMessageItemSchema = z.object({
 export const chatMessageResponseSchema = z.object({
   message: chatMessageItemSchema,
   options: z.array(z.string()).nullable(),
+  shouldSuggestBooking: z.boolean(),
 })
 
 export const sendMessageSchema = z.object({

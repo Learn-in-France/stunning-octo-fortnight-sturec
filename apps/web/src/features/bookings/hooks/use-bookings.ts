@@ -57,18 +57,21 @@ export function useBookingStats() {
 interface CreateBookingInput {
   studentId?: string
   leadId?: string
-  counsellorId: string
+  counsellorId?: string | null
   scheduledAt: string
   notes?: string
+  source?: 'chat' | 'portal'
 }
 
 export function useCreateBooking() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (data: CreateBookingInput) =>
-      api.post('/bookings', data),
+      api.post('/bookings', data) as unknown as Promise<BookingListItem>,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
+      queryClient.invalidateQueries({ queryKey: ['student-portal', 'bookings'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
     },
   })
 }
@@ -77,6 +80,7 @@ export function useCreateBooking() {
 
 interface UpdateBookingInput {
   status?: BookingStatus
+  counsellorId?: string | null
   notes?: string
   scheduledAt?: string
 }
@@ -85,9 +89,11 @@ export function useUpdateBooking() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, ...data }: UpdateBookingInput & { id: string }) =>
-      api.patch(`/bookings/${id}`, data),
+      api.patch(`/bookings/${id}`, data) as unknown as Promise<BookingListItem>,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
+      queryClient.invalidateQueries({ queryKey: ['student-portal', 'bookings'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
     },
   })
 }

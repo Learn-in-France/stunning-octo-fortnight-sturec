@@ -30,12 +30,14 @@ export function createBooking(data: {
       notes: data.notes,
       source: data.source,
       ...(data.status && { status: data.status as BookingStatus }),
+      ...(data.counsellorId !== undefined && { counsellorId: data.counsellorId }),
     },
   })
 }
 
 export function updateBooking(id: string, data: {
   status?: string
+  counsellorId?: string | null
   notes?: string
   scheduledAt?: Date
 }) {
@@ -43,6 +45,7 @@ export function updateBooking(id: string, data: {
     where: { id },
     data: {
       ...(data.status && { status: data.status as BookingStatus }),
+      ...(data.counsellorId !== undefined && { counsellorId: data.counsellorId }),
       ...(data.notes !== undefined && { notes: data.notes }),
       ...(data.scheduledAt && { scheduledAt: data.scheduledAt }),
     },

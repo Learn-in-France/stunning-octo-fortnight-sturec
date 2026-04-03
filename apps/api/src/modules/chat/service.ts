@@ -183,6 +183,7 @@ export async function sendMessage(
   return {
     message: mapMessage(assistantMsg),
     options: structured?.options ?? null,
+    shouldSuggestBooking: structured?.should_suggest_booking === true,
   }
 }
 

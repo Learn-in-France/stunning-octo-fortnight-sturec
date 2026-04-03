@@ -175,6 +175,12 @@ export interface StudentProgress {
   stage: StudentStage
   progressPercent: number
   assignedCounsellorId: string | null
+  bookingReady: boolean
+  intakeCapture: {
+    captured: number
+    total: number
+    missing: string[]
+  }
   completedMilestones: string[]
   nextActions: string[]
   documentChecklist: { completed: number; total: number }
@@ -242,6 +248,7 @@ export interface AiAssessmentSummary {
   recommendedDisposition: string | null
   summaryForTeam: string
   profileCompleteness: number | null
+  leadHeat: string | null
   createdAt: string
 }
 
@@ -359,6 +366,7 @@ export interface ChatMessageItem {
 export interface ChatMessageResponse {
   message: ChatMessageItem
   options: string[] | null
+  shouldSuggestBooking: boolean
 }
 
 // ─── Upload URL Response ──────────────────────────────────────
@@ -451,7 +459,7 @@ export interface AnalyticsOverview {
     students: { total: number; active: number; byStage: Record<string, number> }
     applications: { total: number; submitted: number; offers: number; enrolled: number }
     documents: { pending: number; verified: number; rejected: number }
-    bookings: { scheduled: number; completed: number }
+    bookings: { scheduled: number; completed: number; awaitingAssignment?: number; assigned?: number }
   }
 }
 

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useRef, useEffect, useCallback } from 'react'
 
 import { Card } from '@/components/ui/card'
@@ -21,6 +22,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessageItem[]>([])
   const [options, setOptions] = useState<string[] | null>(null)
+  const [showBookingPrompt, setShowBookingPrompt] = useState(false)
   const [showSessions, setShowSessions] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -71,6 +73,7 @@ export default function ChatPage() {
     const session = await startSession.mutateAsync()
     setActiveSessionId(session.id)
     setOptions(null)
+    setShowBookingPrompt(false)
     setOptimisticMessages([])
   }, [startSession])
 
@@ -95,6 +98,7 @@ export default function ChatPage() {
       if (response.options?.length) {
         setOptions(response.options)
       }
+      setShowBookingPrompt(response.shouldSuggestBooking === true)
     } catch {
       // Remove failed optimistic message
       setOptimisticMessages((prev) => prev.filter((m) => m.id !== tempId))
@@ -108,6 +112,7 @@ export default function ChatPage() {
     await endSession.mutateAsync(activeSessionId)
     setActiveSessionId(null)
     setOptions(null)
+    setShowBookingPrompt(false)
     setOptimisticMessages([])
   }, [activeSessionId, endSession])
 
@@ -176,6 +181,7 @@ export default function ChatPage() {
               onClick={() => {
                 setActiveSessionId(s.id)
                 setOptions(null)
+                setShowBookingPrompt(false)
                 setOptimisticMessages([])
                 setShowSessions(false)
               }}
@@ -202,7 +208,7 @@ export default function ChatPage() {
           <Card padding="none" className="max-w-md w-full">
             <EmptyState
               title="Start a conversation"
-              description="Our AI advisor can help you explore programs, understand requirements, and plan your study journey in France. Your conversations are private."
+              description="Our AI advisor can help you understand studying in France, prepare for the process, and gather the context needed for a counsellor handoff. Your conversations are private."
               icon={
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
                   <path d="M6 6H34C35.657 6 37 7.343 37 9V27C37 28.657 35.657 30 34 30H13L6 37V9C6 7.343 7.343 6 9 6H34" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
@@ -252,6 +258,25 @@ export default function ChatPage() {
 
             <div ref={messagesEndRef} />
           </div>
+
+          {showBookingPrompt && isSessionActive && (
+            <div className="mx-4 mb-2 rounded-2xl border border-primary-200 bg-primary-50/80 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">Ready to speak with a counsellor?</p>
+                  <p className="mt-1 text-xs leading-6 text-text-secondary">
+                    You have shared enough context for a useful human handoff. You can book a counsellor session now or keep chatting if you want to refine your goals first.
+                  </p>
+                </div>
+                <Link
+                  href="/portal/bookings?source=chat"
+                  className="inline-flex items-center justify-center rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-700"
+                >
+                  Book counsellor session
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Interactive options */}
           {options && options.length > 0 && isSessionActive && (
@@ -311,7 +336,7 @@ export default function ChatPage() {
       {/* Privacy notice */}
       <div className="mt-3 p-2.5 rounded-lg bg-surface-sunken/50 border border-border shrink-0">
         <p className="text-[11px] text-text-muted">
-          <span className="font-semibold">Privacy:</span> Your conversations are private and not shared with counsellors. Only structured summaries help improve your recommendations.
+          <span className="font-semibold">Privacy:</span> Your conversations are private and not shared with counsellors. Only structured summaries are shared internally when a counsellor handoff is needed.
         </p>
       </div>
     </div>

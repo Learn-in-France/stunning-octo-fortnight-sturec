@@ -34,6 +34,7 @@ import {
 } from '@/features/students/hooks/use-students'
 import { useStudentApplications } from '@/features/applications/hooks/use-applications'
 import { useStudentDocuments, useStudentRequirements, useVerifyDocument, useRejectDocument } from '@/features/documents/hooks/use-documents'
+import { useMeetingOutcomes, useRecordMeetingOutcome } from '@/features/counsellor/hooks/use-counsellor'
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -120,6 +121,9 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </Card>
 
+      {/* Meeting prep summary */}
+      <MeetingPrepBlock studentId={id} student={student} />
+
       {/* Tabbed content */}
       <Tabs
         items={[
@@ -127,6 +131,11 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             id: 'overview',
             label: 'Overview',
             content: <OverviewTab student={student} />,
+          },
+          {
+            id: 'meetings',
+            label: 'Meetings',
+            content: <MeetingOutcomesTab studentId={id} />,
           },
           {
             id: 'applications',
@@ -1137,4 +1146,215 @@ function ConsentPill({ label, granted }: { label: string; granted: boolean }) {
 function formatDate(iso: string): string {
   const d = new Date(iso)
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+// ─── Meeting Prep Block ─────────────────────────────────────
+
+function MeetingPrepBlock({ studentId, student }: { studentId: string; student: ReturnType<typeof useStudent>['data'] }) {
+  const { data: assessments } = useStudentAssessments(studentId)
+  const latestAssessment = assessments?.[0]
+
+  if (!student) return null
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle>Meeting Prep</CardTitle>
+        <StageBadge stage={student.stage} />
+      </CardHeader>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Lead Heat</p>
+          <Badge variant={
+            latestAssessment?.leadHeat === 'hot' ? 'danger' :
+            latestAssessment?.leadHeat === 'warm' ? 'warning' :
+            latestAssessment?.leadHeat === 'cold' ? 'info' :
+            latestAssessment?.leadHeat === 'needs_follow_up' ? 'warning' : 'muted'
+          } dot>
+            {latestAssessment?.leadHeat ?? 'Not assessed'}
+          </Badge>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Counsellor</p>
+          <p className="text-sm text-text-primary">{student.assignedCounsellorId ? 'Assigned' : 'Unassigned'}</p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Profile</p>
+          <p className="text-sm text-text-primary">
+            {latestAssessment?.profileCompleteness
+              ? `${Math.round(Number(latestAssessment.profileCompleteness) * 100)}% complete`
+              : 'No data'}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Visa Risk</p>
+          <Badge variant={
+            student.visaRisk === 'low' ? 'success' :
+            student.visaRisk === 'medium' ? 'warning' :
+            student.visaRisk === 'high' ? 'danger' : 'muted'
+          } dot>
+            {student.visaRisk ?? 'Unknown'}
+          </Badge>
+        </div>
+      </div>
+      {latestAssessment?.summaryForTeam && (
+        <div className="mt-4 pt-3 border-t border-border">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">AI Summary</p>
+          <p className="text-sm leading-7 text-text-secondary">{latestAssessment.summaryForTeam}</p>
+        </div>
+      )}
+    </Card>
+  )
+}
+
+// ─── Meeting Outcomes Tab ───────────────────────────────────
+
+function MeetingOutcomesTab({ studentId }: { studentId: string }) {
+  const { data: outcomes, isLoading } = useMeetingOutcomes(studentId)
+  const recordOutcome = useRecordMeetingOutcome()
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({
+    bookingId: '',
+    outcome: '',
+    nextAction: '',
+    followUpDueAt: '',
+    privateNote: '',
+    studentVisibleNote: '',
+    stageAfter: '',
+  })
+
+  if (isLoading) return <LoadingSpinner size="md" />
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-text-primary">Meeting Outcomes</h3>
+        <Button size="sm" onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancel' : 'Record outcome'}
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card>
+          <div className="space-y-4">
+            <Input
+              label="Booking ID"
+              value={form.bookingId}
+              onChange={(e) => setForm({ ...form, bookingId: e.target.value })}
+              placeholder="UUID of the booking"
+            />
+            <Select
+              label="Outcome"
+              options={[
+                { value: 'qualified', label: 'Qualified' },
+                { value: 'needs_follow_up', label: 'Needs follow-up' },
+                { value: 'not_ready', label: 'Not ready' },
+                { value: 'disqualified', label: 'Disqualified' },
+              ]}
+              value={form.outcome}
+              onChange={(e) => setForm({ ...form, outcome: e.target.value })}
+            />
+            <Input
+              label="Next action"
+              value={form.nextAction}
+              onChange={(e) => setForm({ ...form, nextAction: e.target.value })}
+              placeholder="What needs to happen next?"
+            />
+            <Input
+              label="Follow-up due date"
+              type="date"
+              value={form.followUpDueAt}
+              onChange={(e) => setForm({ ...form, followUpDueAt: e.target.value })}
+            />
+            <Input
+              label="Private note (counsellor + admin only)"
+              value={form.privateNote}
+              onChange={(e) => setForm({ ...form, privateNote: e.target.value })}
+              placeholder="Internal notes..."
+            />
+            <Input
+              label="Student-visible note (optional)"
+              value={form.studentVisibleNote}
+              onChange={(e) => setForm({ ...form, studentVisibleNote: e.target.value })}
+              placeholder="Visible to the student as their next step"
+            />
+            <Select
+              label="Update stage to (optional)"
+              options={[
+                { value: '', label: 'No change' },
+                ...STAGE_ORDER.map((s) => ({ value: s, label: STAGE_DISPLAY_NAMES[s] })),
+              ]}
+              value={form.stageAfter}
+              onChange={(e) => setForm({ ...form, stageAfter: e.target.value })}
+            />
+            <Button
+              loading={recordOutcome.isPending}
+              disabled={!form.bookingId || !form.outcome || !form.nextAction}
+              onClick={() => {
+                recordOutcome.mutate({
+                  studentId,
+                  bookingId: form.bookingId,
+                  outcome: form.outcome,
+                  nextAction: form.nextAction,
+                  followUpDueAt: form.followUpDueAt || undefined,
+                  privateNote: form.privateNote || undefined,
+                  studentVisibleNote: form.studentVisibleNote || undefined,
+                  stageAfter: form.stageAfter || undefined,
+                }, {
+                  onSuccess: () => {
+                    setShowForm(false)
+                    setForm({ bookingId: '', outcome: '', nextAction: '', followUpDueAt: '', privateNote: '', studentVisibleNote: '', stageAfter: '' })
+                  },
+                })
+              }}
+            >
+              Save outcome
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {(outcomes ?? []).length === 0 && !showForm ? (
+        <EmptyState title="No meeting outcomes recorded yet." />
+      ) : (
+        <div className="space-y-4">
+          {(outcomes ?? []).map((o) => (
+            <Card key={o.id}>
+              <div className="flex items-center justify-between mb-3">
+                <Badge variant={
+                  o.outcome === 'qualified' ? 'success' :
+                  o.outcome === 'needs_follow_up' ? 'warning' :
+                  o.outcome === 'not_ready' ? 'info' :
+                  'danger'
+                } dot>
+                  {o.outcome.replace(/_/g, ' ')}
+                </Badge>
+                <span className="text-xs text-text-muted">{formatDate(o.createdAt)}</span>
+              </div>
+              <p className="text-sm font-semibold text-text-primary mb-1">Next action</p>
+              <p className="text-sm text-text-secondary mb-3">{o.nextAction}</p>
+              {o.followUpDueAt && (
+                <p className="text-xs text-text-muted mb-2">Follow-up due: {formatDate(o.followUpDueAt)}</p>
+              )}
+              {o.privateNote && (
+                <div className="rounded-lg bg-surface-sunken/50 p-3 mb-2">
+                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Private note</p>
+                  <p className="text-sm text-text-secondary">{o.privateNote}</p>
+                </div>
+              )}
+              {o.studentVisibleNote && (
+                <div className="rounded-lg bg-primary-50 p-3">
+                  <p className="text-xs font-semibold text-primary-700 uppercase tracking-wider mb-1">Student-visible</p>
+                  <p className="text-sm text-text-secondary">{o.studentVisibleNote}</p>
+                </div>
+              )}
+              {o.stageAfter && (
+                <p className="text-xs text-text-muted mt-2">Stage changed to: {STAGE_DISPLAY_NAMES[o.stageAfter as keyof typeof STAGE_DISPLAY_NAMES] ?? o.stageAfter}</p>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
