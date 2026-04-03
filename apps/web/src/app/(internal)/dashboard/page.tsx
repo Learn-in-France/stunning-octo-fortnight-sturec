@@ -14,7 +14,7 @@ import { Select } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useAnalyticsOverview, useCounsellorAnalytics } from '@/features/analytics/hooks/use-analytics'
 import { useBookings, useUpdateBooking, type BookingListItemView } from '@/features/bookings/hooks/use-bookings'
-import { useCounsellorAgenda, useCompleteReminder } from '@/features/counsellor/hooks/use-counsellor'
+import { useCounsellorAgenda, useCompleteReminder, useDismissReminder } from '@/features/counsellor/hooks/use-counsellor'
 import { STAGE_DISPLAY_NAMES } from '@sturec/shared'
 
 export default function DashboardPage() {
@@ -291,6 +291,7 @@ function formatDateTime(iso: string): string {
 function CounsellorAgendaView() {
   const { data: agenda, isLoading } = useCounsellorAgenda()
   const completeReminder = useCompleteReminder()
+  const dismissReminder = useDismissReminder()
 
   if (isLoading) return <LoadingSpinner size="md" />
 
@@ -343,14 +344,24 @@ function CounsellorAgendaView() {
                   <p className="text-sm font-semibold text-text-primary">{r.title}</p>
                   <p className="text-xs text-text-muted">Due {new Date(r.dueAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</p>
                 </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => completeReminder.mutate(r.id)}
-                  disabled={completeReminder.isPending}
-                >
-                  Done
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => completeReminder.mutate(r.id)}
+                    disabled={completeReminder.isPending}
+                  >
+                    Done
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => dismissReminder.mutate(r.id)}
+                    disabled={dismissReminder.isPending}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

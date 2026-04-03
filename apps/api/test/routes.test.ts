@@ -97,6 +97,8 @@ vi.mock('../src/lib/prisma.js', () => {
       campusFrancePrep: m(),
       booking: m(),
       notificationLog: m(),
+      meetingOutcomeLog: m(),
+      counsellorReminder: m(),
       chatSession: m(),
       chatMessage: m(),
       mauticSyncLog: m(),
@@ -768,6 +770,158 @@ describe('Route-level smoke tests', () => {
         url: '/api/v1/bookings/00000000-0000-0000-0000-000000000060',
         headers: authHeaders(),
         payload: { status: 'completed' },
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
+  })
+
+  // ─── Counsellor ────────────────────────────────────────────
+
+  describe('Counsellor module', () => {
+    it('GET /counsellor/agenda returns agenda for counsellor', async () => {
+      authAs(COUNSELLOR_USER)
+      db.booking.findMany.mockResolvedValue([])
+      db.counsellorReminder.findMany.mockResolvedValue([])
+      db.document.findMany.mockResolvedValue([])
+      db.student.findMany.mockResolvedValue([])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/counsellor/agenda',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+      expect(body).toHaveProperty('todayMeetings')
+      expect(body).toHaveProperty('overdueReminders')
+      expect(body).toHaveProperty('docsWaitingReview')
+      expect(body).toHaveProperty('staleStudents')
+    })
+
+    it('POST /students/:studentId/meeting-outcome records outcome', async () => {
+      authAs(COUNSELLOR_USER)
+      db.meetingOutcomeLog.create.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000080',
+        bookingId: '00000000-0000-0000-0000-000000000060',
+        studentId: '00000000-0000-0000-0000-000000000010',
+        counsellorId: COUNSELLOR_USER.id,
+        outcome: 'qualified',
+        nextAction: 'Submit transcripts',
+        followUpDueAt: null,
+        privateNote: null,
+        studentVisibleNote: null,
+        stageAfter: null,
+        createdAt: new Date(),
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/meeting-outcome',
+        headers: authHeaders(),
+        payload: {
+          bookingId: '00000000-0000-0000-0000-000000000060',
+          outcome: 'qualified',
+          nextAction: 'Submit transcripts',
+        },
+      })
+
+      expect(response.statusCode).toBe(201)
+      const body = JSON.parse(response.body)
+      expect(body.outcome).toBe('qualified')
+      expect(body.nextAction).toBe('Submit transcripts')
+    })
+
+    it('GET /students/:studentId/meeting-outcomes returns list', async () => {
+      authAs(COUNSELLOR_USER)
+      db.meetingOutcomeLog.findMany.mockResolvedValue([])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/meeting-outcomes',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(JSON.parse(response.body)).toEqual([])
+    })
+
+    it('POST /counsellor/reminders creates a reminder', async () => {
+      authAs(COUNSELLOR_USER)
+      db.counsellorReminder.create.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000090',
+        counsellorId: COUNSELLOR_USER.id,
+        studentId: '00000000-0000-0000-0000-000000000010',
+        title: 'Follow up on transcripts',
+        dueAt: new Date('2026-04-10'),
+        status: 'pending',
+        source: 'manual',
+        completedAt: null,
+        createdAt: new Date(),
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/counsellor/reminders',
+        headers: authHeaders(),
+        payload: {
+          studentId: '00000000-0000-0000-0000-000000000010',
+          title: 'Follow up on transcripts',
+          dueAt: '2026-04-10T00:00:00.000Z',
+        },
+      })
+
+      expect(response.statusCode).toBe(201)
+      const body = JSON.parse(response.body)
+      expect(body.title).toBe('Follow up on transcripts')
+      expect(body.status).toBe('pending')
+    })
+
+    it('POST /counsellor/reminders/:id/complete marks reminder done', async () => {
+      authAs(COUNSELLOR_USER)
+      db.counsellorReminder.update.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000090',
+        status: 'completed',
+        completedAt: new Date(),
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/counsellor/reminders/00000000-0000-0000-0000-000000000090/complete',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+      expect(body.status).toBe('completed')
+    })
+
+    it('POST /counsellor/reminders/:id/dismiss dismisses reminder', async () => {
+      authAs(COUNSELLOR_USER)
+      db.counsellorReminder.update.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000090',
+        status: 'dismissed',
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/counsellor/reminders/00000000-0000-0000-0000-000000000090/dismiss',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+      expect(body.status).toBe('dismissed')
+    })
+
+    it('student cannot access counsellor agenda', async () => {
+      authAs(STUDENT_USER)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/counsellor/agenda',
+        headers: authHeaders(),
       })
 
       expect(response.statusCode).toBe(403)
