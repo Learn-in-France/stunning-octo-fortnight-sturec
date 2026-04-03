@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import api from '@/lib/api/client'
@@ -13,6 +14,7 @@ import { Select } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useAnalyticsOverview, useCounsellorAnalytics } from '@/features/analytics/hooks/use-analytics'
 import { useBookings, useUpdateBooking, type BookingListItemView } from '@/features/bookings/hooks/use-bookings'
+import { useCounsellorAgenda, useCompleteReminder } from '@/features/counsellor/hooks/use-counsellor'
 import { STAGE_DISPLAY_NAMES } from '@sturec/shared'
 
 export default function DashboardPage() {
@@ -74,16 +76,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {!isAdmin && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Your operating view</CardTitle>
-              </CardHeader>
-              <p className="text-sm leading-7 text-text-secondary">
-                Use Students, Leads, and Bookings to manage your portfolio. Admin-only analytics and assignment controls stay hidden from counsellor accounts.
-              </p>
-            </Card>
-          )}
+          {!isAdmin && <CounsellorAgendaView />}
           {isAdmin && (
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)]">
               <Card>
@@ -293,6 +286,134 @@ function WorkloadPill({ label, value }: { label: string; value: number }) {
 function formatDateTime(iso: string): string {
   const d = new Date(iso)
   return `${d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+}
+
+function CounsellorAgendaView() {
+  const { data: agenda, isLoading } = useCounsellorAgenda()
+  const completeReminder = useCompleteReminder()
+
+  if (isLoading) return <LoadingSpinner size="md" />
+
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {/* Today's meetings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Today's meetings</CardTitle>
+          <Badge variant="primary">{agenda?.todayMeetings?.length ?? 0}</Badge>
+        </CardHeader>
+        {(agenda?.todayMeetings ?? []).length === 0 ? (
+          <p className="text-sm text-text-muted">No meetings scheduled for today.</p>
+        ) : (
+          <div className="space-y-3">
+            {agenda!.todayMeetings.map((m) => (
+              <div key={m.id} className="flex items-center justify-between rounded-lg bg-surface-sunken/50 p-3">
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">
+                    {new Date(m.scheduledAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  {m.student && (
+                    <Link href={`/students/${m.student.id}`} className="text-xs text-primary-600 hover:underline">
+                      View student
+                    </Link>
+                  )}
+                </div>
+                <Badge variant={m.status === 'assigned' ? 'info' : 'muted'} dot>{m.status}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Overdue follow-ups */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Overdue follow-ups</CardTitle>
+          {(agenda?.overdueReminders?.length ?? 0) > 0 && (
+            <Badge variant="danger">{agenda!.overdueReminders.length}</Badge>
+          )}
+        </CardHeader>
+        {(agenda?.overdueReminders ?? []).length === 0 ? (
+          <p className="text-sm text-text-muted">No overdue follow-ups. You're on track.</p>
+        ) : (
+          <div className="space-y-3">
+            {agenda!.overdueReminders.map((r) => (
+              <div key={r.id} className="flex items-center justify-between rounded-lg bg-rose-50 p-3">
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">{r.title}</p>
+                  <p className="text-xs text-text-muted">Due {new Date(r.dueAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => completeReminder.mutate(r.id)}
+                  disabled={completeReminder.isPending}
+                >
+                  Done
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Docs waiting review */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Documents to review</CardTitle>
+          <Badge variant="muted">{agenda?.docsWaitingReview?.length ?? 0}</Badge>
+        </CardHeader>
+        {(agenda?.docsWaitingReview ?? []).length === 0 ? (
+          <p className="text-sm text-text-muted">No shared documents waiting for review.</p>
+        ) : (
+          <div className="space-y-3">
+            {agenda!.docsWaitingReview.map((d) => (
+              <div key={d.id} className="flex items-center justify-between rounded-lg bg-surface-sunken/50 p-3">
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">{d.filename}</p>
+                  <p className="text-xs text-text-muted capitalize">{d.type.replace(/_/g, ' ')}</p>
+                </div>
+                <Link href={`/students/${d.studentId}`} className="text-xs text-primary-600 hover:underline">
+                  View
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Stale students */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Stale students</CardTitle>
+          {(agenda?.staleStudents?.length ?? 0) > 0 && (
+            <Badge variant="warning">{agenda!.staleStudents.length}</Badge>
+          )}
+        </CardHeader>
+        {(agenda?.staleStudents ?? []).length === 0 ? (
+          <p className="text-sm text-text-muted">All students have recent activity.</p>
+        ) : (
+          <div className="space-y-3">
+            {agenda!.staleStudents.map((s) => (
+              <div key={s.id} className="flex items-center justify-between rounded-lg bg-amber-50 p-3">
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">
+                    {STAGE_DISPLAY_NAMES[s.stage as keyof typeof STAGE_DISPLAY_NAMES] ?? s.stage}
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    Last activity {Math.round((Date.now() - new Date(s.updatedAt).getTime()) / (1000 * 60 * 60 * 24))}d ago
+                  </p>
+                </div>
+                <Link href={`/students/${s.id}`} className="text-xs text-primary-600 hover:underline">
+                  View
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  )
 }
 
 function getGreeting(): string {

@@ -90,19 +90,29 @@ describe('DashboardPage', () => {
     expect(screen.getByText('42')).toBeInTheDocument()
   })
 
-  it('shows counsellor-safe dashboard copy without admin analytics calls', async () => {
+  it('shows counsellor agenda view without admin analytics', async () => {
     setMockAuth({ user: makeUser({ firstName: 'Nadia', role: 'counsellor' }) })
     vi.mocked(api.get).mockImplementation((url: string) => {
       if (url === '/bookings') return Promise.resolve([] as never)
+      if (url === '/counsellor/agenda') return Promise.resolve({
+        todayMeetings: [],
+        overdueReminders: [],
+        upcomingReminders: [],
+        docsWaitingReview: [],
+        staleStudents: [],
+      } as never)
       return Promise.resolve([] as never)
     })
 
     renderWithProviders(<DashboardPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Your operating view')).toBeInTheDocument()
+      expect(screen.getByText("Today's meetings")).toBeInTheDocument()
     })
 
+    expect(screen.getByText('Overdue follow-ups')).toBeInTheDocument()
+    expect(screen.getByText('Documents to review')).toBeInTheDocument()
+    expect(screen.getByText('Stale students')).toBeInTheDocument()
     expect(screen.queryByText('Pending Assignment Queue')).toBeNull()
   })
 

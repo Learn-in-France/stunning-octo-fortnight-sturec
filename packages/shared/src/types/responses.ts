@@ -248,6 +248,7 @@ export interface AiAssessmentSummary {
   recommendedDisposition: string | null
   summaryForTeam: string
   profileCompleteness: number | null
+  leadHeat: string | null
   createdAt: string
 }
 

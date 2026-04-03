@@ -267,6 +267,7 @@ export function mapAiAssessmentToSummary(a: PrismaAiAssessment): AiAssessmentSum
     recommendedDisposition: a.recommendedDisposition,
     summaryForTeam: a.summaryForTeam,
     profileCompleteness: a.profileCompleteness ? Number(a.profileCompleteness) : null,
+    leadHeat: a.leadHeat ?? null,
     createdAt: a.createdAt.toISOString(),
   }
 }

@@ -262,6 +262,7 @@ export const FIXTURE_AI_ASSESSMENT: AiAssessmentSummary = {
   recommendedDisposition: 'assign_priority_queue',
   summaryForTeam: 'Strong academic profile, good English scores, clear motivation. Financial proof pending. Recommend immediate counsellor assignment.',
   profileCompleteness: 0.85,
+  leadHeat: 'hot',
   createdAt: '2026-03-01T14:22:00.000Z',
 }
 
