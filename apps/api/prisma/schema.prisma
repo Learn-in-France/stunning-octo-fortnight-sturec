@@ -157,6 +157,34 @@ enum ReminderStatus {
   dismissed
 }
 
+enum CampaignMode {
+  manual
+  automated
+}
+
+enum CampaignStatus {
+  draft
+  active
+  paused
+  completed
+}
+
+enum CampaignStepStatus {
+  pending
+  scheduled
+  sent
+  failed
+  skipped
+  paused
+}
+
+enum DeliveryMode {
+  direct_email
+  direct_whatsapp
+  direct_sms
+  mautic_campaign_trigger
+}
+
 enum ActivityType {
   call
   whatsapp
@@ -286,6 +314,7 @@ model User {
   counsellorNotes      CounsellorNote[]
   meetingOutcomes      MeetingOutcomeLog[]     @relation("MeetingOutcomeCounsellor")
   reminders            CounsellorReminder[]    @relation("ReminderCounsellor")
+  counsellorCampaigns  StudentCampaign[]       @relation("CounsellorCampaigns")
   activityLogs         CounsellorActivityLog[] @relation("ActivityCounsellor")
   activityLogsCreated  CounsellorActivityLog[] @relation("ActivityCreator")
   consentsCaptured     ConsentEvent[]
@@ -419,6 +448,7 @@ model Student {
   counsellorNotes       CounsellorNote[]
   meetingOutcomes       MeetingOutcomeLog[]
   reminders             CounsellorReminder[]
+  campaigns             StudentCampaign[]       @relation("StudentCampaigns")
   activityLogs          CounsellorActivityLog[] @relation("ActivityStudent")
   contacts              StudentContact[]
   consentEvents         ConsentEvent[]
@@ -954,6 +984,7 @@ model NotificationLog {
   user              User?              @relation("NotificationUser", fields: [userId], references: [id])
   student           Student?           @relation("NotificationStudent", fields: [studentId], references: [id])
   lead              Lead?              @relation("NotificationLead", fields: [leadId], references: [id])
+  campaignSteps     StudentCampaignStep[]
 
   @@map("notification_log")
 }
@@ -974,4 +1005,110 @@ model OpsAuditLog {
 
   @@index([createdAt])
   @@map("ops_audit_log")
+}
+
+// ─── Campaign Templates (Admin-managed) ───────────────────────────
+
+model CampaignTemplate {
+  id               String       @id @default(uuid()) @db.Uuid
+  name             String       @db.VarChar(255)
+  phaseKey         String       @map("phase_key") @db.VarChar(50)   // onboarding, application, campus_france_visa, pre_departure, arrival
+  channel          String       @db.VarChar(20)                      // email, whatsapp, sms
+  deliveryMode     DeliveryMode @map("delivery_mode") @default(direct_email)
+  templateKey      String       @map("template_key") @db.VarChar(100)
+  mauticCampaignId Int?         @map("mautic_campaign_id")
+  subject          String?      @db.VarChar(500)
+  description      String?      @db.Text
+  defaultDelayDays Int          @map("default_delay_days") @default(0)
+  active           Boolean      @default(true)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  packSteps        CampaignPackStep[]
+  studentSteps     StudentCampaignStep[]
+
+  @@index([phaseKey])
+  @@map("campaign_templates")
+}
+
+model CampaignPack {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  phaseKey    String   @map("phase_key") @db.VarChar(50)
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  steps       CampaignPackStep[]
+  studentCampaigns StudentCampaign[]
+
+  @@index([phaseKey])
+  @@map("campaign_packs")
+}
+
+model CampaignPackStep {
+  id           String           @id @default(uuid()) @db.Uuid
+  packId       String           @map("pack_id") @db.Uuid
+  templateId   String           @map("template_id") @db.Uuid
+  orderIndex   Int              @map("order_index")
+  delayDays    Int              @map("delay_days") @default(0)
+
+  // Relations
+  pack         CampaignPack     @relation(fields: [packId], references: [id])
+  template     CampaignTemplate @relation(fields: [templateId], references: [id])
+
+  @@unique([packId, orderIndex])
+  @@map("campaign_pack_steps")
+}
+
+// ─── Per-Student Campaign Instances ───────────────────────────────
+
+model StudentCampaign {
+  id           String         @id @default(uuid()) @db.Uuid
+  studentId    String         @map("student_id") @db.Uuid
+  counsellorId String         @map("counsellor_id") @db.Uuid
+  packId       String         @map("pack_id") @db.Uuid
+  phaseKey     String         @map("phase_key") @db.VarChar(50)
+  mode         CampaignMode   @default(manual)
+  status       CampaignStatus @default(draft)
+  startedAt    DateTime?      @map("started_at")
+  pausedAt     DateTime?      @map("paused_at")
+  completedAt  DateTime?      @map("completed_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  student      Student        @relation("StudentCampaigns", fields: [studentId], references: [id])
+  counsellor   User           @relation("CounsellorCampaigns", fields: [counsellorId], references: [id])
+  pack         CampaignPack   @relation(fields: [packId], references: [id])
+  steps        StudentCampaignStep[]
+
+  @@index([studentId])
+  @@index([counsellorId, status])
+  @@map("student_campaigns")
+}
+
+model StudentCampaignStep {
+  id                String             @id @default(uuid()) @db.Uuid
+  studentCampaignId String             @map("student_campaign_id") @db.Uuid
+  templateId        String             @map("template_id") @db.Uuid
+  orderIndex        Int                @map("order_index")
+  scheduledFor      DateTime?          @map("scheduled_for")
+  sentAt            DateTime?          @map("sent_at")
+  status            CampaignStepStatus @default(pending)
+  notificationLogId String?            @map("notification_log_id") @db.Uuid
+  errorMessage      String?            @map("error_message") @db.Text
+  createdAt         DateTime           @default(now()) @map("created_at")
+
+  // Relations
+  studentCampaign   StudentCampaign    @relation(fields: [studentCampaignId], references: [id])
+  template          CampaignTemplate   @relation(fields: [templateId], references: [id])
+  notificationLog   NotificationLog?   @relation(fields: [notificationLogId], references: [id])
+
+  @@index([studentCampaignId, orderIndex])
+  @@index([status, scheduledFor])
+  @@map("student_campaign_steps")
 }
