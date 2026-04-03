@@ -92,6 +92,42 @@ export function startAiProcessingWorker() {
             return { status: 'completed' as const, entityId }
           }
 
+          case 'booking': {
+            // Booking triggers a counsellor handoff summary
+            // Find the latest chat session for this entity and generate a full assessment
+            const bookingEntity = entityType === 'student'
+              ? await prisma.student.findUnique({ where: { id: entityId }, select: { userId: true } })
+              : await prisma.lead.findUnique({ where: { id: entityId }, select: { userId: true } })
+            if (!bookingEntity) return { status: 'skipped' as const, reason: 'Entity not found for booking summary' }
+
+            // Find latest chat session for this user
+            const latestSession = await prisma.chatSession.findFirst({
+              where: { userId: bookingEntity.userId },
+              orderBy: { startedAt: 'desc' },
+              select: { id: true, leadId: true, studentId: true },
+            })
+            if (latestSession) {
+              const { generateAssessment } = await import('../modules/chat/service.js')
+              await generateAssessment(latestSession.id, latestSession.leadId, latestSession.studentId)
+            } else {
+              // No chat session — assess from profile data directly
+              if (entityType === 'lead') {
+                const lead = await prisma.lead.findUnique({
+                  where: { id: entityId },
+                  select: { firstName: true, lastName: true, email: true, phone: true, notes: true, source: true },
+                })
+                if (lead) await assessImportedLead(entityId, lead as Record<string, unknown>)
+              } else if (entityType === 'student') {
+                const student = await prisma.student.findUnique({
+                  where: { id: entityId },
+                  select: { id: true, source: true, sourcePartner: true, stage: true, userId: true },
+                })
+                if (student) await assessStudent(entityId, student as Record<string, unknown>, 'booking', sourceId)
+              }
+            }
+            return { status: 'completed' as const, entityId }
+          }
+
           case 'manual_review': {
             // Manual trigger — works for both leads and students
             if (entityType === 'lead') {

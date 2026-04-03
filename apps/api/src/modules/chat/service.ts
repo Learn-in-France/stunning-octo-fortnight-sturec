@@ -9,7 +9,6 @@ import { chatCompletion, type GroqMessage } from '../../integrations/groq/index.
 import {
   ADVISOR_SYSTEM_PROMPT,
   buildProfileMemory,
-  buildProgramContext,
 } from '../../integrations/groq/prompts.js'
 import { computeQualification } from '../../lib/qualification.js'
 import { getAiProcessingQueue } from '../../lib/queue/index.js'
@@ -32,8 +31,8 @@ interface AiStructuredOutput {
   recommended_next_step: string | null
   recommended_disposition: string | null
   summary_for_team: string
-  should_recommend_programs?: boolean
-  should_suggest_counsellor?: boolean
+  lead_heat: string | null
+  should_suggest_booking?: boolean
   options: string[] | null
 }
 
@@ -176,14 +175,9 @@ export async function sendMessage(
     content: text,
   })
 
-  // If structured output exists, save assessment and check for program recommendations
+  // If structured output exists, save assessment
   if (structured) {
     await saveAssessmentFromStructured(structured, session.leadId, session.studentId, sessionId)
-
-    // If AI indicates programs should be recommended, inject them on next turn
-    if (structured.should_recommend_programs) {
-      await injectProgramRecommendations(session)
-    }
   }
 
   return {
@@ -318,6 +312,7 @@ async function saveAssessmentFromStructured(
     profileCompleteness: output.profile_completeness,
     fieldsCollected: output.fields_collected ?? undefined,
     fieldsMissing: output.fields_missing ?? undefined,
+    leadHeat: output.lead_heat,
     rawJson: output as any,
   })
 
@@ -363,58 +358,6 @@ export async function generateAssessment(
   } catch {
     // Assessment generation failure is non-fatal — log but don't break session end
   }
-}
-
-// ─── Program Recommendations ────────────────────────────────
-
-async function injectProgramRecommendations(session: {
-  id: string
-  leadId: string
-  studentId: string | null
-}) {
-  // Get latest assessment for criteria
-  const assessment = await repo.findLatestAssessment({
-    studentId: session.studentId ?? undefined,
-    leadId: session.leadId,
-  })
-  if (!assessment) return
-
-  // Use the raw JSON to find student profile fields
-  const raw = assessment.rawJson as Record<string, unknown> | null
-  const fieldsCollected = (assessment.fieldsCollected ?? []) as string[]
-
-  const criteria: { gpa?: number; englishScore?: number; budget?: number } = {}
-  if (fieldsCollected.includes('gpa') && raw?.gpa) criteria.gpa = Number(raw.gpa)
-  if (fieldsCollected.includes('english_score') && raw?.english_score) {
-    criteria.englishScore = Number(raw.english_score)
-  }
-  if (fieldsCollected.includes('budget') && raw?.budget) {
-    criteria.budget = Number(raw.budget)
-  }
-
-  const programs = await repo.findMatchingPrograms(criteria)
-  if (programs.length === 0) return
-
-  // Inject as system message for next AI turn
-  const programContext = buildProgramContext(
-    programs.map((p) => ({
-      name: p.name,
-      universityName: (p as any).university?.name ?? '',
-      degreeLevel: p.degreeLevel,
-      tuitionAmount: Number(p.tuitionAmount),
-      tuitionCurrency: p.tuitionCurrency,
-      durationMonths: p.durationMonths,
-      language: p.language,
-      minimumGpa: p.minimumGpa ? Number(p.minimumGpa) : null,
-      englishMinimumScore: p.englishMinimumScore ? Number(p.englishMinimumScore) : null,
-    })),
-  )
-
-  await repo.createMessage({
-    sessionId: session.id,
-    role: 'system',
-    content: programContext,
-  })
 }
 
 // ─── Batch Assessment (imported leads) ──────────────────────

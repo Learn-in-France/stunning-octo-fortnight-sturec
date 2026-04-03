@@ -163,7 +163,7 @@ export default function WhyFrancePage() {
       <MarketingCTA
         label="Next step"
         title="Find out if France fits your profile."
-        description="Our AI advisor can assess your eligibility, suggest matching programs, and walk you through what the process actually looks like."
+        description="Our AI advisor can help you understand your eligibility, explore the process, and connect you with a counsellor who matches you to the right programs."
         primary={{ href: '/auth/register', label: 'Talk to AI advisor' }}
         secondary={{ href: '/your-journey', label: 'See the full process' }}
       />

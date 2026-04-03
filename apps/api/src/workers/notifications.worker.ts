@@ -245,9 +245,15 @@ async function sendSms(
 
 const SYSTEM_RECIPIENTS: Record<string, { id?: string; email: string; phone: string | null; firstName: string; lastName: string }> = {
   'support-team': {
-    email: process.env.SUPPORT_EMAIL || 'support@sturec.com',
+    email: process.env.SUPPORT_EMAIL || 'info@learninfrance.com',
     phone: null,
     firstName: 'Support',
+    lastName: 'Team',
+  },
+  'admin-team': {
+    email: process.env.ADMIN_EMAIL || 'info@learninfrance.com',
+    phone: null,
+    firstName: 'Admin',
     lastName: 'Team',
   },
 }
