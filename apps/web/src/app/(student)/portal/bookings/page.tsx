@@ -9,6 +9,8 @@ import type { BookingListItem, BookingStatus } from '@sturec/shared'
 import { useStudentPortalBookings } from '@/features/student-portal/hooks/use-student-portal'
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; variant: 'info' | 'success' | 'danger' | 'warning' }> = {
+  awaiting_assignment: { label: 'Awaiting Assignment', variant: 'warning' },
+  assigned: { label: 'Assigned', variant: 'info' },
   scheduled: { label: 'Upcoming', variant: 'info' },
   completed: { label: 'Completed', variant: 'success' },
   cancelled: { label: 'Cancelled', variant: 'danger' },
@@ -52,8 +54,8 @@ export default function BookingsPage() {
   }
 
   const all = bookings ?? []
-  const upcoming = all.filter((b) => b.status === 'scheduled')
-  const past = all.filter((b) => b.status !== 'scheduled')
+  const upcoming = all.filter((b) => b.status === 'scheduled' || b.status === 'assigned' || b.status === 'awaiting_assignment')
+  const past = all.filter((b) => b.status !== 'scheduled' && b.status !== 'assigned' && b.status !== 'awaiting_assignment')
 
   return (
     <div>
