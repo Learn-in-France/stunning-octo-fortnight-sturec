@@ -36,6 +36,16 @@ import { useStudentApplications } from '@/features/applications/hooks/use-applic
 import { useStudentDocuments, useStudentRequirements, useVerifyDocument, useRejectDocument } from '@/features/documents/hooks/use-documents'
 import { useMeetingOutcomes, useRecordMeetingOutcome, useCreateReminder } from '@/features/counsellor/hooks/use-counsellor'
 import { useBookings } from '@/features/bookings/hooks/use-bookings'
+import {
+  useStudentCampaigns,
+  useCampaignPacks,
+  useStartCampaign,
+  useSendStep,
+  useSendAll,
+  usePauseCampaign,
+  useResumeCampaign,
+  useUpdateCampaignMode,
+} from '@/features/campaigns/hooks/use-campaigns'
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -137,6 +147,11 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             id: 'meetings',
             label: 'Meetings',
             content: <MeetingOutcomesTab studentId={id} />,
+          },
+          {
+            id: 'campaigns',
+            label: 'Campaigns',
+            content: <CampaignsTab studentId={id} />,
           },
           {
             id: 'applications',
@@ -1427,6 +1442,151 @@ function MeetingOutcomesTab({ studentId }: { studentId: string }) {
             </Card>
           ))}
         </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Campaigns Tab ──────────────────────────────────────────
+
+function CampaignsTab({ studentId }: { studentId: string }) {
+  const { data: campaigns, isLoading } = useStudentCampaigns(studentId)
+  const { data: packs } = useCampaignPacks()
+  const startCampaign = useStartCampaign()
+  const sendStep = useSendStep()
+  const sendAll = useSendAll()
+  const pauseCampaign = usePauseCampaign()
+  const resumeCampaign = useResumeCampaign()
+  const updateMode = useUpdateCampaignMode()
+  const [selectedPack, setSelectedPack] = useState('')
+
+  if (isLoading) return <LoadingSpinner size="md" />
+
+  const channelBadge = (channel: string) => {
+    const variant = channel === 'email' ? 'info' : channel === 'whatsapp' ? 'success' : 'muted'
+    return <Badge variant={variant as any}>{channel}</Badge>
+  }
+
+  const stepStatusBadge = (status: string) => {
+    const variant = status === 'sent' ? 'success' : status === 'failed' ? 'danger' : status === 'scheduled' ? 'info' : 'muted'
+    return <Badge variant={variant as any} dot>{status}</Badge>
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Start a new campaign */}
+      <Card>
+        <CardHeader><CardTitle>Start a campaign pack</CardTitle></CardHeader>
+        <div className="flex gap-3">
+          <Select
+            options={[
+              { value: '', label: 'Select a pack...' },
+              ...(packs ?? []).map((p) => ({
+                value: p.id,
+                label: `${p.name} (${p.phaseKey}) — ${p.steps.length} steps`,
+              })),
+            ]}
+            value={selectedPack}
+            onChange={(e) => setSelectedPack(e.target.value)}
+          />
+          <Button
+            size="sm"
+            disabled={!selectedPack || startCampaign.isPending}
+            loading={startCampaign.isPending}
+            onClick={() => {
+              startCampaign.mutate({ studentId, packId: selectedPack }, {
+                onSuccess: () => setSelectedPack(''),
+              })
+            }}
+          >
+            Start
+          </Button>
+        </div>
+      </Card>
+
+      {/* Active campaigns */}
+      {(campaigns ?? []).length === 0 ? (
+        <EmptyState title="No campaigns started yet." description="Select a pack above to begin." />
+      ) : (
+        (campaigns ?? []).map((campaign) => (
+          <Card key={campaign.id}>
+            <CardHeader>
+              <div>
+                <CardTitle>{campaign.pack.name}</CardTitle>
+                <p className="text-xs text-text-muted mt-1">{campaign.phaseKey} — {campaign.mode}</p>
+              </div>
+              <Badge variant={
+                campaign.status === 'active' ? 'success' :
+                campaign.status === 'paused' ? 'warning' :
+                campaign.status === 'completed' ? 'primary' : 'muted'
+              } dot>
+                {campaign.status}
+              </Badge>
+            </CardHeader>
+
+            <div className="flex flex-wrap gap-2 mb-4">
+              {campaign.status === 'active' && (
+                <>
+                  <Button size="sm" variant="secondary"
+                    onClick={() => sendAll.mutate({ studentId, campaignId: campaign.id })}
+                    loading={sendAll.isPending}
+                  >
+                    Send all due
+                  </Button>
+                  <Button size="sm" variant="secondary"
+                    onClick={() => pauseCampaign.mutate({ studentId, campaignId: campaign.id })}
+                  >
+                    Pause
+                  </Button>
+                  <Button size="sm" variant="ghost"
+                    onClick={() => updateMode.mutate({
+                      studentId,
+                      campaignId: campaign.id,
+                      mode: campaign.mode === 'manual' ? 'automated' : 'manual',
+                    })}
+                  >
+                    {campaign.mode === 'manual' ? 'Enable auto' : 'Switch to manual'}
+                  </Button>
+                </>
+              )}
+              {campaign.status === 'paused' && (
+                <Button size="sm" variant="secondary"
+                  onClick={() => resumeCampaign.mutate({ studentId, campaignId: campaign.id })}
+                >
+                  Resume
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              {campaign.steps.map((step) => (
+                <div key={step.id} className="flex items-center justify-between rounded-lg bg-surface-sunken/50 p-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-text-muted w-6">{step.orderIndex + 1}</span>
+                    {channelBadge(step.template.channel)}
+                    <span className="text-sm text-text-primary">{step.template.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {step.sentAt && (
+                      <span className="text-xs text-text-muted">
+                        {new Date(step.sentAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                      </span>
+                    )}
+                    {stepStatusBadge(step.status)}
+                    {(step.status === 'pending' || step.status === 'scheduled') && campaign.status === 'active' && (
+                      <Button size="sm" variant="ghost"
+                        onClick={() => sendStep.mutate({ studentId, campaignId: campaign.id, stepId: step.id })}
+                        disabled={sendStep.isPending}
+                      >
+                        Send
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ))
       )}
     </div>
   )
