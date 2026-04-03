@@ -42,7 +42,7 @@ export async function createBooking(
   if (data.studentId || data.leadId) {
     getAiProcessingQueue().add('booking-summary', {
       entityType: data.studentId ? 'student' : 'lead',
-      entityId: data.studentId || data.leadId,
+      entityId: (data.studentId || data.leadId)!,
       sourceType: 'booking',
       sourceId: booking.id,
     }).catch((err) => console.error('[bookings] Failed to enqueue booking summary:', err))

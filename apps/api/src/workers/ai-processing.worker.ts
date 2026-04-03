@@ -99,10 +99,11 @@ export function startAiProcessingWorker() {
               ? await prisma.student.findUnique({ where: { id: entityId }, select: { userId: true } })
               : await prisma.lead.findUnique({ where: { id: entityId }, select: { userId: true } })
             if (!bookingEntity) return { status: 'skipped' as const, reason: 'Entity not found for booking summary' }
+            if (!bookingEntity.userId) return { status: 'skipped' as const, reason: 'Entity has no userId for chat lookup' }
 
             // Find latest chat session for this user
             const latestSession = await prisma.chatSession.findFirst({
-              where: { userId: bookingEntity.userId },
+              where: { userId: bookingEntity.userId! },
               orderBy: { startedAt: 'desc' },
               select: { id: true, leadId: true, studentId: true },
             })

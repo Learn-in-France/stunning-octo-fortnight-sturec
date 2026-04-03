@@ -438,7 +438,7 @@ export async function assessImportedLead(
 export async function assessStudent(
   studentId: string,
   profileData: Record<string, unknown>,
-  sourceType: 'document' | 'manual_review',
+  sourceType: 'document' | 'manual_review' | 'booking',
   sourceId: string,
 ): Promise<void> {
   const { BATCH_ASSESSMENT_PROMPT } = await import('../../integrations/groq/prompts.js')
