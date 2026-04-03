@@ -34,7 +34,8 @@ import {
 } from '@/features/students/hooks/use-students'
 import { useStudentApplications } from '@/features/applications/hooks/use-applications'
 import { useStudentDocuments, useStudentRequirements, useVerifyDocument, useRejectDocument } from '@/features/documents/hooks/use-documents'
-import { useMeetingOutcomes, useRecordMeetingOutcome } from '@/features/counsellor/hooks/use-counsellor'
+import { useMeetingOutcomes, useRecordMeetingOutcome, useCreateReminder } from '@/features/counsellor/hooks/use-counsellor'
+import { useBookings } from '@/features/bookings/hooks/use-bookings'
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -1211,8 +1212,11 @@ function MeetingPrepBlock({ studentId, student }: { studentId: string; student: 
 
 function MeetingOutcomesTab({ studentId }: { studentId: string }) {
   const { data: outcomes, isLoading } = useMeetingOutcomes(studentId)
+  const { data: bookings } = useBookings()
   const recordOutcome = useRecordMeetingOutcome()
+  const createReminder = useCreateReminder()
   const [showForm, setShowForm] = useState(false)
+  const [showReminderForm, setShowReminderForm] = useState(false)
   const [form, setForm] = useState({
     bookingId: '',
     outcome: '',
@@ -1222,6 +1226,12 @@ function MeetingOutcomesTab({ studentId }: { studentId: string }) {
     studentVisibleNote: '',
     stageAfter: '',
   })
+  const [reminderForm, setReminderForm] = useState({ title: '', dueAt: '' })
+
+  // Filter bookings for this student (completed or assigned)
+  const studentBookings = (bookings ?? []).filter(
+    (b) => b.studentId === studentId && ['assigned', 'scheduled', 'completed'].includes(b.status),
+  )
 
   if (isLoading) return <LoadingSpinner size="md" />
 
@@ -1229,19 +1239,69 @@ function MeetingOutcomesTab({ studentId }: { studentId: string }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-text-primary">Meeting Outcomes</h3>
-        <Button size="sm" onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : 'Record outcome'}
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="secondary" onClick={() => setShowReminderForm(!showReminderForm)}>
+            {showReminderForm ? 'Cancel' : 'Add reminder'}
+          </Button>
+          <Button size="sm" onClick={() => setShowForm(!showForm)}>
+            {showForm ? 'Cancel' : 'Record outcome'}
+          </Button>
+        </div>
       </div>
+
+      {showReminderForm && (
+        <Card>
+          <CardHeader><CardTitle>Create follow-up reminder</CardTitle></CardHeader>
+          <div className="space-y-4">
+            <Input
+              label="Reminder"
+              value={reminderForm.title}
+              onChange={(e) => setReminderForm({ ...reminderForm, title: e.target.value })}
+              placeholder="e.g., Follow up about transcripts"
+            />
+            <Input
+              label="Due date"
+              type="date"
+              value={reminderForm.dueAt}
+              onChange={(e) => setReminderForm({ ...reminderForm, dueAt: e.target.value })}
+            />
+            <Button
+              size="sm"
+              loading={createReminder.isPending}
+              disabled={!reminderForm.title || !reminderForm.dueAt}
+              onClick={() => {
+                createReminder.mutate({
+                  studentId,
+                  title: reminderForm.title,
+                  dueAt: new Date(reminderForm.dueAt).toISOString(),
+                }, {
+                  onSuccess: () => {
+                    setShowReminderForm(false)
+                    setReminderForm({ title: '', dueAt: '' })
+                  },
+                })
+              }}
+            >
+              Create reminder
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {showForm && (
         <Card>
           <div className="space-y-4">
-            <Input
-              label="Booking ID"
+            <Select
+              label="Meeting"
+              options={[
+                { value: '', label: 'Select a booking...' },
+                ...studentBookings.map((b) => ({
+                  value: b.id,
+                  label: `${new Date(b.scheduledAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} — ${b.status}`,
+                })),
+              ]}
               value={form.bookingId}
               onChange={(e) => setForm({ ...form, bookingId: e.target.value })}
-              placeholder="UUID of the booking"
             />
             <Select
               label="Outcome"
