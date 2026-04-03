@@ -1055,6 +1055,90 @@ describe('Route-level smoke tests', () => {
       expect(JSON.parse(response.body)).toEqual([])
     })
 
+    it('POST /students/me/documents/:id/share shares a document', async () => {
+      authAs(STUDENT_USER)
+      db.student.findFirst.mockResolvedValue({ ...STUDENT_RECORD, assignedCounsellorId: '00000000-0000-0000-0000-000000000002' })
+      db.document.findFirst.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000070',
+        studentId: STUDENT_RECORD.id,
+        status: 'pending',
+        sharedAt: null,
+        sharedWithCounsellorId: null,
+        revokedAt: null,
+      })
+      db.document.update.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000070',
+        studentId: STUDENT_RECORD.id,
+        type: 'passport',
+        filename: 'passport.pdf',
+        status: 'pending',
+        isCurrent: true,
+        sharedAt: new Date(),
+        sharedWithCounsellorId: '00000000-0000-0000-0000-000000000002',
+        revokedAt: null,
+        createdAt: new Date(),
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/me/documents/00000000-0000-0000-0000-000000000070/share',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+      expect(body.sharedAt).toBeTruthy()
+      expect(body.sharedWithCounsellorId).toBe('00000000-0000-0000-0000-000000000002')
+    })
+
+    it('POST /students/me/documents/:id/share fails without assigned counsellor', async () => {
+      authAs(STUDENT_USER)
+      db.student.findFirst.mockResolvedValue({ ...STUDENT_RECORD, assignedCounsellorId: null })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/me/documents/00000000-0000-0000-0000-000000000070/share',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(404)
+    })
+
+    it('POST /students/me/documents/:id/revoke revokes a shared document', async () => {
+      authAs(STUDENT_USER)
+      db.student.findFirst.mockResolvedValue(STUDENT_RECORD)
+      db.document.findFirst.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000070',
+        studentId: STUDENT_RECORD.id,
+        status: 'pending',
+        sharedAt: new Date(),
+        sharedWithCounsellorId: '00000000-0000-0000-0000-000000000002',
+        revokedAt: null,
+      })
+      db.document.update.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000070',
+        studentId: STUDENT_RECORD.id,
+        type: 'passport',
+        filename: 'passport.pdf',
+        status: 'pending',
+        isCurrent: true,
+        sharedAt: new Date(),
+        sharedWithCounsellorId: '00000000-0000-0000-0000-000000000002',
+        revokedAt: new Date(),
+        createdAt: new Date(),
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/me/documents/00000000-0000-0000-0000-000000000070/revoke',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+      expect(body.revokedAt).toBeTruthy()
+    })
+
     it('GET /students/me/requirements returns requirements list', async () => {
       authAs(STUDENT_USER)
       db.student.findFirst.mockResolvedValue(STUDENT_RECORD)

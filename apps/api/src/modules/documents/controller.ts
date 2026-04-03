@@ -5,7 +5,16 @@ export async function listDocuments(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
-  const docs = await documentService.listDocuments(request.params.id)
+  const studentId = request.params.id
+
+  // Counsellors only see shared (non-revoked) documents
+  if (request.user.role === 'counsellor') {
+    const docs = await documentService.listSharedDocuments(studentId, request.user.id)
+    return reply.send(docs)
+  }
+
+  // Admin sees all documents with share state visible
+  const docs = await documentService.listAllDocumentsForAdmin(studentId)
   return reply.send(docs)
 }
 
