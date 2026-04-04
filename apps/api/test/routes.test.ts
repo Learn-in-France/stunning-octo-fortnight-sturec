@@ -1012,7 +1012,7 @@ describe('Route-level smoke tests', () => {
 
     it('GET /students/:id/campaign-history returns history', async () => {
       authAs(COUNSELLOR_USER)
-      db.notificationLog.findMany.mockResolvedValue([])
+      db.studentCampaignStep.findMany.mockResolvedValue([])
 
       const response = await app.inject({
         method: 'GET',

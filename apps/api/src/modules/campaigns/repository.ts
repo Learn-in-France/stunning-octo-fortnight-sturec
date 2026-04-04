@@ -213,24 +213,33 @@ export function findDueSteps() {
   })
 }
 
-export function findStudentCampaignHistory(studentId: string) {
-  return prisma.notificationLog.findMany({
+export async function findStudentCampaignHistory(studentId: string) {
+  // Get all campaign step execution records for this student
+  // This covers both direct sends (via notificationLog) and Mautic triggers
+  const steps = await prisma.studentCampaignStep.findMany({
     where: {
-      studentId,
-      payloadJson: { path: ['campaignStepId'], not: undefined },
+      studentCampaign: { studentId },
+      status: { in: ['sent', 'failed'] },
     },
-    orderBy: { createdAt: 'desc' },
+    include: {
+      template: { select: { name: true, channel: true, templateKey: true, deliveryMode: true } },
+      notificationLog: { select: { id: true, status: true, recipient: true, sentAt: true } },
+    },
+    orderBy: { sentAt: 'desc' },
     take: 50,
   })
-}
 
-/**
- * Link a notification log entry back to its campaign step.
- * Called by the notifications worker after successful delivery.
- */
-export function linkStepToNotification(campaignStepId: string, notificationLogId: string) {
-  return prisma.studentCampaignStep.update({
-    where: { id: campaignStepId },
-    data: { notificationLogId },
-  })
+  return steps.map((s) => ({
+    id: s.id,
+    templateName: s.template.name,
+    templateKey: s.template.templateKey,
+    channel: s.template.channel,
+    deliveryMode: s.template.deliveryMode,
+    status: s.status,
+    sentAt: s.sentAt?.toISOString() ?? null,
+    notificationStatus: s.notificationLog?.status ?? null,
+    recipient: s.notificationLog?.recipient ?? null,
+    errorMessage: s.errorMessage,
+    createdAt: s.createdAt.toISOString(),
+  }))
 }

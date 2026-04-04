@@ -1602,15 +1602,23 @@ function CampaignsTab({ studentId }: { studentId: string }) {
                   <Badge variant={h.channel === 'email' ? 'info' : h.channel === 'whatsapp' ? 'success' : 'muted'}>
                     {h.channel}
                   </Badge>
-                  <span className="text-sm text-text-primary">{h.templateKey.replace(/_/g, ' ')}</span>
+                  <span className="text-sm text-text-primary">{h.templateName}</span>
+                  {h.deliveryMode === 'mautic_campaign_trigger' && (
+                    <span className="text-[10px] text-text-muted bg-surface-sunken px-1.5 py-0.5 rounded">Mautic</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-text-muted">
-                    {new Date(h.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                  </span>
-                  <Badge variant={h.status === 'sent' ? 'success' : h.status === 'failed' ? 'danger' : 'muted'} dot>
+                  {h.sentAt && (
+                    <span className="text-xs text-text-muted">
+                      {new Date(h.sentAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                    </span>
+                  )}
+                  <Badge variant={h.status === 'sent' ? 'success' : h.status === 'failed' ? 'danger' : h.status === 'scheduled' ? 'info' : 'muted'} dot>
                     {h.status}
                   </Badge>
+                  {h.errorMessage && (
+                    <span className="text-[10px] text-rose-600" title={h.errorMessage}>error</span>
+                  )}
                 </div>
               </div>
             ))}

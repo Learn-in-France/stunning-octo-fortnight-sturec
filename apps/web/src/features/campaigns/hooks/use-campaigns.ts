@@ -168,11 +168,15 @@ export function useCampaignHistory(studentId: string) {
     queryKey: ['students', studentId, 'campaign-history'],
     queryFn: () => api.get(`/students/${studentId}/campaign-history`) as Promise<Array<{
       id: string
+      templateName: string
       templateKey: string
       channel: string
+      deliveryMode: string
       status: string
-      recipient: string
       sentAt: string | null
+      notificationStatus: string | null
+      recipient: string | null
+      errorMessage: string | null
       createdAt: string
     }>>,
   })

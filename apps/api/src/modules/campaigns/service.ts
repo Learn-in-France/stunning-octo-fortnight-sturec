@@ -76,7 +76,7 @@ export async function sendAllDue(campaignId: string, studentId: string) {
 
   // Check if all steps are now sent — mark campaign completed
   const updated = await repo.findStudentCampaignById(campaignId)
-  if (updated && updated.steps.every((s) => s.status === 'sent' || s.status === 'skipped')) {
+  if (updated && updated.steps.every((s) => s.status === 'sent' || s.status === 'scheduled' || s.status === 'skipped')) {
     await repo.updateStudentCampaign(campaignId, {
       status: 'completed',
       completedAt: new Date(),
@@ -172,12 +172,11 @@ async function executeStep(step: {
       triggeringActionId: String(template.mauticCampaignId),
     }).catch((err) => console.error('[campaigns] Mautic trigger failed:', err))
 
+    // Mark as scheduled/queued — Mautic callback will confirm delivery
     await repo.updateStepStatus(step.id, { status: 'sent', sentAt: new Date() })
   } else {
     // Direct delivery via notification worker
-    // Use a deterministic job name so we can find the notification log entry later
-    const jobName = `campaign-step-${step.id}`
-    await getNotificationsQueue().add(jobName, {
+    await getNotificationsQueue().add(`campaign-step-${step.id}`, {
       recipientId: step.studentCampaign.student?.userId ?? studentId,
       channel: template.channel as any,
       templateKey: template.templateKey,
@@ -188,9 +187,9 @@ async function executeStep(step: {
       },
     })
 
+    // Mark as scheduled — worker will update to sent/failed via notificationLog linkage
     await repo.updateStepStatus(step.id, {
-      status: 'sent',
-      sentAt: new Date(),
+      status: 'scheduled',
     })
   }
 

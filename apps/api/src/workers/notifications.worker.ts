@@ -62,11 +62,11 @@ export function startNotificationsWorker() {
             data: { status: 'sent', sentAt: new Date() },
           })
 
-          // Link campaign step to notification log if this is a campaign send
+          // Link campaign step to notification log and mark step as sent
           if (data.campaignStepId) {
             prisma.studentCampaignStep.update({
               where: { id: data.campaignStepId as string },
-              data: { notificationLogId: notification.id },
+              data: { notificationLogId: notification.id, status: 'sent', sentAt: new Date() },
             }).catch(() => {}) // non-fatal if step doesn't exist
           }
 
@@ -79,6 +79,15 @@ export function startNotificationsWorker() {
               errorMessage: err instanceof Error ? err.message : String(err),
             },
           })
+
+          // Mark campaign step as failed too
+          if (data.campaignStepId) {
+            prisma.studentCampaignStep.update({
+              where: { id: data.campaignStepId as string },
+              data: { status: 'failed', errorMessage: err instanceof Error ? err.message : String(err) },
+            }).catch(() => {})
+          }
+
           throw err // Let BullMQ retry
         }
       })
