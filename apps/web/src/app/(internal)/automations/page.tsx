@@ -13,6 +13,15 @@ import { RoleGuard } from '@/lib/guards/role-guard'
 import { useToast } from '@/providers/toast-provider'
 import { Table } from '@/components/ui/table'
 import { Pagination } from '@/components/ui/pagination'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { EmptyState } from '@/components/ui/empty-state'
+import {
+  useCampaignTemplates,
+  useCreateCampaignTemplate,
+  useCampaignPacks,
+  useCreateCampaignPack,
+} from '@/features/campaigns/hooks/use-campaigns'
 import {
   useQueueStats,
   useQueueDetail,
@@ -998,6 +1007,16 @@ export default function AutomationsPage() {
               content: <IntegrationHealthSection />,
             },
             {
+              id: 'templates',
+              label: 'Campaign Templates',
+              content: <CampaignTemplatesSection />,
+            },
+            {
+              id: 'packs',
+              label: 'Phase Packs',
+              content: <CampaignPacksSection />,
+            },
+            {
               id: 'history',
               label: 'History',
               content: <HistorySection />,
@@ -1006,6 +1025,272 @@ export default function AutomationsPage() {
         />
       </div>
     </RoleGuard>
+  )
+}
+
+// ─── Campaign Templates Section ─────────────────────────────────
+
+const PHASE_KEYS = [
+  { value: 'onboarding', label: 'Onboarding' },
+  { value: 'application', label: 'Application' },
+  { value: 'campus_france_visa', label: 'Campus France & Visa' },
+  { value: 'pre_departure', label: 'Pre-departure' },
+  { value: 'arrival', label: 'Arrival' },
+]
+
+const CHANNELS = [
+  { value: 'email', label: 'Email' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'sms', label: 'SMS' },
+]
+
+const DELIVERY_MODES = [
+  { value: 'direct_email', label: 'Direct Email' },
+  { value: 'direct_whatsapp', label: 'Direct WhatsApp' },
+  { value: 'direct_sms', label: 'Direct SMS' },
+  { value: 'mautic_campaign_trigger', label: 'Mautic Campaign' },
+]
+
+function CampaignTemplatesSection() {
+  const { data: templates, isLoading } = useCampaignTemplates()
+  const createTemplate = useCreateCampaignTemplate()
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({
+    name: '', phaseKey: '', channel: 'email', deliveryMode: 'direct_email',
+    templateKey: '', subject: '', description: '', defaultDelayDays: '0',
+  })
+
+  if (isLoading) return <div className="flex justify-center py-10"><LoadingSpinner size="md" /></div>
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-text-primary">
+          {(templates ?? []).length} templates
+        </h3>
+        <Button size="sm" onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancel' : 'Add template'}
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input label="Name" value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="e.g. Welcome Email" />
+            <Select label="Phase" options={[{ value: '', label: 'Select phase...' }, ...PHASE_KEYS]}
+              value={form.phaseKey}
+              onChange={(e) => setForm({ ...form, phaseKey: e.target.value })} />
+            <Select label="Channel" options={CHANNELS}
+              value={form.channel}
+              onChange={(e) => setForm({ ...form, channel: e.target.value })} />
+            <Select label="Delivery Mode" options={DELIVERY_MODES}
+              value={form.deliveryMode}
+              onChange={(e) => setForm({ ...form, deliveryMode: e.target.value })} />
+            <Input label="Template Key" value={form.templateKey}
+              onChange={(e) => setForm({ ...form, templateKey: e.target.value })}
+              placeholder="e.g. welcome_email_v1" />
+            <Input label="Subject (optional)" value={form.subject}
+              onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+            <Input label="Default Delay (days)" type="number" value={form.defaultDelayDays}
+              onChange={(e) => setForm({ ...form, defaultDelayDays: e.target.value })} />
+            <Input label="Description (optional)" value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          </div>
+          <div className="mt-4">
+            <Button size="sm" loading={createTemplate.isPending}
+              disabled={!form.name || !form.phaseKey || !form.templateKey}
+              onClick={() => {
+                createTemplate.mutate({
+                  name: form.name, phaseKey: form.phaseKey, channel: form.channel,
+                  deliveryMode: form.deliveryMode, templateKey: form.templateKey,
+                  subject: form.subject || undefined, description: form.description || undefined,
+                  defaultDelayDays: parseInt(form.defaultDelayDays) || 0,
+                }, {
+                  onSuccess: () => {
+                    setShowForm(false)
+                    setForm({ name: '', phaseKey: '', channel: 'email', deliveryMode: 'direct_email',
+                      templateKey: '', subject: '', description: '', defaultDelayDays: '0' })
+                  },
+                })
+              }}
+            >
+              Create template
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {(templates ?? []).length === 0 && !showForm ? (
+        <EmptyState title="No campaign templates yet." description="Create templates that can be grouped into phase packs." />
+      ) : (
+        <div className="space-y-3">
+          {(templates ?? []).map((t) => (
+            <Card key={t.id} padding="sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">{t.name}</p>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    {t.phaseKey} · {t.channel} · {t.deliveryMode} · key: {t.templateKey}
+                    {t.defaultDelayDays > 0 && ` · delay: ${t.defaultDelayDays}d`}
+                  </p>
+                </div>
+                <Badge variant={t.active ? 'success' : 'muted'}>{t.active ? 'Active' : 'Inactive'}</Badge>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CampaignPacksSection() {
+  const { data: packs, isLoading } = useCampaignPacks()
+  const { data: templates } = useCampaignTemplates()
+  const createPack = useCreateCampaignPack()
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ name: '', phaseKey: '', description: '' })
+  const [steps, setSteps] = useState<Array<{ templateId: string; delayDays: string }>>([])
+
+  if (isLoading) return <div className="flex justify-center py-10"><LoadingSpinner size="md" /></div>
+
+  const addStep = () => setSteps([...steps, { templateId: '', delayDays: '0' }])
+  const removeStep = (idx: number) => setSteps(steps.filter((_, i) => i !== idx))
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-text-primary">
+          {(packs ?? []).length} packs
+        </h3>
+        <Button size="sm" onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancel' : 'Create pack'}
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input label="Pack Name" value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="e.g. Onboarding Welcome Pack" />
+            <Select label="Phase" options={[{ value: '', label: 'Select phase...' }, ...PHASE_KEYS]}
+              value={form.phaseKey}
+              onChange={(e) => setForm({ ...form, phaseKey: e.target.value })} />
+            <Input label="Description (optional)" value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="sm:col-span-2" />
+          </div>
+
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Steps</p>
+              <Button size="sm" variant="ghost" onClick={addStep}>+ Add step</Button>
+            </div>
+            {steps.length === 0 ? (
+              <p className="text-sm text-text-muted">No steps added. Click "+ Add step" to begin.</p>
+            ) : (
+              <div className="space-y-3">
+                {steps.map((step, idx) => (
+                  <div key={idx} className="flex items-center gap-3 rounded-lg bg-surface-sunken/50 p-3">
+                    <span className="text-xs font-mono text-text-muted w-6">{idx + 1}</span>
+                    <Select
+                      options={[
+                        { value: '', label: 'Select template...' },
+                        ...(templates ?? []).map((t) => ({
+                          value: t.id,
+                          label: `${t.name} (${t.channel})`,
+                        })),
+                      ]}
+                      value={step.templateId}
+                      onChange={(e) => {
+                        const updated = [...steps]
+                        updated[idx] = { ...step, templateId: e.target.value }
+                        setSteps(updated)
+                      }}
+                    />
+                    <Input
+                      placeholder="Delay days"
+                      type="number"
+                      value={step.delayDays}
+                      onChange={(e) => {
+                        const updated = [...steps]
+                        updated[idx] = { ...step, delayDays: e.target.value }
+                        setSteps(updated)
+                      }}
+                      className="w-24"
+                    />
+                    <Button size="sm" variant="ghost" onClick={() => removeStep(idx)}>Remove</Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4">
+            <Button size="sm" loading={createPack.isPending}
+              disabled={!form.name || !form.phaseKey || steps.length === 0 || steps.some((s) => !s.templateId)}
+              onClick={() => {
+                createPack.mutate({
+                  name: form.name, phaseKey: form.phaseKey,
+                  description: form.description || undefined,
+                  steps: steps.map((s, idx) => ({
+                    templateId: s.templateId,
+                    orderIndex: idx,
+                    delayDays: parseInt(s.delayDays) || 0,
+                  })),
+                }, {
+                  onSuccess: () => {
+                    setShowForm(false)
+                    setForm({ name: '', phaseKey: '', description: '' })
+                    setSteps([])
+                  },
+                })
+              }}
+            >
+              Create pack
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {(packs ?? []).length === 0 && !showForm ? (
+        <EmptyState title="No campaign packs yet." description="Create templates first, then group them into packs." />
+      ) : (
+        <div className="space-y-4">
+          {(packs ?? []).map((pack) => (
+            <Card key={pack.id}>
+              <CardHeader>
+                <div>
+                  <CardTitle>{pack.name}</CardTitle>
+                  <p className="text-xs text-text-muted mt-0.5">{pack.phaseKey} · {pack.steps.length} steps</p>
+                </div>
+              </CardHeader>
+              {pack.description && <p className="text-sm text-text-secondary mb-3">{pack.description}</p>}
+              <div className="space-y-2">
+                {pack.steps.map((step) => (
+                  <div key={step.id} className="flex items-center justify-between rounded-lg bg-surface-sunken/50 p-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-mono text-text-muted w-6">{step.orderIndex + 1}</span>
+                      <Badge variant={
+                        step.template.channel === 'email' ? 'info' :
+                        step.template.channel === 'whatsapp' ? 'success' : 'muted'
+                      }>{step.template.channel}</Badge>
+                      <span className="text-sm text-text-primary">{step.template.name}</span>
+                    </div>
+                    {step.delayDays > 0 && (
+                      <span className="text-xs text-text-muted">+{step.delayDays}d delay</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
