@@ -21,7 +21,7 @@ export function startMauticSyncWorker() {
   const worker = new Worker<MauticSyncJobData>(
     'mautic-sync',
     async (job) => {
-      const { entityType, entityId, eventType, triggeringActionId } = job.data
+      const { entityType, entityId, eventType, triggeringActionId, campaignStepId } = job.data
 
       const idempotencyKey = buildIdempotencyKey('mautic-sync', [
         entityId,
@@ -36,7 +36,7 @@ export function startMauticSyncWorker() {
           case 'contact_updated':
             return await syncContactUpdate(entityType, entityId)
           case 'campaign_triggered':
-            return await handleCampaignTrigger(entityType, entityId, triggeringActionId)
+            return await handleCampaignTrigger(entityType, entityId, triggeringActionId, campaignStepId)
           default:
             return { status: 'skipped' as const, reason: `Unknown event: ${eventType}` }
         }
@@ -220,10 +220,18 @@ async function handleCampaignTrigger(
   entityType: string,
   entityId: string,
   triggeringActionId: string,
+  campaignStepId?: string,
 ) {
   // triggeringActionId contains the campaign ID for campaign triggers
   const campaignId = parseInt(triggeringActionId)
   if (isNaN(campaignId)) {
+    // Update step as failed if we have a step reference
+    if (campaignStepId) {
+      await prisma.studentCampaignStep.update({
+        where: { id: campaignStepId },
+        data: { status: 'failed', errorMessage: 'Invalid Mautic campaign ID' },
+      }).catch(() => {})
+    }
     return { status: 'skipped' as const, reason: 'Invalid campaign ID' }
   }
 
@@ -244,9 +252,35 @@ async function handleCampaignTrigger(
   }
 
   if (!mauticContactId) {
+    if (campaignStepId) {
+      await prisma.studentCampaignStep.update({
+        where: { id: campaignStepId },
+        data: { status: 'failed', errorMessage: 'No Mautic contact ID for this student' },
+      }).catch(() => {})
+    }
     return { status: 'skipped' as const, reason: 'No Mautic contact ID' }
   }
 
-  await mautic.triggerCampaign(campaignId, mauticContactId)
-  return { status: 'triggered' as const, campaignId }
+  try {
+    await mautic.triggerCampaign(campaignId, mauticContactId)
+
+    // Mark step as sent after successful Mautic API call
+    if (campaignStepId) {
+      await prisma.studentCampaignStep.update({
+        where: { id: campaignStepId },
+        data: { status: 'sent', sentAt: new Date() },
+      }).catch(() => {})
+    }
+
+    return { status: 'triggered' as const, campaignId }
+  } catch (err) {
+    // Mark step as failed
+    if (campaignStepId) {
+      await prisma.studentCampaignStep.update({
+        where: { id: campaignStepId },
+        data: { status: 'failed', errorMessage: err instanceof Error ? err.message : String(err) },
+      }).catch(() => {})
+    }
+    throw err
+  }
 }

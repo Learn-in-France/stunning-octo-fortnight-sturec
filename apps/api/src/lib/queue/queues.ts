@@ -35,6 +35,7 @@ export interface MauticSyncJobData {
   entityId: string
   eventType: string
   triggeringActionId: string
+  campaignStepId?: string
 }
 
 export interface DocumentJobData {

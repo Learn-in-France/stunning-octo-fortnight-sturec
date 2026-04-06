@@ -268,6 +268,40 @@ export default function DashboardPage() {
               ))}
             </div>
           </Card>
+
+          {/* Stale students across all counsellors */}
+          <AdminStaleStudents />
+
+          {/* Conversion funnel */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Conversion Funnel</CardTitle>
+            </CardHeader>
+            <div className="space-y-3">
+              {[
+                { label: 'Leads', value: leads?.total ?? 0, color: 'bg-status-new' },
+                { label: 'Qualified', value: leads?.qualified ?? 0, color: 'bg-status-qualified' },
+                { label: 'Converted to Student', value: leads?.converted ?? 0, color: 'bg-status-converted' },
+                { label: 'Active Students', value: students?.active ?? 0, color: 'bg-primary-500' },
+                { label: 'Offers Received', value: apps?.offers ?? 0, color: 'bg-sky-500' },
+                { label: 'Enrolled', value: apps?.enrolled ?? 0, color: 'bg-primary-700' },
+              ].map(({ label, value, color }) => {
+                const maxVal = leads?.total || 1
+                const pct = Math.round((value / maxVal) * 100)
+                return (
+                  <div key={label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-text-secondary">{label}</span>
+                      <span className="text-xs font-mono font-semibold text-text-primary">{value}</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-surface-sunken overflow-hidden">
+                      <div className={`h-2 rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
         </div>
       )}
     </div>
@@ -424,6 +458,44 @@ function CounsellorAgendaView() {
         )}
       </Card>
     </div>
+  )
+}
+
+function AdminStaleStudents() {
+  // Use the counsellor agenda endpoint since admin can also access it
+  const { data: agenda } = useCounsellorAgenda()
+
+  // Admin sees stale students across the system — the agenda query
+  // for admin returns all students (not scoped to one counsellor)
+  const staleStudents = agenda?.staleStudents ?? []
+
+  if (staleStudents.length === 0) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Stale Students</CardTitle>
+        <Badge variant="warning">{staleStudents.length}</Badge>
+      </CardHeader>
+      <p className="text-xs text-text-muted mb-3">Students with no activity for 14+ days</p>
+      <div className="space-y-2">
+        {staleStudents.map((s) => (
+          <div key={s.id} className="flex items-center justify-between rounded-lg bg-amber-50 p-3">
+            <div>
+              <p className="text-sm font-semibold text-text-primary">
+                {STAGE_DISPLAY_NAMES[s.stage as keyof typeof STAGE_DISPLAY_NAMES] ?? s.stage}
+              </p>
+              <p className="text-xs text-text-muted">
+                Last activity {Math.round((Date.now() - new Date(s.updatedAt).getTime()) / (1000 * 60 * 60 * 24))}d ago
+              </p>
+            </div>
+            <Link href={`/students/${s.id}`} className="text-xs text-primary-600 hover:underline">
+              View
+            </Link>
+          </div>
+        ))}
+      </div>
+    </Card>
   )
 }
 

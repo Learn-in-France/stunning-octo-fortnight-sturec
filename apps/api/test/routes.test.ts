@@ -69,9 +69,11 @@ vi.mock('../src/lib/prisma.js', () => {
     findMany: vi.fn(),
     count: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
     update: vi.fn(),
     updateMany: vi.fn(),
     groupBy: vi.fn(),
+    delete: vi.fn(),
   })
   return {
     default: {
@@ -99,6 +101,11 @@ vi.mock('../src/lib/prisma.js', () => {
       notificationLog: m(),
       meetingOutcomeLog: m(),
       counsellorReminder: m(),
+      campaignTemplate: m(),
+      campaignPack: m(),
+      campaignPackStep: m(),
+      studentCampaign: m(),
+      studentCampaignStep: m(),
       chatSession: m(),
       chatMessage: m(),
       mauticSyncLog: m(),
@@ -797,6 +804,241 @@ describe('Route-level smoke tests', () => {
       })
 
       expect(response.statusCode).toBe(403)
+    })
+  })
+
+  // ─── Campaigns ─────────────────────────────────────────────
+
+  describe('Campaigns module', () => {
+    it('GET /campaign-templates returns list for admin', async () => {
+      authAs(ADMIN_USER)
+      db.campaignTemplate.findMany.mockResolvedValue([])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/campaign-templates',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(JSON.parse(response.body)).toEqual([])
+    })
+
+    it('POST /campaign-templates creates template for admin', async () => {
+      authAs(ADMIN_USER)
+      db.campaignTemplate.create.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000a1',
+        name: 'Welcome Email',
+        phaseKey: 'onboarding',
+        channel: 'email',
+        deliveryMode: 'direct_email',
+        templateKey: 'welcome_email',
+        active: true,
+        defaultDelayDays: 0,
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/campaign-templates',
+        headers: authHeaders(),
+        payload: {
+          name: 'Welcome Email',
+          phaseKey: 'onboarding',
+          channel: 'email',
+          templateKey: 'welcome_email',
+        },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(JSON.parse(response.body).name).toBe('Welcome Email')
+    })
+
+    it('student cannot access campaign templates', async () => {
+      authAs(STUDENT_USER)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/campaign-templates',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
+
+    it('GET /campaign-packs returns packs for admin', async () => {
+      authAs(ADMIN_USER)
+      db.campaignPack.findMany.mockResolvedValue([])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/campaign-packs',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+    })
+
+    it('GET /students/:id/campaigns returns campaigns for counsellor', async () => {
+      authAs(COUNSELLOR_USER)
+      db.studentCampaign.findMany.mockResolvedValue([])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/campaigns',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+    })
+
+    it('POST /students/:id/campaigns/start starts campaign', async () => {
+      authAs(COUNSELLOR_USER)
+      db.campaignPack.findUnique.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000b1',
+        phaseKey: 'onboarding',
+        steps: [{ templateId: '00000000-0000-0000-0000-0000000000a1', orderIndex: 0, delayDays: 0 }],
+      })
+      db.studentCampaign.create.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000c1',
+        studentId: '00000000-0000-0000-0000-000000000010',
+        counsellorId: COUNSELLOR_USER.id,
+        packId: '00000000-0000-0000-0000-0000000000b1',
+        phaseKey: 'onboarding',
+        mode: 'manual',
+        status: 'active',
+      })
+      db.studentCampaignStep.createMany.mockResolvedValue({ count: 1 })
+      db.studentCampaign.findUnique.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000c1',
+        status: 'active',
+        mode: 'manual',
+        pack: { name: 'Onboarding Pack' },
+        steps: [],
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/campaigns/start',
+        headers: authHeaders(),
+        payload: { packId: '00000000-0000-0000-0000-0000000000b1' },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(JSON.parse(response.body).status).toBe('active')
+    })
+
+    it('student cannot start campaigns', async () => {
+      authAs(STUDENT_USER)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/campaigns/start',
+        headers: authHeaders(),
+        payload: { packId: '00000000-0000-0000-0000-0000000000b1' },
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
+
+    it('POST /students/:id/campaigns/:campaignId/pause pauses campaign', async () => {
+      authAs(COUNSELLOR_USER)
+      db.studentCampaign.findUnique.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000c1',
+        studentId: '00000000-0000-0000-0000-000000000010',
+        status: 'active',
+      })
+      db.studentCampaign.update.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000c1',
+        status: 'paused',
+        pausedAt: new Date(),
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/campaigns/00000000-0000-0000-0000-0000000000c1/pause',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(JSON.parse(response.body).status).toBe('paused')
+    })
+
+    it('POST /students/:id/campaigns/:campaignId/resume resumes campaign', async () => {
+      authAs(COUNSELLOR_USER)
+      db.studentCampaign.findUnique.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000c1',
+        studentId: '00000000-0000-0000-0000-000000000010',
+        status: 'paused',
+      })
+      db.studentCampaign.update.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000c1',
+        status: 'active',
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/campaigns/00000000-0000-0000-0000-0000000000c1/resume',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(JSON.parse(response.body).status).toBe('active')
+    })
+
+    it('PATCH /students/:id/campaigns/:campaignId/mode updates mode', async () => {
+      authAs(COUNSELLOR_USER)
+      db.studentCampaign.findUnique.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000c1',
+        studentId: '00000000-0000-0000-0000-000000000010',
+        status: 'active',
+        mode: 'manual',
+        steps: [],
+        pack: {},
+      })
+      db.studentCampaign.update.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000c1',
+        mode: 'automated',
+      })
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/campaigns/00000000-0000-0000-0000-0000000000c1/mode',
+        headers: authHeaders(),
+        payload: { mode: 'automated' },
+      })
+
+      expect(response.statusCode).toBe(200)
+    })
+
+    it('GET /students/:id/campaign-history returns history', async () => {
+      authAs(COUNSELLOR_USER)
+      db.studentCampaignStep.findMany.mockResolvedValue([])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/campaign-history',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(JSON.parse(response.body)).toEqual([])
+    })
+
+    it('pause returns 404 for wrong studentId', async () => {
+      authAs(COUNSELLOR_USER)
+      db.studentCampaign.findUnique.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000c1',
+        studentId: '00000000-0000-0000-0000-999999999999',
+        status: 'active',
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/campaigns/00000000-0000-0000-0000-0000000000c1/pause',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(404)
     })
   })
 

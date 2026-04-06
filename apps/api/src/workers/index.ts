@@ -12,6 +12,7 @@ import { startDocumentsWorker } from './documents.worker.js'
 import { startMauticSyncWorker } from './mautic-sync.worker.js'
 import { startImportsWorker } from './imports.worker.js'
 import { startWebhooksWorker } from './webhooks.worker.js'
+import { startCampaignSchedulerWorker } from './campaign-scheduler.worker.js'
 import { closeIdempotencyRedis } from '../lib/queue/idempotency.js'
 
 console.log('[workers] Starting worker processes...')
@@ -23,12 +24,14 @@ const documentsWorker = startDocumentsWorker()
 const mauticSyncWorker = startMauticSyncWorker()
 const importsWorker = startImportsWorker()
 const webhooksWorker = startWebhooksWorker()
+const campaignScheduler = startCampaignSchedulerWorker()
 
-console.log('[workers] All 7 workers started')
+console.log('[workers] All 8 workers started')
 
 // Graceful shutdown
 async function shutdown() {
   console.log('[workers] Shutting down...')
+  campaignScheduler.stop()
   await Promise.all([
     aiWorker.close(),
     routingWorker.close(),

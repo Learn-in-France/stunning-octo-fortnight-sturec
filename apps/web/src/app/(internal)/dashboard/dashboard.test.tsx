@@ -87,7 +87,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Counsellor Workload')).toBeInTheDocument()
     expect(screen.getByText('Bookings & Handoffs')).toBeInTheDocument()
     expect(screen.getAllByText('Awaiting assignment').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('42')).toBeInTheDocument()
+    expect(screen.getAllByText('42').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows counsellor agenda view without admin analytics', async () => {
