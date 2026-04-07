@@ -18,6 +18,8 @@ import { fetchTeamMembers, buildNameMap, resolveName } from '@/features/team/lib
 
 /** List item with resolved counsellor display name */
 export interface LeadListItemView extends LeadListItem {
+  isPartnerHotLead: boolean
+  needsIntakeCompletion: boolean
   counsellorName: string
 }
 
@@ -33,6 +35,8 @@ export interface TimelineItem {
 
 /** Detail view model — combines LeadDetail + assessment + timeline for the UI */
 export interface LeadDetailView extends LeadDetail {
+  isPartnerHotLead: boolean
+  needsIntakeCompletion: boolean
   counsellorName: string
   /** Latest assessment summary from GET /leads/:id/ai-assessments */
   latestAssessment: AiAssessmentSummary | null

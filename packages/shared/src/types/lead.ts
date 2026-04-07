@@ -16,6 +16,8 @@ export interface Lead {
   qualificationScore: number | null
   priorityLevel: PriorityLevel | null
   profileCompleteness: number | null
+  isPartnerHotLead: boolean
+  needsIntakeCompletion: boolean
   userId: string | null
   assignedCounsellorId: string | null
   latestAiAssessmentId: string | null

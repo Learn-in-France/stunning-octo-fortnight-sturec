@@ -54,7 +54,13 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
       <PageHeader
         title={`${lead.firstName} ${lead.lastName ?? ''}`}
-        badge={<StatusBadge status={lead.status} />}
+        badge={
+          <div className="flex items-center gap-2">
+            <StatusBadge status={lead.status} />
+            {lead.isPartnerHotLead && <Badge variant="warning">Hot partner lead</Badge>}
+            {lead.needsIntakeCompletion && <Badge variant="muted">Needs intake completion</Badge>}
+          </div>
+        }
         actions={
           <div className="flex items-center gap-2">
             {lead.status !== 'converted' && lead.status !== 'disqualified' && (
@@ -87,6 +93,22 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               <InfoRow label="Source Partner" value={lead.sourcePartner ?? '—'} />
               <InfoRow label="Counsellor" value={lead.counsellorName} />
               <InfoRow label="Created" value={formatDateTime(lead.createdAt)} />
+              {lead.isPartnerHotLead && (
+                <div className="col-span-2">
+                  <span className="text-xs text-text-muted block mb-1">Workflow</span>
+                  <p className="text-sm text-text-secondary">
+                    Trusted university-partner lead. Prioritize outreach quickly even if the intake is still incomplete.
+                  </p>
+                </div>
+              )}
+              {lead.needsIntakeCompletion && (
+                <div className="col-span-2">
+                  <span className="text-xs text-text-muted block mb-1">Next action</span>
+                  <p className="text-sm text-text-secondary">
+                    Use the first counsellor interaction to collect the missing academic, budget, language, and timeline details.
+                  </p>
+                </div>
+              )}
               {lead.notes && (
                 <div className="col-span-2">
                   <span className="text-xs text-text-muted block mb-1">Notes</span>
