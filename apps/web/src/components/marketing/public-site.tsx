@@ -151,6 +151,7 @@ function Footer() {
         { href: '/why-france', label: 'Why France' },
         { href: '/your-journey', label: 'Your Journey' },
         { href: '/advisor', label: 'AI Advisor' },
+        { href: '/about', label: 'About Us' },
       ],
     },
     {

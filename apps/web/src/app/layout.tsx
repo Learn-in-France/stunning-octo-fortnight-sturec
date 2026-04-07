@@ -28,14 +28,14 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://learninfrance.com'
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: 'Learn in France — Overseas Education & Admissions Guidance',
-  description: 'Specialist guidance for international students planning to study in France',
+  description: 'Specialist education agency with a team on the ground in France. We help international students with applications, Campus France, visas, housing, and settling in — from first question to first week in France.',
   icons: {
     icon: '/favicon.png',
     apple: '/logo-128.png',
   },
   openGraph: {
     title: 'Learn in France — Overseas Education & Admissions Guidance',
-    description: 'Specialist guidance for international students planning to study in France',
+    description: 'Specialist education agency with a team on the ground in France. We help international students with applications, visas, housing, and settling in.',
     images: [{ url: '/images/og-brand.webp', width: 1200, height: 630 }],
     type: 'website',
     siteName: 'Learn in France',

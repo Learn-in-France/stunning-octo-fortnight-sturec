@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   title: 'Burgundy School of Business — Partner | Learn in France',
   description:
     'Study at Burgundy School of Business in Dijon, France. AACSB & EQUIS accredited Grande Ecole with English-taught programs. Apply with full support from Learn in France.',
+  alternates: { canonical: 'https://learninfrance.com/partners/burgundy-school-of-business' },
+  openGraph: {
+    title: 'Burgundy School of Business — Official Partner',
+    description: 'AACSB & EQUIS accredited Grande Ecole in Dijon. English-taught programs with full application support from Learn in France.',
+    url: 'https://learninfrance.com/partners/burgundy-school-of-business',
+  },
 }
 
 const accreditations = [

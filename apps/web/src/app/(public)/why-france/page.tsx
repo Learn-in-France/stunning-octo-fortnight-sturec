@@ -59,9 +59,14 @@ const reasons = [
   },
 ]
 
+// FAQ schema for rich results — static trusted content, safe for dangerouslySetInnerHTML
+const faqSchemaJson = '{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is tuition affordable in France for international students?","acceptedAnswer":{"@type":"Answer","text":"Yes. Public universities charge a fraction of UK, US, or Australian fees. Even private institutions and Grandes Ecoles are often more competitive than Anglophone alternatives."}},{"@type":"Question","name":"Are there English-taught programs in France?","acceptedAnswer":{"@type":"Answer","text":"Hundreds of programs are delivered in English, especially at Master\'s and MBA level. French can be added over time — it\'s an asset, not a barrier."}},{"@type":"Question","name":"Can I work in France after graduating?","acceptedAnswer":{"@type":"Answer","text":"Graduates get a residence permit to stay and work in France. You can build your career where you studied — no need to leave the country after graduation."}},{"@type":"Question","name":"Is France a good place to live as a student?","acceptedAnswer":{"@type":"Answer","text":"Healthcare, public transport, culture, and a student-friendly cost of living. France consistently ranks among the best countries for international students."}},{"@type":"Question","name":"Does a French degree work across Europe?","acceptedAnswer":{"@type":"Answer","text":"A French degree opens doors across the EU. With Schengen access and internationally recognised qualifications, your career isn\'t limited to one country."}},{"@type":"Question","name":"How are French universities ranked globally?","acceptedAnswer":{"@type":"Answer","text":"France has over 30 universities in the global top 500 and a Grandes Ecoles system with no equivalent elsewhere. Academic credibility is built in."}}]}'
+
 export default function WhyFrancePage() {
   return (
     <>
+      {/* Static trusted JSON-LD — no user input, safe */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqSchemaJson }} />
       <MarketingHero
         label="Why France"
         title={
