@@ -58,6 +58,7 @@ import type {
 } from '@sturec/shared'
 
 import { mapLeadStatus, mapActivityChannel, mapConsentType } from './enums.js'
+import { isTrustedUniversityPartnerLead, needsPartnerIntakeCompletion } from '../../modules/leads/workflow.js'
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -85,6 +86,12 @@ export function mapUserToAuthResponse(user: PrismaUser): AuthUserResponse {
 // ─── Lead → LeadListItem ─────────────────────────────────────
 
 export function mapLeadToListItem(lead: PrismaLead): LeadListItem {
+  const profileCompleteness = lead.profileCompleteness ? Number(lead.profileCompleteness) : null
+  const isPartnerHotLead = isTrustedUniversityPartnerLead({
+    source: lead.source,
+    sourcePartner: lead.sourcePartner,
+  })
+
   return {
     id: lead.id,
     email: lead.email,
@@ -96,11 +103,17 @@ export function mapLeadToListItem(lead: PrismaLead): LeadListItem {
     status: mapLeadStatus(lead.status),
     qualificationScore: lead.qualificationScore,
     priorityLevel: lead.priorityLevel as LeadListItem['priorityLevel'],
-    profileCompleteness: lead.profileCompleteness ? Number(lead.profileCompleteness) : null,
+    profileCompleteness,
+    isPartnerHotLead,
+    needsIntakeCompletion: needsPartnerIntakeCompletion({
+      source: lead.source,
+      sourcePartner: lead.sourcePartner,
+      profileCompleteness,
+    }),
     assignedCounsellorId: lead.assignedCounsellorId,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
-  }
+  } as LeadListItem
 }
 
 // ─── Lead → LeadDetail ───────────────────────────────────────

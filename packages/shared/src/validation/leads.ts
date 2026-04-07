@@ -26,6 +26,8 @@ export const leadListItemSchema = z.object({
   qualificationScore: z.number().nullable(),
   priorityLevel: priorityLevelSchema.nullable(),
   profileCompleteness: z.number().nullable(),
+  isPartnerHotLead: z.boolean(),
+  needsIntakeCompletion: z.boolean(),
   assignedCounsellorId: z.string().uuid().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),

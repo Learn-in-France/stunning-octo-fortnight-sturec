@@ -83,7 +83,20 @@ export default function LeadsPage() {
       key: 'source',
       header: 'Source',
       render: (row) => (
-        <span className="text-xs text-text-secondary capitalize">{row.source}</span>
+        <div className="space-y-1">
+          <p className="text-xs text-text-secondary capitalize">{row.source}</p>
+          {row.sourcePartner && (
+            <p className="text-[11px] text-text-muted">{row.sourcePartner}</p>
+          )}
+          <div className="flex flex-wrap gap-1">
+            {row.isPartnerHotLead && (
+              <Badge variant="warning">Hot partner lead</Badge>
+            )}
+            {row.needsIntakeCompletion && (
+              <Badge variant="muted">Needs intake</Badge>
+            )}
+          </div>
+        </div>
       ),
     },
     {

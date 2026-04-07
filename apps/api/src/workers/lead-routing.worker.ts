@@ -14,6 +14,7 @@ import { buildIdempotencyKey, withIdempotency } from '../lib/queue/idempotency.j
 import { getMauticSyncQueue, getNotificationsQueue } from '../lib/queue/queues.js'
 import type { LeadRoutingJobData } from '../lib/queue/queues.js'
 import prisma from '../lib/prisma.js'
+import { deriveLeadRoutingDecision } from '../modules/leads/workflow.js'
 
 export function startLeadRoutingWorker() {
   const worker = new Worker<LeadRoutingJobData>(
@@ -33,10 +34,29 @@ export function startLeadRoutingWorker() {
         })
         if (!assessment) return { status: 'skipped' as const, reason: 'Assessment not found' }
 
-        const qualScore = assessment.qualificationScore ?? 0
+        const lead = await prisma.lead.findUnique({
+          where: { id: leadId },
+          select: {
+            source: true,
+            sourcePartner: true,
+            assignedCounsellorId: true,
+            firstName: true,
+            email: true,
+          },
+        })
+        if (!lead) return { status: 'skipped' as const, reason: 'Lead not found' }
 
-        // Determine lead status based on qualification score
-        const newStatus = qualScore >= 80 ? 'qualified' : 'nurturing'
+        const routed = deriveLeadRoutingDecision({
+          source: lead.source,
+          sourcePartner: lead.sourcePartner,
+          qualificationScore: assessment.qualificationScore,
+          priorityLevel: assessment.priorityLevel as any,
+          profileCompleteness: assessment.profileCompleteness
+            ? Number(assessment.profileCompleteness)
+            : null,
+        })
+        const qualScore = routed.qualificationScore
+        const newStatus = routed.status
 
         // Update lead
         await prisma.lead.update({
@@ -44,13 +64,24 @@ export function startLeadRoutingWorker() {
           data: {
             status: newStatus as any,
             qualificationScore: qualScore,
-            priorityLevel: assessment.priorityLevel,
+            priorityLevel: routed.priorityLevel,
             profileCompleteness: assessment.profileCompleteness
               ? Number(assessment.profileCompleteness)
               : undefined,
             ...(newStatus === 'qualified' && { qualifiedAt: new Date() }),
           },
         })
+
+        if (routed.isPartnerHotLead) {
+          await prisma.aiAssessment.update({
+            where: { id: assessmentId },
+            data: {
+              leadHeat: 'hot',
+              priorityLevel: routed.priorityLevel as any,
+              recommendedDisposition: assessment.recommendedDisposition || 'assign_counsellor',
+            },
+          })
+        }
 
         // Emit Mautic sync for the lead update
         getMauticSyncQueue().add('lead-qualified', {
@@ -62,10 +93,6 @@ export function startLeadRoutingWorker() {
 
         // If qualified, notify assigned counsellor (if any)
         if (newStatus === 'qualified') {
-          const lead = await prisma.lead.findUnique({
-            where: { id: leadId },
-            select: { assignedCounsellorId: true, firstName: true, email: true },
-          })
           if (lead?.assignedCounsellorId) {
             getNotificationsQueue().add('lead-qualified', {
               recipientId: lead.assignedCounsellorId,
