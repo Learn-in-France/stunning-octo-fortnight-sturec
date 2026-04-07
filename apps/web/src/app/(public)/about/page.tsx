@@ -6,10 +6,10 @@ import { BrandName } from '@/components/branding/brand-logo'
 export const metadata: Metadata = {
   title: 'About Us — The Team Behind Learn in France',
   description:
-    'Learn in France is a specialist education agency based in Dijon, France. Our team on the ground helps international students with applications, Campus France, visas, housing, and settling in.',
+    'Learn in France is a specialist education agency based in France. Our team on the ground helps international students with applications, Campus France, visas, housing, and settling in.',
   alternates: { canonical: 'https://learninfrance.com/about' },
   openGraph: {
-    title: 'About Learn in France — Our Team in Dijon',
+    title: 'About Learn in France — Our Team in France',
     description: 'A specialist agency with a team on the ground in France.',
     url: 'https://learninfrance.com/about',
   },
@@ -49,7 +49,7 @@ export default function AboutPage() {
             <span className="public-accent">Based in France.</span>
           </>
         }
-        description="We're not a general-purpose study abroad agency. We're a France specialist with a team on the ground in Dijon. We help international students navigate the French education system from first question to first week in the country."
+        description="We're not a general-purpose study abroad agency. We're a France specialist with a team on the ground in France. We help international students navigate the French education system from first question to first week in the country."
         actions={[
           { href: '/auth/register', label: 'Talk to AI advisor' },
           { href: '/why-france', label: 'Why France?', variant: 'secondary' },
@@ -98,7 +98,7 @@ export default function AboutPage() {
                   into a new country — is left entirely to the student.
                 </p>
                 <p>
-                  So we built an agency that stays. Our team is based in Dijon, in the heart of Burgundy.
+                  So we built an agency that stays. Our team is based in France.
                   We work with curated university partners, and our support continues long after students
                   land in France.
                 </p>
@@ -114,15 +114,15 @@ export default function AboutPage() {
             <h2 className="public-heading-section">Where we are</h2>
             <div className="public-divider" />
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-public-slate">
-              Based in Dijon, France — the capital of Burgundy. A UNESCO World Heritage city with
-              excellent universities, affordable living, and a high quality of life for students.
+              Our team is based in France — close to our university partners, in a region with
+              excellent institutions, affordable living, and a high quality of life for students.
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2">
             <EditorialCard title="Contact" tone="tinted">
               <div className="space-y-2 text-base">
                 <p>Learn in France</p>
-                <p>Dijon, Burgundy, France</p>
+                <p>France</p>
                 <p className="mt-4">
                   <a href="mailto:info@learninfrance.com" className="font-semibold text-public-blue hover:underline">
                     info@learninfrance.com
@@ -134,7 +134,7 @@ export default function AboutPage() {
               <div className="space-y-2 text-base">
                 <p className="font-semibold">Burgundy School of Business</p>
                 <p>AACSB &amp; EQUIS accredited Grande Ecole</p>
-                <p>Dijon, France</p>
+                <p>France</p>
                 <p className="mt-4">
                   <a href="/partners/burgundy-school-of-business" className="font-semibold text-public-blue hover:underline">
                     View partnership details &rarr;
