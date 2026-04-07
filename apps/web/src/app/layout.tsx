@@ -69,6 +69,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1&display=swap" rel="stylesheet" />
+        {/* Organization schema - static trusted content, no XSS risk */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: '{"@context":"https://schema.org","@type":"EducationalOrganization","name":"Learn in France","url":"https://learninfrance.com","logo":"https://learninfrance.com/images/brand-crest-tight.webp","description":"Specialist education agency helping international students study in France. Based in Dijon with on-ground support from application through arrival.","areaServed":"France","serviceType":"Education Consulting","email":"info@learninfrance.com","address":{"@type":"PostalAddress","addressCountry":"FR","addressLocality":"Dijon"}}',
+          }}
+        />
       </head>
       <body className="font-sans">
         <Providers>{children}</Providers>

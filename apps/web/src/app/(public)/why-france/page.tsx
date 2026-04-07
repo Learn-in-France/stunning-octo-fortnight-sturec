@@ -1,6 +1,18 @@
 import Image from 'next/image'
+import type { Metadata } from 'next'
 
 import { EditorialCard, MarketingCTA, MarketingHero } from '@/components/marketing/sections'
+
+export const metadata: Metadata = {
+  title: 'Why Study in France? — Affordable Tuition, English Programs & Work Visa | Learn in France',
+  description: 'Discover why France is one of the best destinations for international students. Affordable public tuition, English-taught programs, post-study work visa, and world-ranked universities.',
+  alternates: { canonical: 'https://learninfrance.com/why-france' },
+  openGraph: {
+    title: 'Why Study in France? — Affordable Tuition & English Programs',
+    description: 'Affordable public tuition, English-taught programs, post-study work visa, and world-ranked universities. Discover why France is the right choice.',
+    url: 'https://learninfrance.com/why-france',
+  },
+}
 
 const earlyFactors = [
   'Public university tuition starts under EUR 300/year for many programs',

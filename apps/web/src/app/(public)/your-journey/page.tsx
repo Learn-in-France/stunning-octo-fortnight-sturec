@@ -1,6 +1,18 @@
 import Image from 'next/image'
+import type { Metadata } from 'next'
 
 import { EditorialCard, MarketingCTA, MarketingHero } from '@/components/marketing/sections'
+
+export const metadata: Metadata = {
+  title: 'Your Journey to France — 5-Phase Process from Application to Arrival | Learn in France',
+  description: 'From first conversation to first week in France. Our structured 5-phase process covers profile assessment, applications, Campus France, visa, and on-ground arrival support.',
+  alternates: { canonical: 'https://learninfrance.com/your-journey' },
+  openGraph: {
+    title: 'Your Journey to France — 5 Clear Phases',
+    description: 'Structured 5-phase process: profile assessment, applications, Campus France, visa preparation, and arrival support with our team on the ground in France.',
+    url: 'https://learninfrance.com/your-journey',
+  },
+}
 
 const phases = [
   {
