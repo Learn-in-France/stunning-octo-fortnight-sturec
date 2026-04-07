@@ -24,7 +24,12 @@ vi.mock('../src/lib/prisma.js', () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    student: {
+      findFirst: vi.fn(),
+      upsert: vi.fn(),
+    },
     lead: {
+      findFirst: vi.fn(),
       updateMany: vi.fn(),
     },
   },
@@ -46,7 +51,12 @@ const mockPrisma = prisma as unknown as {
     create: ReturnType<typeof vi.fn>
     update: ReturnType<typeof vi.fn>
   }
+  student: {
+    findFirst: ReturnType<typeof vi.fn>
+    upsert: ReturnType<typeof vi.fn>
+  }
   lead: {
+    findFirst: ReturnType<typeof vi.fn>
     updateMany: ReturnType<typeof vi.fn>
   }
 }
@@ -81,6 +91,10 @@ describe('Auth Module', () => {
 
       mockVerify.mockResolvedValue({ uid: TEST_STUDENT.uid, email: TEST_STUDENT.email })
       mockPrisma.user.findFirst.mockResolvedValue(existingUser)
+      mockPrisma.student.findFirst.mockResolvedValue({
+        id: 'student-existing',
+        userId: existingUser.id,
+      })
 
       const response = await app.inject({
         method: 'POST',
@@ -93,6 +107,52 @@ describe('Auth Module', () => {
       expect(body.id).toBe(existingUser.id)
       expect(body.email).toBe(TEST_STUDENT.email)
       expect(body.role).toBe('student')
+    })
+
+    it('backfills missing student record for existing student user on verify', async () => {
+      const existingUser = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        firebaseUid: TEST_STUDENT.uid,
+        email: TEST_STUDENT.email,
+        role: 'student',
+        firstName: 'Test',
+        lastName: 'Student',
+        phone: null,
+        avatarUrl: null,
+        status: 'active',
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01'),
+      }
+
+      mockVerify.mockResolvedValue({ uid: TEST_STUDENT.uid, email: TEST_STUDENT.email })
+      mockPrisma.user.findFirst.mockResolvedValue(existingUser)
+      mockPrisma.student.findFirst.mockResolvedValue(null)
+      mockPrisma.lead.findFirst.mockResolvedValue({
+        source: 'marketing',
+        sourcePartner: 'website',
+      })
+      mockPrisma.student.upsert.mockResolvedValue({
+        id: 'student-backfilled',
+        userId: existingUser.id,
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/verify',
+        headers: { authorization: `Bearer ${TEST_FIREBASE_TOKEN}` },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(mockPrisma.student.upsert).toHaveBeenCalledWith({
+        where: { userId: existingUser.id },
+        update: {},
+        create: expect.objectContaining({
+          userId: existingUser.id,
+          source: 'marketing',
+          sourcePartner: 'website',
+          stage: 'lead_created',
+        }),
+      })
     })
 
     it('returns 401 for unknown user', async () => {
@@ -164,6 +224,12 @@ describe('Auth Module', () => {
         .mockResolvedValueOnce(null)
       mockPrisma.user.create.mockResolvedValue(newUser)
       mockPrisma.lead.updateMany.mockResolvedValue({ count: 0 })
+      mockPrisma.student.findFirst.mockResolvedValue(null)
+      mockPrisma.lead.findFirst.mockResolvedValue(null)
+      mockPrisma.student.upsert.mockResolvedValue({
+        id: 'student-created',
+        userId: newUser.id,
+      })
 
       const response = await app.inject({
         method: 'POST',
@@ -175,6 +241,16 @@ describe('Auth Module', () => {
       const body = JSON.parse(response.body)
       expect(body.role).toBe('student')
       expect(body.email).toBe(TEST_STUDENT.email)
+      expect(mockPrisma.student.upsert).toHaveBeenCalledWith({
+        where: { userId: newUser.id },
+        update: {},
+        create: expect.objectContaining({
+          userId: newUser.id,
+          source: 'direct_signup',
+          sourcePartner: null,
+          stage: 'lead_created',
+        }),
+      })
     })
 
     it('is idempotent — returns existing user if already registered', async () => {
@@ -195,6 +271,12 @@ describe('Auth Module', () => {
       mockVerify.mockResolvedValue({ uid: TEST_STUDENT.uid, email: TEST_STUDENT.email })
       // findByFirebaseUid → existingUser (short-circuits)
       mockPrisma.user.findFirst.mockResolvedValue(existingUser)
+      mockPrisma.student.findFirst.mockResolvedValue(null)
+      mockPrisma.lead.findFirst.mockResolvedValue(null)
+      mockPrisma.student.upsert.mockResolvedValue({
+        id: 'student-existing',
+        userId: existingUser.id,
+      })
 
       const response = await app.inject({
         method: 'POST',
@@ -206,6 +288,15 @@ describe('Auth Module', () => {
       const body = JSON.parse(response.body)
       expect(body.id).toBe(existingUser.id)
       expect(mockPrisma.user.create).not.toHaveBeenCalled()
+      expect(mockPrisma.student.upsert).toHaveBeenCalledWith({
+        where: { userId: existingUser.id },
+        update: {},
+        create: expect.objectContaining({
+          userId: existingUser.id,
+          source: 'direct_signup',
+          sourcePartner: null,
+        }),
+      })
     })
 
     it('links matching leads by email on registration', async () => {
@@ -235,6 +326,15 @@ describe('Auth Module', () => {
         .mockResolvedValueOnce(null)
       mockPrisma.user.create.mockResolvedValue(newUser)
       mockPrisma.lead.updateMany.mockResolvedValue({ count: 1 })
+      mockPrisma.student.findFirst.mockResolvedValue(null)
+      mockPrisma.lead.findFirst.mockResolvedValue({
+        source: 'marketing',
+        sourcePartner: 'website',
+      })
+      mockPrisma.student.upsert.mockResolvedValue({
+        id: 'student-from-lead',
+        userId: newUser.id,
+      })
 
       const response = await app.inject({
         method: 'POST',
@@ -252,6 +352,15 @@ describe('Auth Module', () => {
         data: {
           userId: newUser.id,
         },
+      })
+      expect(mockPrisma.student.upsert).toHaveBeenCalledWith({
+        where: { userId: newUser.id },
+        update: {},
+        create: expect.objectContaining({
+          userId: newUser.id,
+          source: 'marketing',
+          sourcePartner: 'website',
+        }),
       })
     })
 
