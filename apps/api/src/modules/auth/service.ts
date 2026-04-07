@@ -11,6 +11,7 @@ import { mapUserToAuthResponse } from '../../lib/mappers/index.js'
 export async function verifyUser(decoded: DecodedIdToken): Promise<AuthUserResponse | null> {
   const user = await authRepo.findUserByFirebaseUid(decoded.uid)
   if (!user) return null
+  await ensurePortalReadyStudent(user)
   return mapUserToAuthResponse(user)
 }
 
@@ -32,6 +33,7 @@ export async function registerUser(
   // Idempotent: if user already exists by Firebase UID, return it
   const existing = await authRepo.findUserByFirebaseUid(decoded.uid)
   if (existing) {
+    await ensurePortalReadyStudent(existing)
     return { user: mapUserToAuthResponse(existing) }
   }
 
@@ -67,6 +69,7 @@ export async function registerUser(
 
   // Link any existing leads with matching email
   await authRepo.linkLeadToUser(decoded.email!, user.id)
+  await ensurePortalReadyStudent(user)
 
   return { user: mapUserToAuthResponse(user) }
 }
@@ -105,4 +108,22 @@ export async function acceptInvite(decoded: DecodedIdToken): Promise<AuthUserRes
 
   const user = await authRepo.linkFirebaseUidToUser(invitedUser.id, decoded.uid)
   return mapUserToAuthResponse(user)
+}
+
+async function ensurePortalReadyStudent(user: {
+  id: string
+  role: 'student' | 'counsellor' | 'admin'
+}) {
+  if (user.role !== 'student') return
+
+  const existingStudent = await authRepo.findStudentByUserId(user.id)
+  if (existingStudent) return existingStudent
+
+  const latestLead = await authRepo.findLatestLeadByUserId(user.id)
+
+  return authRepo.upsertStudentForUser({
+    userId: user.id,
+    source: latestLead?.source ?? 'direct_signup',
+    sourcePartner: latestLead?.sourcePartner ?? null,
+  })
 }

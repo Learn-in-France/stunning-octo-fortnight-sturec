@@ -74,3 +74,42 @@ export async function linkLeadToUser(email: string, userId: string) {
     },
   })
 }
+
+export async function findStudentByUserId(userId: string) {
+  return prisma.student.findFirst({
+    where: { userId, deletedAt: null },
+  })
+}
+
+export async function findLatestLeadByUserId(userId: string) {
+  return prisma.lead.findFirst({
+    where: { userId, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      source: true,
+      sourcePartner: true,
+    },
+  })
+}
+
+export async function upsertStudentForUser(data: {
+  userId: string
+  source: string
+  sourcePartner?: string | null
+}) {
+  const year = new Date().getFullYear()
+  const referenceCode = `STU-${year}-${Date.now().toString().slice(-5)}`
+
+  return prisma.student.upsert({
+    where: { userId: data.userId },
+    update: {},
+    create: {
+      userId: data.userId,
+      referenceCode,
+      source: data.source,
+      sourcePartner: data.sourcePartner ?? null,
+      stage: 'lead_created',
+      stageUpdatedAt: new Date(),
+    },
+  })
+}
