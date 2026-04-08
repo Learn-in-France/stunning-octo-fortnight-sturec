@@ -117,7 +117,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const openHistoryFlow = () => setActiveTab('history')
 
   return (
-    <div>
+    <div className="min-w-0 overflow-x-hidden">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-xs text-text-muted mb-4">
         <Link href="/students" className="hover:text-primary-600 transition-colors">
@@ -139,7 +139,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           </div>
         }
         actions={
-          <div className="flex max-w-[42rem] flex-wrap justify-end gap-2">
+          <div className="flex w-full flex-wrap gap-2 lg:max-w-[42rem] lg:justify-end">
             <Button size="sm" variant="ghost" onClick={openOutcomeFlow}>
               Record Outcome
             </Button>
@@ -226,31 +226,33 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       />
 
       {/* Tabbed content */}
-      <Tabs
-        activeTab={activeTab}
-        onChange={(tabId) => {
-          setActiveTab(tabId)
-          if (tabId !== 'work') setMeetingIntent(null)
-        }}
-        defaultTab="work"
-        items={[
-          {
-            id: 'work',
-            label: 'Work',
-            content: <WorkTab studentId={id} intent={meetingIntent} />,
-          },
-          {
-            id: 'history',
-            label: 'History',
-            content: <HistoryTab studentId={id} />,
-          },
-          {
-            id: 'profile',
-            label: 'Profile',
-            content: <ProfileWorkspaceTab student={student} studentId={id} />,
-          },
-        ]}
-      />
+      <div className="min-w-0">
+        <Tabs
+          activeTab={activeTab}
+          onChange={(tabId) => {
+            setActiveTab(tabId)
+            if (tabId !== 'work') setMeetingIntent(null)
+          }}
+          defaultTab="work"
+          items={[
+            {
+              id: 'work',
+              label: 'Work',
+              content: <WorkTab studentId={id} intent={meetingIntent} />,
+            },
+            {
+              id: 'history',
+              label: 'History',
+              content: <HistoryTab studentId={id} />,
+            },
+            {
+              id: 'profile',
+              label: 'Profile',
+              content: <ProfileWorkspaceTab student={student} studentId={id} />,
+            },
+          ]}
+        />
+      </div>
 
       <Modal
         open={showStageModal}
