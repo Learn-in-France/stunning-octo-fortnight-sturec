@@ -2,7 +2,6 @@
 
 import { use, useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import { useQuery } from '@tanstack/react-query'
 
 import type {
   ApplicationListItem,
@@ -16,11 +15,9 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Modal } from '@/components/ui/modal'
 import { Select } from '@/components/ui/select'
 import { Tabs } from '@/components/ui/tabs'
 import { Table, type Column } from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StageBadge } from '@/components/shared/stage-badge'
@@ -32,12 +29,10 @@ import {
   useStudentTimeline,
   useStudentCaseLog,
   useStudentNotes,
-  useCreateNote,
   useStudentActivities,
   useCreateActivity,
   useStudentContacts,
   useCreateContact,
-  useAssignStudentCounsellor,
 } from '@/features/students/hooks/use-students'
 import { useStudentApplications } from '@/features/applications/hooks/use-applications'
 import { useStudentDocuments, useStudentRequirements, useVerifyDocument, useRejectDocument } from '@/features/documents/hooks/use-documents'
@@ -54,33 +49,24 @@ import {
   useUpdateCampaignMode,
   useCampaignHistory,
 } from '@/features/campaigns/hooks/use-campaigns'
-import { fetchTeamMembers } from '@/features/team/lib/team-cache'
 import { OutcomeDrawer } from './_drawers/outcome-drawer'
 import { ReminderDrawer } from './_drawers/reminder-drawer'
 import { StageDrawer } from './_drawers/stage-drawer'
+import { NoteDrawer } from './_drawers/note-drawer'
+import { ReassignDrawer } from './_drawers/reassign-drawer'
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { user } = useAuth()
   const { data: student, isLoading, error } = useStudent(id)
-  const assignCounsellor = useAssignStudentCounsellor(id)
   const [showOutcomeDrawer, setShowOutcomeDrawer] = useState(false)
   const [showReminderDrawer, setShowReminderDrawer] = useState(false)
   const [showStageDrawer, setShowStageDrawer] = useState(false)
-  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [showNoteDrawer, setShowNoteDrawer] = useState(false)
+  const [showReassignDrawer, setShowReassignDrawer] = useState(false)
   const [activeTab, setActiveTab] = useState('work')
-  const [assignForm, setAssignForm] = useState({
-    counsellorId: '',
-    reason: '',
-  })
 
   const isAdmin = user?.role === 'admin'
-  const teamQuery = useQuery({
-    queryKey: ['team', 'invite-and-assignment-options'],
-    queryFn: fetchTeamMembers,
-    enabled: showAssignModal && isAdmin,
-    staleTime: 60_000,
-  })
 
   if (isLoading) {
     return (
@@ -102,13 +88,14 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const stageIndex = STAGE_ORDER.indexOf(student.stage)
-  const availableCounsellors = (teamQuery.data ?? []).filter((member) => member.role === 'counsellor' && member.status !== 'deactivated')
   // Drawer openers are exclusive — only one drawer is ever open at a time so
   // the user never has to click through layered slide-overs.
   const closeAllDrawers = () => {
     setShowOutcomeDrawer(false)
     setShowReminderDrawer(false)
     setShowStageDrawer(false)
+    setShowNoteDrawer(false)
+    setShowReassignDrawer(false)
   }
   const openOutcomeFlow = () => {
     closeAllDrawers()
@@ -122,6 +109,14 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const openChangeStage = () => {
     closeAllDrawers()
     setShowStageDrawer(true)
+  }
+  const openAddNote = () => {
+    closeAllDrawers()
+    setShowNoteDrawer(true)
+  }
+  const openReassign = () => {
+    closeAllDrawers()
+    setShowReassignDrawer(true)
   }
 
   return (
@@ -154,6 +149,9 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             <Button size="sm" variant="ghost" onClick={openReminderFlow}>
               Add Reminder
             </Button>
+            <Button size="sm" variant="ghost" onClick={openAddNote}>
+              Add Note
+            </Button>
             <Button size="sm" variant="ghost" onClick={openHistoryFlow}>
               View History
             </Button>
@@ -161,13 +159,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
               Change Stage
             </Button>
             {isAdmin ? (
-              <Button size="sm" variant="secondary" onClick={() => {
-                setAssignForm({
-                  counsellorId: student.assignedCounsellorId ?? '',
-                  reason: '',
-                })
-                setShowAssignModal(true)
-              }}>
+              <Button size="sm" variant="secondary" onClick={openReassign}>
                 {student.assignedCounsellorId ? 'Reassign Counsellor' : 'Assign Counsellor'}
               </Button>
             ) : null}
@@ -210,13 +202,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         onAddReminder={openReminderFlow}
         onViewHistory={openHistoryFlow}
         onChangeStage={openChangeStage}
-        onReassign={() => {
-          setAssignForm({
-            counsellorId: student.assignedCounsellorId ?? '',
-            reason: '',
-          })
-          setShowAssignModal(true)
-        }}
+        onReassign={openReassign}
       />
 
       {/* Tabbed content */}
@@ -264,51 +250,18 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         currentStage={student.stage}
       />
 
-      <Modal
-        open={showAssignModal}
-        onClose={() => setShowAssignModal(false)}
-        title="Reassign Counsellor"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <Select
-            label="Counsellor"
-            value={assignForm.counsellorId}
-            onChange={(e) => setAssignForm((prev) => ({ ...prev, counsellorId: e.target.value }))}
-            options={availableCounsellors.map((member) => ({
-              value: member.id,
-              label: `${member.firstName} ${member.lastName}`,
-            }))}
-            placeholder="Select counsellor"
-          />
-          <Textarea
-            label="Handoff note"
-            value={assignForm.reason}
-            onChange={(e) => setAssignForm((prev) => ({ ...prev, reason: e.target.value }))}
-            placeholder="Why is this case being reassigned, and what should the next counsellor pick up first?"
-          />
-          <div className="flex items-center justify-end gap-2">
-            <Button size="sm" variant="secondary" onClick={() => setShowAssignModal(false)}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              loading={assignCounsellor.isPending}
-              disabled={!assignForm.counsellorId || !assignForm.reason.trim()}
-              onClick={() => {
-                assignCounsellor.mutate({
-                  counsellorId: assignForm.counsellorId,
-                  reason: assignForm.reason.trim(),
-                }, {
-                  onSuccess: () => setShowAssignModal(false),
-                })
-              }}
-            >
-              Save reassignment
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <NoteDrawer
+        open={showNoteDrawer}
+        onClose={() => setShowNoteDrawer(false)}
+        studentId={id}
+      />
+
+      <ReassignDrawer
+        open={showReassignDrawer}
+        onClose={() => setShowReassignDrawer(false)}
+        studentId={id}
+        currentCounsellorId={student.assignedCounsellorId}
+      />
     </div>
   )
 }
@@ -840,64 +793,17 @@ function TimelineTab({ studentId }: { studentId: string }) {
 
 function NotesTab({ studentId }: { studentId: string }) {
   const [page, setPage] = useState(1)
-  const [content, setContent] = useState('')
-  const [noteType, setNoteType] = useState('general')
   const { data, isLoading } = useStudentNotes(studentId, page)
-  const createNote = useCreateNote(studentId)
   const notes = getListData(data)
   const meta = getListMeta(data, notes)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!content.trim()) return
-    createNote.mutate(
-      { noteType, content: content.trim() },
-      { onSuccess: () => { setContent(''); setPage(1) } },
-    )
-  }
-
   return (
     <div className="space-y-4">
-      {/* Create note form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Add Note</CardTitle>
-        </CardHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="flex gap-3">
-            <div className="w-40">
-              <Select
-                label="Type"
-                value={noteType}
-                onChange={(e) => setNoteType(e.target.value)}
-                options={[
-                  { value: 'general', label: 'General' },
-                  { value: 'risk', label: 'Risk' },
-                  { value: 'academic', label: 'Academic' },
-                  { value: 'finance', label: 'Finance' },
-                  { value: 'visa', label: 'Visa' },
-                  { value: 'meeting_outcome', label: 'Meeting outcome' },
-                ]}
-              />
-            </div>
-            <div className="flex-1">
-              <Input
-                label="Content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Write a note..."
-              />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button type="submit" size="sm" loading={createNote.isPending} disabled={!content.trim()}>
-              Add Note
-            </Button>
-          </div>
-        </form>
-      </Card>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-text-primary">Notes</h3>
+        <p className="text-xs text-text-muted">Use the Add Note action above to record an internal note.</p>
+      </div>
 
-      {/* Notes list */}
       {isLoading ? (
         <div className="flex justify-center py-12"><LoadingSpinner /></div>
       ) : !notes.length ? (

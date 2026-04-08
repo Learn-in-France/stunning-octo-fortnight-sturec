@@ -398,11 +398,17 @@ describe('StudentDetailPage', () => {
     // Outcome footer button is gone — only one drawer at a time
     expect(screen.queryByRole('button', { name: 'Save outcome' })).toBeNull()
 
+    // Add Note opens the note drawer and closes the reminder one
+    await user.click(screen.getAllByRole('button', { name: 'Add Note' })[0])
+    expect(screen.getByRole('heading', { name: 'Add Note' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add note' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create reminder' })).toBeNull()
+
     // Change Stage opens the stage drawer
     await user.click(screen.getAllByRole('button', { name: 'Change Stage' })[0])
     expect(screen.getByRole('heading', { name: 'Change Stage' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save stage change' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Create reminder' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Add note' })).toBeNull()
 
     // Closing the drawer leaves the read-only Work tab still visible underneath
     await user.click(screen.getByRole('button', { name: 'Close drawer' }))
@@ -411,7 +417,7 @@ describe('StudentDetailPage', () => {
     expect(screen.getByText('Start a campaign pack')).toBeInTheDocument()
   })
 
-  it('shows admin reassignment controls and opens the modal', async () => {
+  it('shows admin reassignment controls and opens the drawer', async () => {
     setMockAuth({ user: makeUser({ role: 'admin', firstName: 'Jane' }) })
     const user = userEvent.setup()
 
@@ -423,11 +429,14 @@ describe('StudentDetailPage', () => {
 
     await user.click(screen.getAllByRole('button', { name: 'Reassign Counsellor' })[0])
 
+    // Reassign now opens as a right-side drawer, same surface as every other write action
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Reassign Counsellor' })).toBeInTheDocument()
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
     })
+    expect(screen.getByRole('heading', { name: 'Reassign Counsellor' })).toBeInTheDocument()
     expect(screen.getByLabelText('Counsellor')).toBeInTheDocument()
     expect(screen.getByLabelText('Handoff note')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save reassignment' })).toBeInTheDocument()
   })
 
   it('does not crash on legacy campaign and activity records with missing nested relations', async () => {
