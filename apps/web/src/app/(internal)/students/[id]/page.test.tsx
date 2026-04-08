@@ -414,7 +414,13 @@ describe('StudentDetailPage', () => {
     await user.click(screen.getByRole('button', { name: 'Close drawer' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByText('Meeting Outcomes')).toBeInTheDocument()
-    expect(screen.getByText('Start a campaign pack')).toBeInTheDocument()
+
+    // Manage Campaigns opens the campaign drawer with start + active sections
+    await user.click(screen.getAllByRole('button', { name: 'Manage Campaigns' })[0])
+    expect(screen.getByRole('heading', { name: 'Manage Campaigns' })).toBeInTheDocument()
+    expect(screen.getByText('Start a new pack')).toBeInTheDocument()
+    expect(screen.getByText('Active campaigns')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start pack' })).toBeInTheDocument()
   })
 
   it('shows admin reassignment controls and opens the drawer', async () => {

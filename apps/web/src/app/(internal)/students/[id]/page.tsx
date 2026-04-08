@@ -40,13 +40,8 @@ import { useMeetingOutcomes, useCounsellorReminders } from '@/features/counsello
 import { useBookings } from '@/features/bookings/hooks/use-bookings'
 import {
   useStudentCampaigns,
-  useCampaignPacks,
-  useStartCampaign,
   useSendStep,
   useSendAll,
-  usePauseCampaign,
-  useResumeCampaign,
-  useUpdateCampaignMode,
   useCampaignHistory,
 } from '@/features/campaigns/hooks/use-campaigns'
 import { OutcomeDrawer } from './_drawers/outcome-drawer'
@@ -54,6 +49,7 @@ import { ReminderDrawer } from './_drawers/reminder-drawer'
 import { StageDrawer } from './_drawers/stage-drawer'
 import { NoteDrawer } from './_drawers/note-drawer'
 import { ReassignDrawer } from './_drawers/reassign-drawer'
+import { CampaignDrawer } from './_drawers/campaign-drawer'
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -64,6 +60,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const [showStageDrawer, setShowStageDrawer] = useState(false)
   const [showNoteDrawer, setShowNoteDrawer] = useState(false)
   const [showReassignDrawer, setShowReassignDrawer] = useState(false)
+  const [showCampaignDrawer, setShowCampaignDrawer] = useState(false)
   const [activeTab, setActiveTab] = useState('work')
 
   const isAdmin = user?.role === 'admin'
@@ -96,6 +93,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
     setShowStageDrawer(false)
     setShowNoteDrawer(false)
     setShowReassignDrawer(false)
+    setShowCampaignDrawer(false)
   }
   const openOutcomeFlow = () => {
     closeAllDrawers()
@@ -117,6 +115,10 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const openReassign = () => {
     closeAllDrawers()
     setShowReassignDrawer(true)
+  }
+  const openCampaigns = () => {
+    closeAllDrawers()
+    setShowCampaignDrawer(true)
   }
 
   return (
@@ -151,6 +153,9 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             </Button>
             <Button size="sm" variant="ghost" onClick={openAddNote}>
               Add Note
+            </Button>
+            <Button size="sm" variant="ghost" onClick={openCampaigns}>
+              Manage Campaigns
             </Button>
             <Button size="sm" variant="ghost" onClick={openHistoryFlow}>
               View History
@@ -261,6 +266,12 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         onClose={() => setShowReassignDrawer(false)}
         studentId={id}
         currentCounsellorId={student.assignedCounsellorId}
+      />
+
+      <CampaignDrawer
+        open={showCampaignDrawer}
+        onClose={() => setShowCampaignDrawer(false)}
+        studentId={id}
       />
     </div>
   )
@@ -1758,19 +1769,12 @@ function caseLogBadgeVariant(kind: string): 'muted' | 'info' | 'warning' | 'succ
 
 function CampaignsTab({ studentId }: { studentId: string }) {
   const { data: campaigns, isLoading } = useStudentCampaigns(studentId)
-  const { data: packs } = useCampaignPacks()
   const { data: history } = useCampaignHistory(studentId)
-  const startCampaign = useStartCampaign()
   const sendStep = useSendStep()
   const sendAll = useSendAll()
-  const pauseCampaign = usePauseCampaign()
-  const resumeCampaign = useResumeCampaign()
-  const updateMode = useUpdateCampaignMode()
-  const [selectedPack, setSelectedPack] = useState('')
 
   if (isLoading) return <LoadingSpinner size="md" />
 
-  const campaignPacks = Array.isArray(packs) ? packs : []
   const studentCampaigns = Array.isArray(campaigns) ? campaigns : []
   const deliveryHistory = Array.isArray(history) ? history : []
   const channelBadge = (channel: string) => {
@@ -1785,39 +1789,17 @@ function CampaignsTab({ studentId }: { studentId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Start a new campaign */}
-      <Card>
-        <CardHeader><CardTitle>Start a campaign pack</CardTitle></CardHeader>
-        <div className="flex gap-3">
-          <Select
-            options={[
-              { value: '', label: 'Select a pack...' },
-              ...campaignPacks.map((p) => ({
-                value: p.id,
-                label: `${p.name} (${p.phaseKey}) — ${(Array.isArray(p.steps) ? p.steps.length : 0)} steps`,
-              })),
-            ]}
-            value={selectedPack}
-            onChange={(e) => setSelectedPack(e.target.value)}
-          />
-          <Button
-            size="sm"
-            disabled={!selectedPack || startCampaign.isPending}
-            loading={startCampaign.isPending}
-            onClick={() => {
-              startCampaign.mutate({ studentId, packId: selectedPack }, {
-                onSuccess: () => setSelectedPack(''),
-              })
-            }}
-          >
-            Start
-          </Button>
-        </div>
-      </Card>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-text-primary">Campaigns</h3>
+        <p className="text-xs text-text-muted">Use the Manage Campaigns action above to start a pack or pause / resume an active one.</p>
+      </div>
 
-      {/* Active campaigns */}
+      {/* Active campaigns — read view + per-row send actions */}
       {studentCampaigns.length === 0 ? (
-        <EmptyState title="No campaigns started yet." description="Select a pack above to begin." />
+        <EmptyState
+          title="No campaigns started yet."
+          description="Use the Manage Campaigns action above to start a pack."
+        />
       ) : (
         studentCampaigns.map((campaign) => (
           <Card key={campaign.id}>
@@ -1835,39 +1817,16 @@ function CampaignsTab({ studentId }: { studentId: string }) {
               </Badge>
             </CardHeader>
 
-            <div className="flex flex-wrap gap-2 mb-4">
-              {campaign.status === 'active' && (
-                <>
-                  <Button size="sm" variant="secondary"
-                    onClick={() => sendAll.mutate({ studentId, campaignId: campaign.id })}
-                    loading={sendAll.isPending}
-                  >
-                    Send all due
-                  </Button>
-                  <Button size="sm" variant="secondary"
-                    onClick={() => pauseCampaign.mutate({ studentId, campaignId: campaign.id })}
-                  >
-                    Pause
-                  </Button>
-                  <Button size="sm" variant="ghost"
-                    onClick={() => updateMode.mutate({
-                      studentId,
-                      campaignId: campaign.id,
-                      mode: campaign.mode === 'manual' ? 'automated' : 'manual',
-                    })}
-                  >
-                    {campaign.mode === 'manual' ? 'Enable auto' : 'Switch to manual'}
-                  </Button>
-                </>
-              )}
-              {campaign.status === 'paused' && (
+            {campaign.status === 'active' && (
+              <div className="flex flex-wrap gap-2 mb-4">
                 <Button size="sm" variant="secondary"
-                  onClick={() => resumeCampaign.mutate({ studentId, campaignId: campaign.id })}
+                  onClick={() => sendAll.mutate({ studentId, campaignId: campaign.id })}
+                  loading={sendAll.isPending}
                 >
-                  Resume
+                  Send all due
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               {(Array.isArray(campaign.steps) ? campaign.steps : []).map((step) => (
