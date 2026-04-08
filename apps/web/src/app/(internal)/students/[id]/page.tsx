@@ -65,7 +65,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const assignCounsellor = useAssignStudentCounsellor(id)
   const [showStageModal, setShowStageModal] = useState(false)
   const [showAssignModal, setShowAssignModal] = useState(false)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('work')
   const [meetingIntent, setMeetingIntent] = useState<'outcome' | 'reminder' | null>(null)
   const [stageForm, setStageForm] = useState({
     toStage: '',
@@ -107,15 +107,14 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const stageIndex = STAGE_ORDER.indexOf(student.stage)
   const availableCounsellors = (teamQuery.data ?? []).filter((member) => member.role === 'counsellor' && member.status !== 'deactivated')
   const openOutcomeFlow = () => {
-    setActiveTab('meetings')
+    setActiveTab('work')
     setMeetingIntent('outcome')
   }
   const openReminderFlow = () => {
-    setActiveTab('meetings')
+    setActiveTab('work')
     setMeetingIntent('reminder')
   }
-  const openNotesFlow = () => setActiveTab('case-log')
-  const openCampaignsFlow = () => setActiveTab('campaigns')
+  const openHistoryFlow = () => setActiveTab('history')
 
   return (
     <div>
@@ -147,11 +146,8 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             <Button size="sm" variant="ghost" onClick={openReminderFlow}>
               Add Reminder
             </Button>
-            <Button size="sm" variant="ghost" onClick={openNotesFlow}>
-              Add Note
-            </Button>
-            <Button size="sm" variant="ghost" onClick={openCampaignsFlow}>
-              Manage Campaigns
+            <Button size="sm" variant="ghost" onClick={openHistoryFlow}>
+              View History
             </Button>
             <Button size="sm" variant="secondary" onClick={() => {
               setStageForm({
@@ -206,13 +202,12 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       </Card>
 
       <OperationalSummaryBlock studentId={id} student={student} />
-      <WorkflowCompass />
-      <ActionCenterBlock
+      <MeetingPrepBlock studentId={id} student={student} />
+      <QuickActionsBlock
         isAdmin={isAdmin}
         onRecordOutcome={openOutcomeFlow}
         onAddReminder={openReminderFlow}
-        onAddNote={openNotesFlow}
-        onManageCampaigns={openCampaignsFlow}
+        onViewHistory={openHistoryFlow}
         onChangeStage={() => {
           setStageForm({
             toStage: student.stage,
@@ -230,43 +225,24 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         }}
       />
 
-      {/* Meeting prep summary */}
-      <MeetingPrepBlock studentId={id} student={student} />
-
       {/* Tabbed content */}
-      <WorkspaceGuide activeTab={activeTab} />
       <Tabs
         activeTab={activeTab}
         onChange={(tabId) => {
           setActiveTab(tabId)
-          if (tabId !== 'meetings') setMeetingIntent(null)
+          if (tabId !== 'work') setMeetingIntent(null)
         }}
-        defaultTab="overview"
+        defaultTab="work"
         items={[
           {
-            id: 'overview',
-            label: 'Overview',
-            content: <OverviewTab student={student} />,
+            id: 'work',
+            label: 'Work',
+            content: <WorkTab studentId={id} intent={meetingIntent} />,
           },
           {
-            id: 'case-log',
-            label: 'Case Log',
-            content: <CaseManagementTab studentId={id} />,
-          },
-          {
-            id: 'meetings',
-            label: 'Meetings',
-            content: <MeetingOutcomesTab studentId={id} intent={meetingIntent} />,
-          },
-          {
-            id: 'documents',
-            label: 'Documents',
-            content: <DocumentsTab studentId={id} />,
-          },
-          {
-            id: 'campaigns',
-            label: 'Campaigns',
-            content: <CampaignsTab studentId={id} />,
+            id: 'history',
+            label: 'History',
+            content: <HistoryTab studentId={id} />,
           },
           {
             id: 'profile',
@@ -1522,94 +1498,46 @@ function OperationalSummaryBlock({ studentId, student }: { studentId: string; st
   )
 }
 
-function WorkflowCompass() {
-  const steps = [
-    {
-      title: '1. Understand the case',
-      description: 'Start with the operational summary and meeting prep. Confirm ownership, current stage, latest outcome, and any blockers before taking action.',
-    },
-    {
-      title: '2. Act on the blocker',
-      description: 'Use the action center to record an outcome, add a reminder, log a note, or move the case forward. Choose one next action and make it explicit.',
-    },
-    {
-      title: '3. Keep the trail clean',
-      description: 'Every important decision should leave a visible internal trail so another counsellor or admin can continue the case without guessing.',
-    },
-  ]
-
-  return (
-    <Card className="mb-6">
-      <CardHeader>
-        <div>
-          <CardTitle>How to Work This Case</CardTitle>
-          <p className="mt-1 text-xs text-text-muted">
-            This page is designed for internal case management. Use it to understand status fast, act on the next step, and leave a clear audit trail.
-          </p>
-        </div>
-      </CardHeader>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {steps.map((step) => (
-          <div key={step.title} className="rounded-2xl border border-border bg-surface-sunken/35 p-4">
-            <p className="text-sm font-semibold text-text-primary">{step.title}</p>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">{step.description}</p>
-          </div>
-        ))}
-      </div>
-    </Card>
-  )
-}
-
-function ActionCenterBlock({
+function QuickActionsBlock({
   isAdmin,
   onRecordOutcome,
   onAddReminder,
-  onAddNote,
-  onManageCampaigns,
+  onViewHistory,
   onChangeStage,
   onReassign,
 }: {
   isAdmin: boolean
   onRecordOutcome: () => void
   onAddReminder: () => void
-  onAddNote: () => void
-  onManageCampaigns: () => void
+  onViewHistory: () => void
   onChangeStage: () => void
   onReassign: () => void
 }) {
-  const primaryActions = [
+  const actions = [
     {
-      title: 'Record progress',
-      description: 'Use this after a call or meeting to capture what happened, what should happen next, and whether the stage should change.',
+      title: 'Record outcome',
+      description: 'Log what happened in the latest discussion and decide the next case action.',
       cta: 'Record Outcome',
       onClick: onRecordOutcome,
       variant: 'primary' as const,
     },
     {
-      title: 'Set the next follow-up',
-      description: 'Create a reminder when a document, callback, or internal follow-up has a due date and should not get lost.',
+      title: 'Add reminder',
+      description: 'Set a clear due date when something must be followed up and should not slip.',
       cta: 'Add Reminder',
       onClick: onAddReminder,
       variant: 'secondary' as const,
     },
     {
-      title: 'Leave continuity notes',
-      description: 'Add a private working note for blockers, context, or internal observations another counsellor may need later.',
-      cta: 'Add Note',
-      onClick: onAddNote,
+      title: 'Review history',
+      description: 'Open the internal trail of notes, outcomes, stage changes, reminders, and assignments.',
+      cta: 'Open History',
+      onClick: onViewHistory,
       variant: 'secondary' as const,
     },
     {
-      title: 'Run outreach',
-      description: 'Start or manage a campaign when the student needs nudges, follow-ups, or a structured communication sequence.',
-      cta: 'Manage Campaigns',
-      onClick: onManageCampaigns,
-      variant: 'secondary' as const,
-    },
-    {
-      title: 'Move the case forward',
-      description: 'Use a direct stage change when the student has clearly progressed or needs to be reclassified outside a meeting record.',
+      title: 'Change stage',
+      description: 'Use this when the case has genuinely moved forward or needs reclassification outside a meeting form.',
       cta: 'Change Stage',
       onClick: onChangeStage,
       variant: 'secondary' as const,
@@ -1620,15 +1548,15 @@ function ActionCenterBlock({
     <Card className="mb-6">
       <CardHeader>
         <div>
-          <CardTitle>Action Center</CardTitle>
+          <CardTitle>Quick Actions</CardTitle>
           <p className="mt-1 text-xs text-text-muted">
-            These are the main internal actions staff use on this case. Pick one action, complete it fully, and keep the next step visible.
+            Start here after reading the summary. Pick the one action that moves the case forward right now.
           </p>
         </div>
       </CardHeader>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {primaryActions.map((action) => (
+        {actions.map((action) => (
           <div key={action.title} className="rounded-2xl border border-border bg-surface-sunken/30 p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -1657,49 +1585,6 @@ function ActionCenterBlock({
             </div>
           </div>
         ) : null}
-      </div>
-    </Card>
-  )
-}
-
-function WorkspaceGuide({ activeTab }: { activeTab: string }) {
-  const copy: Record<string, { title: string; description: string }> = {
-    overview: {
-      title: 'Overview',
-      description: 'Use this first. It combines profile context, readiness, ownership, and internal signals so you can decide whether to progress, follow up, or escalate.',
-    },
-    'case-log': {
-      title: 'Case Log',
-      description: 'Use this when you need the internal story of the case in chronological order: notes, reminders, meetings, stage changes, assignments, and key activities.',
-    },
-    meetings: {
-      title: 'Meetings',
-      description: 'Use this to record consultation outcomes, update the next action, and create follow-up reminders that drive the case forward.',
-    },
-    documents: {
-      title: 'Documents',
-      description: 'Use this to review uploaded documents, check outstanding requirements, and identify blockers stopping the student from moving ahead.',
-    },
-    campaigns: {
-      title: 'Campaigns',
-      description: 'Use this when the student needs structured outreach. Start the right pack, send due steps, and review delivery history here.',
-    },
-    profile: {
-      title: 'Profile',
-      description: 'Use this for deeper reference material: raw profile data, assessments, contacts, applications, and stage history.',
-    },
-  }
-
-  const guide = copy[activeTab] ?? copy.overview
-
-  return (
-    <Card className="mb-4" padding="sm">
-      <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-text-primary">{guide.title} Workspace</p>
-          <p className="text-xs text-text-muted">{guide.description}</p>
-        </div>
-        <Badge variant="muted">Current workspace</Badge>
       </div>
     </Card>
   )
@@ -1736,7 +1621,34 @@ function WorkflowSection({ title, description, children }: { title: string; desc
   )
 }
 
-function CaseManagementTab({ studentId }: { studentId: string }) {
+function WorkTab({ studentId, intent }: { studentId: string; intent?: 'outcome' | 'reminder' | null }) {
+  return (
+    <div className="space-y-8">
+      <WorkflowSection
+        title="Meetings"
+        description="Record consultation outcomes, decide the next action, and set reminders that keep the case moving."
+      >
+        <MeetingOutcomesTab studentId={studentId} intent={intent} />
+      </WorkflowSection>
+
+      <WorkflowSection
+        title="Documents"
+        description="Review uploads and requirements here when the student is blocked on missing or pending documents."
+      >
+        <DocumentsTab studentId={studentId} />
+      </WorkflowSection>
+
+      <WorkflowSection
+        title="Campaigns"
+        description="Use campaigns when the student needs structured outreach, nudges, or a managed follow-up sequence."
+      >
+        <CampaignsTab studentId={studentId} />
+      </WorkflowSection>
+    </div>
+  )
+}
+
+function HistoryTab({ studentId }: { studentId: string }) {
   return (
     <div className="space-y-8">
       <WorkflowSection

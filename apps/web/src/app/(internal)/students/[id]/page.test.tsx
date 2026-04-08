@@ -351,7 +351,7 @@ describe('StudentDetailPage', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the workflow-first summary and tabs for counsellors', async () => {
+  it('renders the simplified case-desk summary and tabs for counsellors', async () => {
     setMockAuth({ user: makeUser({ role: 'counsellor', firstName: 'Sarah' }) })
 
     renderWithProviders(<StudentDetailPage params={Promise.resolve({ id: 'student-1' })} />)
@@ -360,17 +360,12 @@ describe('StudentDetailPage', () => {
       expect(screen.getByText('Operational Summary')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('How to Work This Case')).toBeInTheDocument()
-    expect(screen.getByText('Action Center')).toBeInTheDocument()
-    expect(screen.getByText('Overview Workspace')).toBeInTheDocument()
+    expect(screen.getByText('Quick Actions')).toBeInTheDocument()
     expect(screen.getByText('What should happen next?')).toBeInTheDocument()
     expect(screen.getByText('Follow up on transcript upload')).toBeInTheDocument()
     expect(screen.getByText('Working signals')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Overview' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Case Log' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Meetings' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Documents' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Campaigns' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'History' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Profile' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /assign counsellor|reassign counsellor/i })).toBeNull()
   })
@@ -387,14 +382,12 @@ describe('StudentDetailPage', () => {
 
     await user.click(screen.getAllByRole('button', { name: 'Record Outcome' })[0])
     expect(screen.getByText('Meeting Outcomes')).toBeInTheDocument()
-    expect(screen.getByText('Meetings Workspace')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save outcome' })).toBeInTheDocument()
 
     await user.click(screen.getAllByRole('button', { name: 'Add Reminder' })[0])
     expect(screen.getByText('Create follow-up reminder')).toBeInTheDocument()
 
-    await user.click(screen.getAllByRole('button', { name: 'Manage Campaigns' })[0])
-    expect(screen.getByText('Campaigns Workspace')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Work' }))
     expect(screen.getByText('Start a campaign pack')).toBeInTheDocument()
   })
 
@@ -457,7 +450,7 @@ describe('StudentDetailPage', () => {
     })
 
     expect(screen.getByText('Campaign pack unavailable (manual)')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Case Log' }))
+    await user.click(screen.getByRole('button', { name: 'History' }))
     expect(screen.getByText('Tried to confirm next document step.')).toBeInTheDocument()
   })
 })
