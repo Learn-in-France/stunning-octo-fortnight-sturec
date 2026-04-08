@@ -8,6 +8,7 @@ import type {
   ApplicationListItem,
   DocumentListItem,
   DocumentRequirementItem,
+  PaginatedResponse,
 } from '@sturec/shared'
 import { STAGE_DISPLAY_NAMES, STAGE_ORDER } from '@sturec/shared'
 import { PageHeader } from '@/components/layout/page-header'
@@ -64,7 +65,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const assignCounsellor = useAssignStudentCounsellor(id)
   const [showStageModal, setShowStageModal] = useState(false)
   const [showAssignModal, setShowAssignModal] = useState(false)
-  const [activeTab, setActiveTab] = useState('case-log')
+  const [activeTab, setActiveTab] = useState('overview')
   const [meetingIntent, setMeetingIntent] = useState<'outcome' | 'reminder' | null>(null)
   const [stageForm, setStageForm] = useState({
     toStage: '',
@@ -105,6 +106,16 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
 
   const stageIndex = STAGE_ORDER.indexOf(student.stage)
   const availableCounsellors = (teamQuery.data ?? []).filter((member) => member.role === 'counsellor' && member.status !== 'deactivated')
+  const openOutcomeFlow = () => {
+    setActiveTab('meetings')
+    setMeetingIntent('outcome')
+  }
+  const openReminderFlow = () => {
+    setActiveTab('meetings')
+    setMeetingIntent('reminder')
+  }
+  const openNotesFlow = () => setActiveTab('case-log')
+  const openCampaignsFlow = () => setActiveTab('campaigns')
 
   return (
     <div>
@@ -130,22 +141,16 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         }
         actions={
           <div className="flex max-w-[42rem] flex-wrap justify-end gap-2">
-            <Button size="sm" variant="ghost" onClick={() => {
-              setActiveTab('meetings')
-              setMeetingIntent('outcome')
-            }}>
+            <Button size="sm" variant="ghost" onClick={openOutcomeFlow}>
               Record Outcome
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => {
-              setActiveTab('meetings')
-              setMeetingIntent('reminder')
-            }}>
+            <Button size="sm" variant="ghost" onClick={openReminderFlow}>
               Add Reminder
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setActiveTab('case-log')}>
+            <Button size="sm" variant="ghost" onClick={openNotesFlow}>
               Add Note
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setActiveTab('campaigns')}>
+            <Button size="sm" variant="ghost" onClick={openCampaignsFlow}>
               Manage Campaigns
             </Button>
             <Button size="sm" variant="secondary" onClick={() => {
@@ -201,18 +206,42 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       </Card>
 
       <OperationalSummaryBlock studentId={id} student={student} />
+      <WorkflowCompass />
+      <ActionCenterBlock
+        isAdmin={isAdmin}
+        onRecordOutcome={openOutcomeFlow}
+        onAddReminder={openReminderFlow}
+        onAddNote={openNotesFlow}
+        onManageCampaigns={openCampaignsFlow}
+        onChangeStage={() => {
+          setStageForm({
+            toStage: student.stage,
+            reasonCode: 'manual_review',
+            reasonNote: '',
+          })
+          setShowStageModal(true)
+        }}
+        onReassign={() => {
+          setAssignForm({
+            counsellorId: student.assignedCounsellorId ?? '',
+            reason: '',
+          })
+          setShowAssignModal(true)
+        }}
+      />
 
       {/* Meeting prep summary */}
       <MeetingPrepBlock studentId={id} student={student} />
 
       {/* Tabbed content */}
+      <WorkspaceGuide activeTab={activeTab} />
       <Tabs
         activeTab={activeTab}
         onChange={(tabId) => {
           setActiveTab(tabId)
           if (tabId !== 'meetings') setMeetingIntent(null)
         }}
-        defaultTab="case-log"
+        defaultTab="overview"
         items={[
           {
             id: 'overview',
@@ -435,6 +464,27 @@ function OverviewTab({ student }: { student: ReturnType<typeof useStudent>['data
   )
 }
 
+function getListData<T>(data: PaginatedResponse<T> | T[] | undefined): T[] {
+  if (Array.isArray(data)) return data
+  return data?.items ?? []
+}
+
+function getListMeta<T>(data: PaginatedResponse<T> | T[] | undefined, items: T[]) {
+  if (Array.isArray(data)) {
+    return {
+      total: data.length,
+      page: 1,
+      limit: data.length || 1,
+    }
+  }
+
+  return {
+    total: data?.total ?? items.length,
+    page: data?.page ?? 1,
+    limit: data?.limit ?? Math.max(items.length, 1),
+  }
+}
+
 // ─── Applications Tab ────────────────────────────────────────────
 
 const APP_STATUS_VARIANTS: Record<string, 'muted' | 'info' | 'success' | 'danger'> = {
@@ -447,6 +497,7 @@ const APP_STATUS_VARIANTS: Record<string, 'muted' | 'info' | 'success' | 'danger
 
 function ApplicationsTab({ studentId }: { studentId: string }) {
   const { data, isLoading } = useStudentApplications(studentId)
+  const applications = getListData(data)
 
   const columns: Column<ApplicationListItem>[] = [
     {
@@ -499,7 +550,7 @@ function ApplicationsTab({ studentId }: { studentId: string }) {
 
   if (isLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>
 
-  if (!data?.items.length) {
+  if (!applications.length) {
     return (
       <EmptyState
         title="No applications"
@@ -510,7 +561,7 @@ function ApplicationsTab({ studentId }: { studentId: string }) {
 
   return (
     <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
-      <Table columns={columns} data={data.items} rowKey={(row) => row.id} />
+      <Table columns={columns} data={applications} rowKey={(row) => row.id} />
     </div>
   )
 }
@@ -864,6 +915,8 @@ function NotesTab({ studentId }: { studentId: string }) {
   const [noteType, setNoteType] = useState('general')
   const { data, isLoading } = useStudentNotes(studentId, page)
   const createNote = useCreateNote(studentId)
+  const notes = getListData(data)
+  const meta = getListMeta(data, notes)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -918,14 +971,14 @@ function NotesTab({ studentId }: { studentId: string }) {
       {/* Notes list */}
       {isLoading ? (
         <div className="flex justify-center py-12"><LoadingSpinner /></div>
-      ) : !data?.items.length ? (
+      ) : !notes.length ? (
         <EmptyState
           title="No notes"
           description="No notes have been added for this student yet."
         />
       ) : (
         <div className="space-y-3">
-          {data.items.map((n) => (
+          {notes.map((n) => (
             <Card key={n.id}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -943,10 +996,10 @@ function NotesTab({ studentId }: { studentId: string }) {
           ))}
 
           {/* Pagination */}
-          {data.total > data.limit && (
+          {meta.total > meta.limit && (
             <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-text-muted">
-                Page {data.page} of {Math.ceil(data.total / data.limit)}
+                Page {meta.page} of {Math.ceil(meta.total / meta.limit)}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -960,7 +1013,7 @@ function NotesTab({ studentId }: { studentId: string }) {
                 <Button
                   size="sm"
                   variant="secondary"
-                  disabled={page >= Math.ceil(data.total / data.limit)}
+                  disabled={page >= Math.ceil(meta.total / meta.limit)}
                   onClick={() => setPage((p) => p + 1)}
                 >
                   Next
@@ -1130,6 +1183,8 @@ function ActivityTab({ studentId }: { studentId: string }) {
   const [showForm, setShowForm] = useState(false)
   const { data, isLoading } = useStudentActivities(studentId, page)
   const createActivity = useCreateActivity(studentId)
+  const activities = getListData(data)
+  const meta = getListMeta(data, activities)
   const [form, setForm] = useState({
     activityType: 'call' as string,
     channel: 'phone' as string,
@@ -1246,14 +1301,14 @@ function ActivityTab({ studentId }: { studentId: string }) {
       {/* Activities list */}
       {isLoading ? (
         <div className="flex justify-center py-12"><LoadingSpinner /></div>
-      ) : !data?.items.length ? (
+      ) : !activities.length ? (
         <EmptyState
           title="No activities"
           description="No activities have been logged for this student yet."
         />
       ) : (
         <div className="space-y-3">
-          {data.items.map((a) => (
+          {activities.map((a) => (
             <Card key={a.id}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -1272,7 +1327,7 @@ function ActivityTab({ studentId }: { studentId: string }) {
                   {a.outcome && (
                     <p className="text-xs text-text-secondary mt-1">Outcome: {a.outcome}</p>
                   )}
-                  <p className="text-[11px] text-text-muted mt-1">by {a.createdBy.name}</p>
+                  <p className="text-[11px] text-text-muted mt-1">by {a.createdBy?.name ?? 'Unknown user'}</p>
                 </div>
                 <span className="text-[11px] text-text-muted font-mono shrink-0">
                   {formatDate(a.createdAt)}
@@ -1282,10 +1337,10 @@ function ActivityTab({ studentId }: { studentId: string }) {
           ))}
 
           {/* Pagination */}
-          {data.total > data.limit && (
+          {meta.total > meta.limit && (
             <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-text-muted">
-                Page {data.page} of {Math.ceil(data.total / data.limit)}
+                Page {meta.page} of {Math.ceil(meta.total / meta.limit)}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -1299,7 +1354,7 @@ function ActivityTab({ studentId }: { studentId: string }) {
                 <Button
                   size="sm"
                   variant="secondary"
-                  disabled={page >= Math.ceil(data.total / data.limit)}
+                  disabled={page >= Math.ceil(meta.total / meta.limit)}
                   onClick={() => setPage((p) => p + 1)}
                 >
                   Next
@@ -1352,6 +1407,7 @@ function OperationalSummaryBlock({ studentId, student }: { studentId: string; st
     .sort((a: { dueAt: string }, b: { dueAt: string }) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0]
   const pendingRequirements = (requirements?.items ?? []).filter((requirement: { status: string }) => ['missing', 'requested', 'rejected'].includes(requirement.status))
   const activeCampaign = (campaigns ?? []).find((campaign) => campaign.status === 'active')
+  const activeCampaignName = activeCampaign?.pack?.name ?? 'Campaign pack unavailable'
 
   if (!student) return null
 
@@ -1457,10 +1513,193 @@ function OperationalSummaryBlock({ studentId, student }: { studentId: string; st
           <div className="mt-3 space-y-3">
             <SignalRow label="Latest outcome" value={latestOutcome ? latestOutcome.outcome.replace(/_/g, ' ') : 'No meeting recorded'} />
             <SignalRow label="Follow-up due" value={overdueReminder ? formatDate(overdueReminder.dueAt) : studentReminders[0]?.dueAt ? formatDate(studentReminders[0].dueAt) : 'No reminder set'} />
-            <SignalRow label="Campaign" value={activeCampaign ? `${activeCampaign.pack.name} (${activeCampaign.mode})` : 'No active campaign'} />
+            <SignalRow label="Campaign" value={activeCampaign ? `${activeCampaignName} (${activeCampaign.mode})` : 'No active campaign'} />
             <SignalRow label="Docs to action" value={pendingRequirements.length > 0 ? `${pendingRequirements.length} open` : 'Clear'} />
           </div>
         </div>
+      </div>
+    </Card>
+  )
+}
+
+function WorkflowCompass() {
+  const steps = [
+    {
+      title: '1. Understand the case',
+      description: 'Start with the operational summary and meeting prep. Confirm ownership, current stage, latest outcome, and any blockers before taking action.',
+    },
+    {
+      title: '2. Act on the blocker',
+      description: 'Use the action center to record an outcome, add a reminder, log a note, or move the case forward. Choose one next action and make it explicit.',
+    },
+    {
+      title: '3. Keep the trail clean',
+      description: 'Every important decision should leave a visible internal trail so another counsellor or admin can continue the case without guessing.',
+    },
+  ]
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <div>
+          <CardTitle>How to Work This Case</CardTitle>
+          <p className="mt-1 text-xs text-text-muted">
+            This page is designed for internal case management. Use it to understand status fast, act on the next step, and leave a clear audit trail.
+          </p>
+        </div>
+      </CardHeader>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {steps.map((step) => (
+          <div key={step.title} className="rounded-2xl border border-border bg-surface-sunken/35 p-4">
+            <p className="text-sm font-semibold text-text-primary">{step.title}</p>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">{step.description}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
+function ActionCenterBlock({
+  isAdmin,
+  onRecordOutcome,
+  onAddReminder,
+  onAddNote,
+  onManageCampaigns,
+  onChangeStage,
+  onReassign,
+}: {
+  isAdmin: boolean
+  onRecordOutcome: () => void
+  onAddReminder: () => void
+  onAddNote: () => void
+  onManageCampaigns: () => void
+  onChangeStage: () => void
+  onReassign: () => void
+}) {
+  const primaryActions = [
+    {
+      title: 'Record progress',
+      description: 'Use this after a call or meeting to capture what happened, what should happen next, and whether the stage should change.',
+      cta: 'Record Outcome',
+      onClick: onRecordOutcome,
+      variant: 'primary' as const,
+    },
+    {
+      title: 'Set the next follow-up',
+      description: 'Create a reminder when a document, callback, or internal follow-up has a due date and should not get lost.',
+      cta: 'Add Reminder',
+      onClick: onAddReminder,
+      variant: 'secondary' as const,
+    },
+    {
+      title: 'Leave continuity notes',
+      description: 'Add a private working note for blockers, context, or internal observations another counsellor may need later.',
+      cta: 'Add Note',
+      onClick: onAddNote,
+      variant: 'secondary' as const,
+    },
+    {
+      title: 'Run outreach',
+      description: 'Start or manage a campaign when the student needs nudges, follow-ups, or a structured communication sequence.',
+      cta: 'Manage Campaigns',
+      onClick: onManageCampaigns,
+      variant: 'secondary' as const,
+    },
+    {
+      title: 'Move the case forward',
+      description: 'Use a direct stage change when the student has clearly progressed or needs to be reclassified outside a meeting record.',
+      cta: 'Change Stage',
+      onClick: onChangeStage,
+      variant: 'secondary' as const,
+    },
+  ]
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <div>
+          <CardTitle>Action Center</CardTitle>
+          <p className="mt-1 text-xs text-text-muted">
+            These are the main internal actions staff use on this case. Pick one action, complete it fully, and keep the next step visible.
+          </p>
+        </div>
+      </CardHeader>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        {primaryActions.map((action) => (
+          <div key={action.title} className="rounded-2xl border border-border bg-surface-sunken/30 p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-text-primary">{action.title}</p>
+                <p className="mt-2 text-sm leading-6 text-text-secondary">{action.description}</p>
+              </div>
+              <Button size="sm" variant={action.variant} onClick={action.onClick}>
+                {action.cta}
+              </Button>
+            </div>
+          </div>
+        ))}
+
+        {isAdmin ? (
+          <div className="rounded-2xl border border-border bg-primary-50/50 p-4 xl:col-span-2">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-text-primary">Reassign ownership</p>
+                <p className="mt-2 text-sm leading-6 text-text-secondary">
+                  Admins can reassign this case when workloads change or a counsellor is unavailable. Always add a clear handoff note so the next owner can continue without losing context.
+                </p>
+              </div>
+              <Button size="sm" variant="secondary" onClick={onReassign}>
+                Reassign Counsellor
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </Card>
+  )
+}
+
+function WorkspaceGuide({ activeTab }: { activeTab: string }) {
+  const copy: Record<string, { title: string; description: string }> = {
+    overview: {
+      title: 'Overview',
+      description: 'Use this first. It combines profile context, readiness, ownership, and internal signals so you can decide whether to progress, follow up, or escalate.',
+    },
+    'case-log': {
+      title: 'Case Log',
+      description: 'Use this when you need the internal story of the case in chronological order: notes, reminders, meetings, stage changes, assignments, and key activities.',
+    },
+    meetings: {
+      title: 'Meetings',
+      description: 'Use this to record consultation outcomes, update the next action, and create follow-up reminders that drive the case forward.',
+    },
+    documents: {
+      title: 'Documents',
+      description: 'Use this to review uploaded documents, check outstanding requirements, and identify blockers stopping the student from moving ahead.',
+    },
+    campaigns: {
+      title: 'Campaigns',
+      description: 'Use this when the student needs structured outreach. Start the right pack, send due steps, and review delivery history here.',
+    },
+    profile: {
+      title: 'Profile',
+      description: 'Use this for deeper reference material: raw profile data, assessments, contacts, applications, and stage history.',
+    },
+  }
+
+  const guide = copy[activeTab] ?? copy.overview
+
+  return (
+    <Card className="mb-4" padding="sm">
+      <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-text-primary">{guide.title} Workspace</p>
+          <p className="text-xs text-text-muted">{guide.description}</p>
+        </div>
+        <Badge variant="muted">Current workspace</Badge>
       </div>
     </Card>
   )
@@ -1914,6 +2153,9 @@ function CampaignsTab({ studentId }: { studentId: string }) {
 
   if (isLoading) return <LoadingSpinner size="md" />
 
+  const campaignPacks = Array.isArray(packs) ? packs : []
+  const studentCampaigns = Array.isArray(campaigns) ? campaigns : []
+  const deliveryHistory = Array.isArray(history) ? history : []
   const channelBadge = (channel: string) => {
     const variant = channel === 'email' ? 'info' : channel === 'whatsapp' ? 'success' : 'muted'
     return <Badge variant={variant as any}>{channel}</Badge>
@@ -1933,9 +2175,9 @@ function CampaignsTab({ studentId }: { studentId: string }) {
           <Select
             options={[
               { value: '', label: 'Select a pack...' },
-              ...(packs ?? []).map((p) => ({
+              ...campaignPacks.map((p) => ({
                 value: p.id,
-                label: `${p.name} (${p.phaseKey}) — ${p.steps.length} steps`,
+                label: `${p.name} (${p.phaseKey}) — ${(Array.isArray(p.steps) ? p.steps.length : 0)} steps`,
               })),
             ]}
             value={selectedPack}
@@ -1957,14 +2199,14 @@ function CampaignsTab({ studentId }: { studentId: string }) {
       </Card>
 
       {/* Active campaigns */}
-      {(campaigns ?? []).length === 0 ? (
+      {studentCampaigns.length === 0 ? (
         <EmptyState title="No campaigns started yet." description="Select a pack above to begin." />
       ) : (
-        (campaigns ?? []).map((campaign) => (
+        studentCampaigns.map((campaign) => (
           <Card key={campaign.id}>
             <CardHeader>
               <div>
-                <CardTitle>{campaign.pack.name}</CardTitle>
+                <CardTitle>{campaign.pack?.name ?? 'Campaign pack unavailable'}</CardTitle>
                 <p className="text-xs text-text-muted mt-1">{campaign.phaseKey} — {campaign.mode}</p>
               </div>
               <Badge variant={
@@ -2011,12 +2253,12 @@ function CampaignsTab({ studentId }: { studentId: string }) {
             </div>
 
             <div className="space-y-2">
-              {campaign.steps.map((step) => (
+              {(Array.isArray(campaign.steps) ? campaign.steps : []).map((step) => (
                 <div key={step.id} className="flex items-center justify-between rounded-lg bg-surface-sunken/50 p-3">
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-mono text-text-muted w-6">{step.orderIndex + 1}</span>
-                    {channelBadge(step.template.channel)}
-                    <span className="text-sm text-text-primary">{step.template.name}</span>
+                    {channelBadge(step.template?.channel ?? 'unknown')}
+                    <span className="text-sm text-text-primary">{step.template?.name ?? 'Template unavailable'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {step.sentAt && (
@@ -2042,11 +2284,11 @@ function CampaignsTab({ studentId }: { studentId: string }) {
       )}
 
       {/* Delivery history */}
-      {(history ?? []).length > 0 && (
+      {deliveryHistory.length > 0 && (
         <Card>
           <CardHeader><CardTitle>Delivery History</CardTitle></CardHeader>
           <div className="space-y-2">
-            {history!.map((h) => (
+            {deliveryHistory.map((h) => (
               <div key={h.id} className="flex items-center justify-between rounded-lg bg-surface-sunken/50 p-3">
                 <div className="flex items-center gap-3">
                   <Badge variant={h.channel === 'email' ? 'info' : h.channel === 'whatsapp' ? 'success' : 'muted'}>
