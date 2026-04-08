@@ -12,6 +12,7 @@ import type {
   NoteItem,
   ActivityLogItem,
   ContactItem,
+  CaseLogItem,
 } from '@sturec/shared'
 import api from '@/lib/api/client'
 import { fetchTeamMembers, buildNameMap, resolveName } from '@/features/team/lib/team-cache'
@@ -132,6 +133,15 @@ export function useStudentTimeline(studentId: string) {
   })
 }
 
+export function useStudentCaseLog(studentId: string) {
+  return useQuery({
+    queryKey: ['students', studentId, 'case-log'],
+    queryFn: () =>
+      api.get(`/students/${studentId}/case-log`) as unknown as CaseLogItem[],
+    enabled: !!studentId,
+  })
+}
+
 // ─── Notes hook ───────────────────────────────────────────────────
 
 export function useStudentNotes(studentId: string, page = 1) {
@@ -150,6 +160,7 @@ export function useCreateNote(studentId: string) {
       api.post(`/students/${studentId}/notes`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students', studentId, 'notes'] })
+      queryClient.invalidateQueries({ queryKey: ['students', studentId, 'case-log'] })
     },
   })
 }
@@ -177,6 +188,7 @@ export function useCreateActivity(studentId: string) {
     }) => api.post(`/students/${studentId}/activities`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students', studentId, 'activities'] })
+      queryClient.invalidateQueries({ queryKey: ['students', studentId, 'case-log'] })
     },
   })
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
@@ -25,7 +25,47 @@ function InviteForm() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [validatingInvite, setValidatingInvite] = useState(true)
+  const [inviteValid, setInviteValid] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function validateInviteLink() {
+      if (!token || !prefilledEmail) {
+        setValidatingInvite(false)
+        setInviteValid(false)
+        return
+      }
+
+      try {
+        await api.post('/auth/validate-invite', { token, email: prefilledEmail })
+        if (!cancelled) {
+          setInviteValid(true)
+          setError('')
+        }
+      } catch (err: unknown) {
+        const apiError = err as { code?: string }
+        if (!cancelled) {
+          setInviteValid(false)
+          setError(
+            apiError?.code === 'INVITE_INVALID'
+              ? 'This invitation link is invalid or expired. Please request a new one from your admin.'
+              : 'Could not validate this invite link. Please try again or contact your admin.',
+          )
+        }
+      } finally {
+        if (!cancelled) setValidatingInvite(false)
+      }
+    }
+
+    validateInviteLink()
+
+    return () => {
+      cancelled = true
+    }
+  }, [prefilledEmail, token])
 
   async function handleAcceptInvite(e: React.FormEvent) {
     e.preventDefault()
@@ -43,6 +83,11 @@ function InviteForm() {
 
     if (!token) {
       setError('Invalid invite link. Please check the URL or request a new invitation.')
+      return
+    }
+
+    if (!inviteValid) {
+      setError('This invitation link is invalid or expired. Please request a new one from your admin.')
       return
     }
 
@@ -73,7 +118,7 @@ function InviteForm() {
     }
   }
 
-  if (!token && !prefilledEmail) {
+  if (!token || !prefilledEmail) {
     return (
       <AuthShell
         eyebrow="Invite"
@@ -98,6 +143,28 @@ function InviteForm() {
           <Button variant="secondary" size="lg" className="rounded-full px-6" onClick={() => router.push('/auth/login')}>
             Go to sign in
           </Button>
+        </div>
+      </AuthShell>
+    )
+  }
+
+  if (validatingInvite) {
+    return (
+      <AuthShell
+        eyebrow="Team invite"
+        title={<>Checking your invitation to the <BrandName inverse /> workspace.</>}
+        description="Please wait while we validate your invite link."
+        sideTitle="Internal access"
+        sideCopy="Only invited internal users can continue through this page."
+        sidePoints={[
+          'Invite links are time-limited.',
+          'The invited email must match the account you create.',
+          'If this fails, ask your admin to send a new invite.',
+        ]}
+        mode="team"
+      >
+        <div className="py-12 flex justify-center">
+          <LoadingInvite />
         </div>
       </AuthShell>
     )
@@ -178,6 +245,14 @@ function InviteForm() {
         </Link>
       </div>
     </AuthShell>
+  )
+}
+
+function LoadingInvite() {
+  return (
+    <p className="rounded-full bg-white/85 px-5 py-3 text-sm font-medium text-text-secondary shadow-[0_12px_28px_rgba(10,22,41,0.06)]">
+      Validating invitation...
+    </p>
   )
 }
 

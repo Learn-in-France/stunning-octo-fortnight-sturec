@@ -1,5 +1,6 @@
 import type { DecodedIdToken } from 'firebase-admin/auth'
-import type { AuthUserResponse } from '@sturec/shared'
+import type { AuthUserResponse, InviteValidationResponse } from '@sturec/shared'
+import { createHash } from 'node:crypto'
 
 import * as authRepo from './repository.js'
 import { mapUserToAuthResponse } from '../../lib/mappers/index.js'
@@ -102,11 +103,40 @@ export async function updateUserProfile(
  * Links a Firebase UID to a pre-created invited user record.
  * This is the only path for admin/counsellor account activation.
  */
-export async function acceptInvite(decoded: DecodedIdToken): Promise<AuthUserResponse | null> {
-  const invitedUser = await authRepo.findInvitedUserByEmail(decoded.email!)
+export async function validateInvite(
+  data: { email: string; token: string },
+): Promise<InviteValidationResponse | null> {
+  const invite = await authRepo.validateInvite(
+    data.email,
+    hashInviteToken(data.token),
+  )
+  if (!invite) return null
+
+  return {
+    email: invite.email,
+    role: invite.role as InviteValidationResponse['role'],
+    firstName: invite.firstName,
+    lastName: invite.lastName,
+    expiresAt: invite.inviteTokenExpiresAt!.toISOString(),
+  }
+}
+
+export async function acceptInvite(
+  decoded: DecodedIdToken,
+  data: { token: string; firstName: string; lastName: string },
+): Promise<AuthUserResponse | null> {
+  const invitedUser = await authRepo.findValidInviteByEmailAndTokenHash(
+    decoded.email!,
+    hashInviteToken(data.token),
+  )
   if (!invitedUser) return null
 
-  const user = await authRepo.linkFirebaseUidToUser(invitedUser.id, decoded.uid)
+  const user = await authRepo.acceptInviteForUser({
+    userId: invitedUser.id,
+    firebaseUid: decoded.uid,
+    firstName: data.firstName,
+    lastName: data.lastName,
+  })
   return mapUserToAuthResponse(user)
 }
 
@@ -126,4 +156,8 @@ async function ensurePortalReadyStudent(user: {
     source: latestLead?.source ?? 'direct_signup',
     sourcePartner: latestLead?.sourcePartner ?? null,
   })
+}
+
+function hashInviteToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex')
 }

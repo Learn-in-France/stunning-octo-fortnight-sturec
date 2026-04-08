@@ -53,6 +53,11 @@ export async function listTimeline(request: FastifyRequest<{ Params: { id: strin
   return reply.send(timeline)
 }
 
+export async function listCaseLog(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+  const caseLog = await studentService.listCaseLog(request.params.id)
+  return reply.send(caseLog)
+}
+
 export async function listNotes(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
   const result = await studentService.listNotes(
     request.params.id,

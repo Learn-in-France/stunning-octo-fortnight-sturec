@@ -18,6 +18,18 @@ export async function findInvitedUserByEmail(email: string) {
   })
 }
 
+export async function findValidInviteByEmailAndTokenHash(email: string, inviteTokenHash: string) {
+  return prisma.user.findFirst({
+    where: {
+      email,
+      status: 'invited',
+      inviteTokenHash,
+      inviteTokenExpiresAt: { gt: new Date() },
+      deletedAt: null,
+    },
+  })
+}
+
 export async function createUser(data: {
   firebaseUid: string
   email: string
@@ -43,6 +55,48 @@ export async function linkFirebaseUidToUser(userId: string, firebaseUid: string)
     data: {
       firebaseUid,
       status: 'active',
+      inviteTokenHash: null,
+      inviteTokenExpiresAt: null,
+      inviteAcceptedAt: new Date(),
+    },
+  })
+}
+
+export async function acceptInviteForUser(data: {
+  userId: string
+  firebaseUid: string
+  firstName: string
+  lastName: string
+}) {
+  return prisma.user.update({
+    where: { id: data.userId },
+    data: {
+      firebaseUid: data.firebaseUid,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      status: 'active',
+      inviteTokenHash: null,
+      inviteTokenExpiresAt: null,
+      inviteAcceptedAt: new Date(),
+    },
+  })
+}
+
+export async function validateInvite(email: string, inviteTokenHash: string) {
+  return prisma.user.findFirst({
+    where: {
+      email,
+      status: 'invited',
+      inviteTokenHash,
+      inviteTokenExpiresAt: { gt: new Date() },
+      deletedAt: null,
+    },
+    select: {
+      email: true,
+      role: true,
+      firstName: true,
+      lastName: true,
+      inviteTokenExpiresAt: true,
     },
   })
 }

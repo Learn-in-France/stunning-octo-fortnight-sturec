@@ -103,6 +103,9 @@ export function findStageTransitions(studentId: string) {
   return prisma.stageTransition.findMany({
     where: { studentId },
     orderBy: { timestamp: 'desc' },
+    include: {
+      changedByUser: { select: { firstName: true, lastName: true } },
+    },
   })
 }
 
@@ -122,6 +125,7 @@ export function findAssignments(studentId: string) {
     orderBy: { assignedAt: 'desc' },
     include: {
       counsellor: { select: { firstName: true, lastName: true } },
+      assignedByUser: { select: { firstName: true, lastName: true } },
     },
   })
 }
@@ -251,4 +255,62 @@ export function findStudentAssessmentById(studentId: string, assessmentId: strin
       ],
     },
   })
+}
+
+// ─── Case Log ───────────────────────────────────────────────
+
+export async function findCaseLogData(studentId: string) {
+  const [transitions, notes, activities, outcomes, reminders, assignments] = await Promise.all([
+    prisma.stageTransition.findMany({
+      where: { studentId },
+      include: {
+        changedByUser: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { timestamp: 'desc' },
+      take: 50,
+    }),
+    prisma.counsellorNote.findMany({
+      where: { studentId },
+      include: {
+        author: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    }),
+    prisma.counsellorActivityLog.findMany({
+      where: { studentId },
+      include: {
+        createdByUser: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    }),
+    prisma.meetingOutcomeLog.findMany({
+      where: { studentId },
+      include: {
+        counsellor: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    }),
+    prisma.counsellorReminder.findMany({
+      where: { studentId },
+      include: {
+        counsellor: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    }),
+    prisma.studentAssignment.findMany({
+      where: { studentId },
+      include: {
+        counsellor: { select: { firstName: true, lastName: true } },
+        assignedByUser: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { assignedAt: 'desc' },
+      take: 50,
+    }),
+  ])
+
+  return { transitions, notes, activities, outcomes, reminders, assignments }
 }

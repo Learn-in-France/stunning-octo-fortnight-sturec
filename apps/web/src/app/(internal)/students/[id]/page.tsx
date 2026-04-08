@@ -25,6 +25,7 @@ import {
   useStudent,
   useStudentAssessments,
   useStudentTimeline,
+  useStudentCaseLog,
   useStudentNotes,
   useCreateNote,
   useStudentActivities,
@@ -143,6 +144,11 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             id: 'overview',
             label: 'Overview',
             content: <OverviewTab student={student} />,
+          },
+          {
+            id: 'case-log',
+            label: 'Case Log',
+            content: <CaseLogTab studentId={id} />,
           },
           {
             id: 'meetings',
@@ -730,11 +736,11 @@ function NotesTab({ studentId }: { studentId: string }) {
                 onChange={(e) => setNoteType(e.target.value)}
                 options={[
                   { value: 'general', label: 'General' },
-                  { value: 'counsellor', label: 'Counsellor' },
+                  { value: 'risk', label: 'Risk' },
                   { value: 'academic', label: 'Academic' },
-                  { value: 'financial', label: 'Financial' },
+                  { value: 'finance', label: 'Finance' },
                   { value: 'visa', label: 'Visa' },
-                  { value: 'follow_up', label: 'Follow-up' },
+                  { value: 'meeting_outcome', label: 'Meeting outcome' },
                 ]}
               />
             </div>
@@ -1252,7 +1258,6 @@ function MeetingOutcomesTab({ studentId }: { studentId: string }) {
     nextAction: '',
     followUpDueAt: '',
     privateNote: '',
-    studentVisibleNote: '',
     stageAfter: '',
   })
   const [reminderForm, setReminderForm] = useState({ title: '', dueAt: '' })
@@ -1361,12 +1366,6 @@ function MeetingOutcomesTab({ studentId }: { studentId: string }) {
               onChange={(e) => setForm({ ...form, privateNote: e.target.value })}
               placeholder="Internal notes..."
             />
-            <Input
-              label="Student-visible note (optional)"
-              value={form.studentVisibleNote}
-              onChange={(e) => setForm({ ...form, studentVisibleNote: e.target.value })}
-              placeholder="Visible to the student as their next step"
-            />
             <Select
               label="Update stage to (optional)"
               options={[
@@ -1387,12 +1386,11 @@ function MeetingOutcomesTab({ studentId }: { studentId: string }) {
                   nextAction: form.nextAction,
                   followUpDueAt: form.followUpDueAt || undefined,
                   privateNote: form.privateNote || undefined,
-                  studentVisibleNote: form.studentVisibleNote || undefined,
                   stageAfter: form.stageAfter || undefined,
                 }, {
                   onSuccess: () => {
                     setShowForm(false)
-                    setForm({ bookingId: '', outcome: '', nextAction: '', followUpDueAt: '', privateNote: '', studentVisibleNote: '', stageAfter: '' })
+                    setForm({ bookingId: '', outcome: '', nextAction: '', followUpDueAt: '', privateNote: '', stageAfter: '' })
                   },
                 })
               }}
@@ -1431,12 +1429,6 @@ function MeetingOutcomesTab({ studentId }: { studentId: string }) {
                   <p className="text-sm text-text-secondary">{o.privateNote}</p>
                 </div>
               )}
-              {o.studentVisibleNote && (
-                <div className="rounded-lg bg-primary-50 p-3">
-                  <p className="text-xs font-semibold text-primary-700 uppercase tracking-wider mb-1">Student-visible</p>
-                  <p className="text-sm text-text-secondary">{o.studentVisibleNote}</p>
-                </div>
-              )}
               {o.stageAfter && (
                 <p className="text-xs text-text-muted mt-2">Stage changed to: {STAGE_DISPLAY_NAMES[o.stageAfter as keyof typeof STAGE_DISPLAY_NAMES] ?? o.stageAfter}</p>
               )}
@@ -1446,6 +1438,67 @@ function MeetingOutcomesTab({ studentId }: { studentId: string }) {
       )}
     </div>
   )
+}
+
+function CaseLogTab({ studentId }: { studentId: string }) {
+  const { data: entries, isLoading } = useStudentCaseLog(studentId)
+
+  if (isLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>
+
+  if (!entries?.length) {
+    return (
+      <EmptyState
+        title="No case activity yet"
+        description="Notes, stage changes, reminders, assignments, and meeting outcomes will appear here in one internal trail."
+      />
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {entries.map((entry) => (
+        <Card key={`${entry.kind}-${entry.id}`}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <Badge variant={caseLogBadgeVariant(entry.kind)}>{entry.kind.replace(/_/g, ' ')}</Badge>
+                {entry.status && <Badge variant="muted">{entry.status.replace(/_/g, ' ')}</Badge>}
+                {entry.actorName && <span className="text-xs text-text-muted">by {entry.actorName}</span>}
+              </div>
+              <p className="text-sm font-medium text-text-primary">{entry.title}</p>
+              {entry.summary && <p className="text-sm text-text-secondary mt-1">{entry.summary}</p>}
+              {entry.detail && <p className="text-sm text-text-secondary mt-1 whitespace-pre-wrap">{entry.detail}</p>}
+              {entry.dueAt && (
+                <p className="text-xs text-text-muted mt-2">Due: {formatDate(entry.dueAt)}</p>
+              )}
+            </div>
+            <span className="text-[11px] text-text-muted font-mono shrink-0">
+              {formatDate(entry.createdAt)}
+            </span>
+          </div>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+function caseLogBadgeVariant(kind: string): 'muted' | 'info' | 'warning' | 'success' | 'danger' | 'primary' {
+  switch (kind) {
+    case 'meeting_outcome':
+      return 'success'
+    case 'stage_change':
+      return 'primary'
+    case 'note':
+      return 'muted'
+    case 'activity':
+      return 'info'
+    case 'reminder':
+      return 'warning'
+    case 'assignment':
+      return 'primary'
+    default:
+      return 'muted'
+  }
 }
 
 // ─── Campaigns Tab ──────────────────────────────────────────

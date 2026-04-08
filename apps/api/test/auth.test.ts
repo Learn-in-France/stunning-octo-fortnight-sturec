@@ -433,7 +433,33 @@ describe('Auth Module', () => {
   })
 
   describe('POST /api/v1/auth/accept-invite', () => {
-    it('links Firebase UID to invited user', async () => {
+    it('validates a pending invite token', async () => {
+      const invitedUser = {
+        email: TEST_ADMIN.email,
+        role: 'admin',
+        firstName: 'Invited',
+        lastName: 'Admin',
+        inviteTokenExpiresAt: new Date('2026-12-31'),
+      }
+
+      mockPrisma.user.findFirst.mockResolvedValue(invitedUser)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/validate-invite',
+        payload: {
+          email: TEST_ADMIN.email,
+          token: 'valid-token',
+        },
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+      expect(body.email).toBe(TEST_ADMIN.email)
+      expect(body.role).toBe('admin')
+    })
+
+    it('links Firebase UID to invited user when token is valid', async () => {
       const invitedUser = {
         id: '550e8400-e29b-41d4-a716-446655440003',
         firebaseUid: '',
@@ -462,6 +488,11 @@ describe('Auth Module', () => {
         method: 'POST',
         url: '/api/v1/auth/accept-invite',
         headers: { authorization: `Bearer ${TEST_FIREBASE_TOKEN}` },
+        payload: {
+          token: 'valid-token',
+          firstName: 'Invited',
+          lastName: 'Admin',
+        },
       })
 
       expect(response.statusCode).toBe(200)
@@ -470,7 +501,7 @@ describe('Auth Module', () => {
       expect(body.role).toBe('admin')
     })
 
-    it('returns 404 if no pending invite exists', async () => {
+    it('returns 404 if the invite token is invalid or expired', async () => {
       mockVerify.mockResolvedValue({ uid: TEST_ADMIN.uid, email: TEST_ADMIN.email })
       mockPrisma.user.findFirst.mockResolvedValue(null)
 
@@ -478,11 +509,16 @@ describe('Auth Module', () => {
         method: 'POST',
         url: '/api/v1/auth/accept-invite',
         headers: { authorization: `Bearer ${TEST_FIREBASE_TOKEN}` },
+        payload: {
+          token: 'bad-token',
+          firstName: 'Invited',
+          lastName: 'Admin',
+        },
       })
 
       expect(response.statusCode).toBe(404)
       const body = JSON.parse(response.body)
-      expect(body.code).toBe('INVITE_NOT_FOUND')
+      expect(body.code).toBe('INVITE_INVALID')
     })
   })
 })

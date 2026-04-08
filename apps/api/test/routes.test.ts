@@ -326,6 +326,42 @@ describe('Route-level smoke tests', () => {
       expect(body).toHaveProperty('total', 0)
     })
 
+    it('GET /students/:id/case-log returns aggregated internal trail', async () => {
+      authAs(COUNSELLOR_USER)
+      db.stageTransition.findMany.mockResolvedValue([
+        {
+          id: '00000000-0000-0000-0000-000000000401',
+          fromStage: 'lead_created',
+          toStage: 'qualified',
+          changedByType: 'user',
+          changedByUserId: COUNSELLOR_USER.id,
+          reasonCode: 'meeting_outcome',
+          reasonNote: 'Student is ready to move forward',
+          timestamp: new Date('2026-04-01T10:00:00Z'),
+          changedByUser: { firstName: 'Sarah', lastName: 'Counsellor' },
+        },
+      ])
+      db.counsellorNote.findMany.mockResolvedValue([])
+      db.counsellorActivityLog.findMany.mockResolvedValue([])
+      db.meetingOutcomeLog.findMany.mockResolvedValue([])
+      db.counsellorReminder.findMany.mockResolvedValue([])
+      db.studentAssignment.findMany.mockResolvedValue([])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/case-log',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+      expect(body).toHaveLength(1)
+      expect(body[0]).toMatchObject({
+        kind: 'stage_change',
+        status: 'qualified',
+      })
+    })
+
     it('POST /leads creates a lead', async () => {
       authAs(ADMIN_USER)
 
@@ -625,6 +661,12 @@ describe('Route-level smoke tests', () => {
       const body = JSON.parse(response.body)
       expect(body.email).toBe('new@test.com')
       expect(body.status).toBe('invited')
+      expect(db.user.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({
+          inviteTokenHash: expect.any(String),
+          inviteTokenExpiresAt: expect.any(Date),
+        }),
+      }))
     })
 
     it('PATCH /team/:id updates team member', async () => {
@@ -867,6 +909,19 @@ describe('Route-level smoke tests', () => {
 
     it('GET /campaign-packs returns packs for admin', async () => {
       authAs(ADMIN_USER)
+      db.campaignPack.findMany.mockResolvedValue([])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/campaign-packs',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+    })
+
+    it('GET /campaign-packs returns packs for counsellor', async () => {
+      authAs(COUNSELLOR_USER)
       db.campaignPack.findMany.mockResolvedValue([])
 
       const response = await app.inject({

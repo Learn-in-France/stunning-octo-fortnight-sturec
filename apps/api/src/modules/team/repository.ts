@@ -23,6 +23,8 @@ export function createInvitedUser(data: {
   lastName: string
   role: string
   invitedBy: string
+  inviteTokenHash: string
+  inviteTokenExpiresAt: Date
 }) {
   return prisma.user.create({
     data: {
@@ -34,6 +36,8 @@ export function createInvitedUser(data: {
       status: 'invited',
       invitedBy: data.invitedBy,
       invitedAt: new Date(),
+      inviteTokenHash: data.inviteTokenHash,
+      inviteTokenExpiresAt: data.inviteTokenExpiresAt,
     },
   })
 }
