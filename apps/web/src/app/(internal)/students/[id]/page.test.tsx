@@ -370,7 +370,7 @@ describe('StudentDetailPage', () => {
     expect(screen.queryByRole('button', { name: /assign counsellor|reassign counsellor/i })).toBeNull()
   })
 
-  it('routes header quick actions into meetings and campaigns work areas', async () => {
+  it('opens write actions in right-side drawers, not by switching tabs', async () => {
     setMockAuth({ user: makeUser({ role: 'counsellor', firstName: 'Sarah' }) })
     const user = userEvent.setup()
 
@@ -380,14 +380,34 @@ describe('StudentDetailPage', () => {
       expect(screen.getAllByRole('button', { name: 'Record Outcome' }).length).toBeGreaterThan(0)
     })
 
+    // No drawer initially
+    expect(screen.queryByRole('dialog')).toBeNull()
+
+    // Record Outcome opens the outcome drawer with the form footer button
     await user.click(screen.getAllByRole('button', { name: 'Record Outcome' })[0])
-    expect(screen.getByText('Meeting Outcomes')).toBeInTheDocument()
+    let dialog = screen.getByRole('dialog')
+    expect(dialog).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Record Outcome' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save outcome' })).toBeInTheDocument()
 
+    // Switching to Add Reminder closes the outcome drawer and opens the reminder one
     await user.click(screen.getAllByRole('button', { name: 'Add Reminder' })[0])
-    expect(screen.getByText('Create follow-up reminder')).toBeInTheDocument()
+    dialog = screen.getByRole('dialog')
+    expect(screen.getByRole('heading', { name: 'Add Reminder' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create reminder' })).toBeInTheDocument()
+    // Outcome footer button is gone — only one drawer at a time
+    expect(screen.queryByRole('button', { name: 'Save outcome' })).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Work' }))
+    // Change Stage opens the stage drawer
+    await user.click(screen.getAllByRole('button', { name: 'Change Stage' })[0])
+    expect(screen.getByRole('heading', { name: 'Change Stage' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save stage change' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create reminder' })).toBeNull()
+
+    // Closing the drawer leaves the read-only Work tab still visible underneath
+    await user.click(screen.getByRole('button', { name: 'Close drawer' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByText('Meeting Outcomes')).toBeInTheDocument()
     expect(screen.getByText('Start a campaign pack')).toBeInTheDocument()
   })
 
