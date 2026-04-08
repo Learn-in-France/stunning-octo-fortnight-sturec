@@ -10,7 +10,6 @@ import type {
   PaginatedResponse,
 } from '@sturec/shared'
 import { STAGE_DISPLAY_NAMES, STAGE_ORDER } from '@sturec/shared'
-import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -50,6 +49,8 @@ import { StageDrawer } from './_drawers/stage-drawer'
 import { NoteDrawer } from './_drawers/note-drawer'
 import { ReassignDrawer } from './_drawers/reassign-drawer'
 import { CampaignDrawer } from './_drawers/campaign-drawer'
+import { IdentityRail } from './_sections/identity-rail'
+import { ActionRail } from './_sections/action-rail'
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -84,7 +85,6 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
     )
   }
 
-  const stageIndex = STAGE_ORDER.indexOf(student.stage)
   // Drawer openers are exclusive — only one drawer is ever open at a time so
   // the user never has to click through layered slide-overs.
   const closeAllDrawers = () => {
@@ -124,7 +124,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="min-w-0 overflow-x-hidden">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-xs text-text-muted mb-4">
+      <div className="mb-4 flex items-center gap-1.5 text-xs text-text-muted">
         <Link href="/students" className="hover:text-primary-600 transition-colors">
           Students
         </Link>
@@ -132,109 +132,90 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         <span className="text-text-secondary">{student.fullName}</span>
       </div>
 
-      <PageHeader
-        title={student.fullName}
-        description="Use this page to assess current progress, understand what happened last, and decide the next internal action."
-        badge={
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full">
-              {student.referenceCode}
-            </span>
-            <StageBadge stage={student.stage} />
+      {/* Three-pane case desk shell.
+          - xl: identity rail | center | action rail
+          - below xl: identity rail collapses to top, action rail collapses to a sticky bottom bar */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[220px_minmax(0,1fr)_240px]">
+        {/* Left rail — sticky on xl */}
+        <aside className="xl:sticky xl:top-6 xl:self-start">
+          <IdentityRail student={student} studentId={id} />
+        </aside>
+
+        {/* Center column */}
+        <main className="min-w-0 space-y-6">
+          <OperationalSummaryBlock studentId={id} student={student} />
+          <MeetingPrepBlock studentId={id} student={student} />
+
+          <div className="min-w-0">
+            <Tabs
+              activeTab={activeTab}
+              onChange={(tabId) => setActiveTab(tabId)}
+              defaultTab="work"
+              items={[
+                {
+                  id: 'work',
+                  label: 'Work',
+                  content: <WorkTab studentId={id} />,
+                },
+                {
+                  id: 'history',
+                  label: 'History',
+                  content: <HistoryTab studentId={id} />,
+                },
+                {
+                  id: 'profile',
+                  label: 'Profile',
+                  content: <ProfileWorkspaceTab student={student} studentId={id} />,
+                },
+              ]}
+            />
           </div>
-        }
-        actions={
-          <div className="flex w-full flex-wrap gap-2 lg:max-w-[42rem] lg:justify-end">
-            <Button size="sm" variant="ghost" onClick={openOutcomeFlow}>
-              Record Outcome
-            </Button>
-            <Button size="sm" variant="ghost" onClick={openReminderFlow}>
-              Add Reminder
-            </Button>
-            <Button size="sm" variant="ghost" onClick={openAddNote}>
-              Add Note
-            </Button>
-            <Button size="sm" variant="ghost" onClick={openCampaigns}>
-              Manage Campaigns
-            </Button>
-            <Button size="sm" variant="ghost" onClick={openHistoryFlow}>
-              View History
-            </Button>
-            <Button size="sm" variant="secondary" onClick={openChangeStage}>
-              Change Stage
-            </Button>
-            {isAdmin ? (
-              <Button size="sm" variant="secondary" onClick={openReassign}>
-                {student.assignedCounsellorId ? 'Reassign Counsellor' : 'Assign Counsellor'}
-              </Button>
-            ) : null}
-          </div>
-        }
-      />
+        </main>
 
-      {/* Stage pipeline */}
-      <Card className="mb-6 min-w-0" padding="sm">
-        <div className="flex items-center gap-0.5 overflow-x-auto py-1 px-1">
-          {STAGE_ORDER.map((s, idx) => {
-            const isCurrent = s === student.stage
-            const isPast = idx < stageIndex
-            return (
-              <div
-                key={s}
-                className={`
-                  shrink-0 min-w-[5.5rem] px-2 py-1.5 rounded-md text-center text-[10px] font-medium truncate
-                  transition-colors
-                  ${isCurrent
-                    ? 'bg-primary-600 text-white'
-                    : isPast
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'bg-surface-sunken text-text-muted'}
-                `}
-                title={STAGE_DISPLAY_NAMES[s]}
-              >
-                {STAGE_DISPLAY_NAMES[s]}
-              </div>
-            )
-          })}
-        </div>
-      </Card>
-
-      <OperationalSummaryBlock studentId={id} student={student} />
-      <MeetingPrepBlock studentId={id} student={student} />
-      <QuickActionsBlock
-        isAdmin={isAdmin}
-        onRecordOutcome={openOutcomeFlow}
-        onAddReminder={openReminderFlow}
-        onViewHistory={openHistoryFlow}
-        onChangeStage={openChangeStage}
-        onReassign={openReassign}
-      />
-
-      {/* Tabbed content */}
-      <div className="min-w-0">
-        <Tabs
-          activeTab={activeTab}
-          onChange={(tabId) => setActiveTab(tabId)}
-          defaultTab="work"
-          items={[
-            {
-              id: 'work',
-              label: 'Work',
-              content: <WorkTab studentId={id} />,
-            },
-            {
-              id: 'history',
-              label: 'History',
-              content: <HistoryTab studentId={id} />,
-            },
-            {
-              id: 'profile',
-              label: 'Profile',
-              content: <ProfileWorkspaceTab student={student} studentId={id} />,
-            },
-          ]}
-        />
+        {/* Right action rail — sticky on xl, hidden below (mobile uses bottom bar instead) */}
+        <aside className="hidden xl:block xl:sticky xl:top-6 xl:self-start">
+          <ActionRail
+            isAdmin={isAdmin}
+            hasAssignedCounsellor={!!student.assignedCounsellorId}
+            onRecordOutcome={openOutcomeFlow}
+            onAddReminder={openReminderFlow}
+            onAddNote={openAddNote}
+            onManageCampaigns={openCampaigns}
+            onChangeStage={openChangeStage}
+            onReassign={openReassign}
+          />
+        </aside>
       </div>
+
+      {/* Mobile / tablet sticky bottom action bar — same handlers, different chrome.
+          Pinned to the viewport bottom on screens below xl so the action surface is
+          always one tap away even when the right rail is hidden. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface-raised/95 px-4 py-3 shadow-[0_-12px_32px_rgba(10,22,41,0.08)] backdrop-blur xl:hidden">
+        <div className="flex flex-nowrap gap-2 overflow-x-auto">
+          <Button size="sm" variant="primary" onClick={openOutcomeFlow}>
+            Outcome
+          </Button>
+          <Button size="sm" variant="secondary" onClick={openReminderFlow}>
+            Reminder
+          </Button>
+          <Button size="sm" variant="secondary" onClick={openAddNote}>
+            Note
+          </Button>
+          <Button size="sm" variant="secondary" onClick={openCampaigns}>
+            Campaigns
+          </Button>
+          <Button size="sm" variant="secondary" onClick={openChangeStage}>
+            Stage
+          </Button>
+          {isAdmin && (
+            <Button size="sm" variant="secondary" onClick={openReassign}>
+              {student.assignedCounsellorId ? 'Reassign' : 'Assign'}
+            </Button>
+          )}
+        </div>
+      </div>
+      {/* Reserve space so the sticky mobile bar doesn't overlap content */}
+      <div className="h-20 xl:hidden" aria-hidden />
 
       <OutcomeDrawer
         open={showOutcomeDrawer}
@@ -1363,98 +1344,6 @@ function OperationalSummaryBlock({ studentId, student }: { studentId: string; st
             <SignalRow label="Docs to action" value={pendingRequirements.length > 0 ? `${pendingRequirements.length} open` : 'Clear'} />
           </div>
         </div>
-      </div>
-    </Card>
-  )
-}
-
-function QuickActionsBlock({
-  isAdmin,
-  onRecordOutcome,
-  onAddReminder,
-  onViewHistory,
-  onChangeStage,
-  onReassign,
-}: {
-  isAdmin: boolean
-  onRecordOutcome: () => void
-  onAddReminder: () => void
-  onViewHistory: () => void
-  onChangeStage: () => void
-  onReassign: () => void
-}) {
-  const actions = [
-    {
-      title: 'Record outcome',
-      description: 'Log what happened in the latest discussion and decide the next case action.',
-      cta: 'Record Outcome',
-      onClick: onRecordOutcome,
-      variant: 'primary' as const,
-    },
-    {
-      title: 'Add reminder',
-      description: 'Set a clear due date when something must be followed up and should not slip.',
-      cta: 'Add Reminder',
-      onClick: onAddReminder,
-      variant: 'secondary' as const,
-    },
-    {
-      title: 'Review history',
-      description: 'Open the internal trail of notes, outcomes, stage changes, reminders, and assignments.',
-      cta: 'Open History',
-      onClick: onViewHistory,
-      variant: 'secondary' as const,
-    },
-    {
-      title: 'Change stage',
-      description: 'Use this when the case has genuinely moved forward or needs reclassification outside a meeting form.',
-      cta: 'Change Stage',
-      onClick: onChangeStage,
-      variant: 'secondary' as const,
-    },
-  ]
-
-  return (
-    <Card className="mb-6">
-      <CardHeader>
-        <div>
-          <CardTitle>Quick Actions</CardTitle>
-          <p className="mt-1 text-xs text-text-muted">
-            Start here after reading the summary. Pick the one action that moves the case forward right now.
-          </p>
-        </div>
-      </CardHeader>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {actions.map((action) => (
-          <div key={action.title} className="rounded-2xl border border-border bg-surface-sunken/30 p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-text-primary">{action.title}</p>
-                <p className="mt-2 text-sm leading-6 text-text-secondary">{action.description}</p>
-              </div>
-              <Button size="sm" variant={action.variant} onClick={action.onClick}>
-                {action.cta}
-              </Button>
-            </div>
-          </div>
-        ))}
-
-        {isAdmin ? (
-          <div className="rounded-2xl border border-border bg-primary-50/50 p-4 xl:col-span-2">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-text-primary">Reassign ownership</p>
-                <p className="mt-2 text-sm leading-6 text-text-secondary">
-                  Admins can reassign this case when workloads change or a counsellor is unavailable. Always add a clear handoff note so the next owner can continue without losing context.
-                </p>
-              </div>
-              <Button size="sm" variant="secondary" onClick={onReassign}>
-                Reassign Counsellor
-              </Button>
-            </div>
-          </div>
-        ) : null}
       </div>
     </Card>
   )
