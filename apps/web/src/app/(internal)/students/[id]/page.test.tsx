@@ -351,7 +351,7 @@ describe('StudentDetailPage', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the simplified case-desk summary and tabs for counsellors', async () => {
+  it('renders the case-desk shell with identity rail, summary, action rail, and tabs for counsellors', async () => {
     setMockAuth({ user: makeUser({ role: 'counsellor', firstName: 'Sarah' }) })
 
     renderWithProviders(<StudentDetailPage params={Promise.resolve({ id: 'student-1' })} />)
@@ -360,13 +360,32 @@ describe('StudentDetailPage', () => {
       expect(screen.getByText('Operational Summary')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('Quick Actions')).toBeInTheDocument()
+    // Identity rail (left): KPI tiles and stage path that only exist in the rail
+    // ("Owner" intentionally still appears in both rail and Operational Summary
+    // during step 3 — that duplication gets cleaned up in step 4.)
+    expect(screen.getByText('Readiness')).toBeInTheDocument()
+    expect(screen.getByText('Doc blockers')).toBeInTheDocument()
+    expect(screen.getByText('Stage path')).toBeInTheDocument()
+    expect(screen.getAllByText('Owner').length).toBeGreaterThanOrEqual(1)
+
+    // Center: operational summary content still rendered
     expect(screen.getByText('What should happen next?')).toBeInTheDocument()
     expect(screen.getByText('Follow up on transcript upload')).toBeInTheDocument()
     expect(screen.getByText('Working signals')).toBeInTheDocument()
+
+    // Action rail (right): the canonical write entry points
+    expect(screen.getAllByRole('button', { name: 'Record Outcome' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Add Reminder' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Add Note' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Manage Campaigns' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Change Stage' }).length).toBeGreaterThan(0)
+
+    // Tabs still wired
     expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'History' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Profile' })).toBeInTheDocument()
+
+    // Counsellor sees no admin reassign action (only admins do)
     expect(screen.queryByRole('button', { name: /assign counsellor|reassign counsellor/i })).toBeNull()
   })
 
@@ -414,7 +433,13 @@ describe('StudentDetailPage', () => {
     await user.click(screen.getByRole('button', { name: 'Close drawer' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByText('Meeting Outcomes')).toBeInTheDocument()
-    expect(screen.getByText('Start a campaign pack')).toBeInTheDocument()
+
+    // Manage Campaigns opens the campaign drawer with start + active sections
+    await user.click(screen.getAllByRole('button', { name: 'Manage Campaigns' })[0])
+    expect(screen.getByRole('heading', { name: 'Manage Campaigns' })).toBeInTheDocument()
+    expect(screen.getByText('Start a new pack')).toBeInTheDocument()
+    expect(screen.getByText('Active campaigns')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start pack' })).toBeInTheDocument()
   })
 
   it('shows admin reassignment controls and opens the drawer', async () => {
