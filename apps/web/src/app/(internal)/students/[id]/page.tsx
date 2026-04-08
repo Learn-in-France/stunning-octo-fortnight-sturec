@@ -51,6 +51,7 @@ import { ReassignDrawer } from './_drawers/reassign-drawer'
 import { CampaignDrawer } from './_drawers/campaign-drawer'
 import { IdentityRail } from './_sections/identity-rail'
 import { ActionRail } from './_sections/action-rail'
+import { NextActionCard } from './_sections/next-action-card'
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -143,7 +144,17 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Center column */}
         <main className="min-w-0 space-y-6">
-          <OperationalSummaryBlock studentId={id} student={student} />
+          <NextActionCard
+            studentId={id}
+            hasAssignedCounsellor={!!student.assignedCounsellorId}
+            isAdmin={isAdmin}
+            onRecordOutcome={openOutcomeFlow}
+            onAddReminder={openReminderFlow}
+            onAddNote={openAddNote}
+            onManageCampaigns={openCampaigns}
+            onChangeStage={openChangeStage}
+            onReassign={openReassign}
+          />
           <MeetingPrepBlock studentId={id} student={student} />
 
           <div className="min-w-0">
@@ -1218,154 +1229,6 @@ function ConsentPill({ label, granted }: { label: string; granted: boolean }) {
 function formatDate(iso: string): string {
   const d = new Date(iso)
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-function OperationalSummaryBlock({ studentId, student }: { studentId: string; student: ReturnType<typeof useStudent>['data'] }) {
-  const { data: assessments } = useStudentAssessments(studentId)
-  const { data: outcomes } = useMeetingOutcomes(studentId)
-  const { data: reminders } = useCounsellorReminders()
-  const { data: requirements } = useStudentRequirements(studentId)
-  const { data: campaigns } = useStudentCampaigns(studentId)
-  const latestAssessment = assessments?.[0]
-  const latestOutcome = outcomes?.[0]
-  const studentReminders = (reminders ?? []).filter((reminder: { student: { id: string } | null; status: string }) => reminder.student?.id === studentId && reminder.status === 'pending')
-  const overdueReminder = studentReminders
-    .filter((reminder: { dueAt: string }) => new Date(reminder.dueAt).getTime() < Date.now())
-    .sort((a: { dueAt: string }, b: { dueAt: string }) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0]
-  const pendingRequirements = (requirements?.items ?? []).filter((requirement: { status: string }) => ['missing', 'requested', 'rejected'].includes(requirement.status))
-  const activeCampaign = (campaigns ?? []).find((campaign) => campaign.status === 'active')
-  const activeCampaignName = activeCampaign?.pack?.name ?? 'Campaign pack unavailable'
-
-  if (!student) return null
-
-  const nextAction = (() => {
-    if (!student.assignedCounsellorId) {
-      return {
-        label: 'Assign a counsellor',
-        detail: 'This case cannot progress until a counsellor owns it.',
-        tone: 'warning' as const,
-      }
-    }
-    if (overdueReminder) {
-      return {
-        label: overdueReminder.title,
-        detail: `Follow-up is overdue since ${formatDate(overdueReminder.dueAt)}.`,
-        tone: 'danger' as const,
-      }
-    }
-    if (pendingRequirements.length > 0) {
-      return {
-        label: `Review ${pendingRequirements.length} document requirement${pendingRequirements.length === 1 ? '' : 's'}`,
-        detail: 'The document checklist still has open items blocking progress.',
-        tone: 'warning' as const,
-      }
-    }
-    if (latestOutcome?.nextAction) {
-      return {
-        label: latestOutcome.nextAction,
-        detail: latestOutcome.followUpDueAt
-          ? `Follow-up planned for ${formatDate(latestOutcome.followUpDueAt)}.`
-          : 'This came from the latest recorded meeting outcome.',
-        tone: 'info' as const,
-      }
-    }
-    if (!activeCampaign) {
-      return {
-        label: 'Start the phase campaign',
-        detail: 'No active campaign is running for this student yet.',
-        tone: 'info' as const,
-      }
-    }
-    return {
-      label: 'Continue active case management',
-      detail: 'No urgent blocker is recorded right now.',
-      tone: 'success' as const,
-    }
-  })()
-
-  return (
-    <Card className="mb-6">
-      <CardHeader>
-        <div>
-          <CardTitle>Operational Summary</CardTitle>
-          <p className="mt-1 text-xs text-text-muted">This is the internal working summary for counsellors and admins.</p>
-        </div>
-        <Badge variant={
-          nextAction.tone === 'danger' ? 'danger' :
-          nextAction.tone === 'warning' ? 'warning' :
-          nextAction.tone === 'success' ? 'success' : 'info'
-        } dot>
-          Next: {nextAction.tone === 'danger' ? 'urgent' : nextAction.tone}
-        </Badge>
-      </CardHeader>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryMetric
-          label="Current Stage"
-          value={STAGE_DISPLAY_NAMES[student.stage]}
-          hint={`Updated ${formatDate(student.stageUpdatedAt)}`}
-        />
-        <SummaryMetric
-          label="Owner"
-          value={student.counsellorName}
-          hint={student.assignedAt ? `Assigned ${formatDate(student.assignedAt)}` : 'Needs ownership'}
-        />
-        <SummaryMetric
-          label="Lead Heat"
-          value={latestAssessment?.leadHeat ? latestAssessment.leadHeat.replace(/_/g, ' ') : 'Not assessed'}
-          hint={latestAssessment ? `AI updated ${formatDate(latestAssessment.createdAt)}` : 'No AI assessment yet'}
-        />
-        <SummaryMetric
-          label="Profile Completeness"
-          value={latestAssessment?.profileCompleteness != null ? `${Math.round(Number(latestAssessment.profileCompleteness) * 100)}%` : 'No data'}
-          hint={pendingRequirements.length > 0 ? `${pendingRequirements.length} open requirement${pendingRequirements.length === 1 ? '' : 's'}` : 'No open document blockers'}
-        />
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
-        <div className="rounded-2xl border border-border bg-surface-sunken/35 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">What should happen next?</p>
-          <p className="mt-2 text-sm font-semibold text-text-primary">{nextAction.label}</p>
-          <p className="mt-1 text-sm leading-6 text-text-secondary">{nextAction.detail}</p>
-          {latestOutcome?.privateNote ? (
-            <div className="mt-3 rounded-xl bg-white/70 p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Latest internal note</p>
-              <p className="mt-1 text-sm text-text-secondary">{latestOutcome.privateNote}</p>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="rounded-2xl border border-border bg-surface-sunken/35 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">Working signals</p>
-          <div className="mt-3 space-y-3">
-            <SignalRow label="Latest outcome" value={latestOutcome ? latestOutcome.outcome.replace(/_/g, ' ') : 'No meeting recorded'} />
-            <SignalRow label="Follow-up due" value={overdueReminder ? formatDate(overdueReminder.dueAt) : studentReminders[0]?.dueAt ? formatDate(studentReminders[0].dueAt) : 'No reminder set'} />
-            <SignalRow label="Campaign" value={activeCampaign ? `${activeCampaignName} (${activeCampaign.mode})` : 'No active campaign'} />
-            <SignalRow label="Docs to action" value={pendingRequirements.length > 0 ? `${pendingRequirements.length} open` : 'Clear'} />
-          </div>
-        </div>
-      </div>
-    </Card>
-  )
-}
-
-function SummaryMetric({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface-sunken/35 p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-text-primary">{value}</p>
-      <p className="mt-1 text-xs text-text-muted">{hint}</p>
-    </div>
-  )
-}
-
-function SignalRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-xs text-text-muted">{label}</span>
-      <span className="text-sm font-medium text-text-primary text-right">{value}</span>
-    </div>
-  )
 }
 
 function WorkflowSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {

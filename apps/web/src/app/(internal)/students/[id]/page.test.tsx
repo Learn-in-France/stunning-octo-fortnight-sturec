@@ -357,21 +357,21 @@ describe('StudentDetailPage', () => {
     renderWithProviders(<StudentDetailPage params={Promise.resolve({ id: 'student-1' })} />)
 
     await waitFor(() => {
-      expect(screen.getByText('Operational Summary')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Next action' })).toBeInTheDocument()
     })
 
     // Identity rail (left): KPI tiles and stage path that only exist in the rail
-    // ("Owner" intentionally still appears in both rail and Operational Summary
-    // during step 3 — that duplication gets cleaned up in step 4.)
     expect(screen.getByText('Readiness')).toBeInTheDocument()
     expect(screen.getByText('Doc blockers')).toBeInTheDocument()
     expect(screen.getByText('Stage path')).toBeInTheDocument()
-    expect(screen.getAllByText('Owner').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Owner')).toBeInTheDocument()
 
-    // Center: operational summary content still rendered
-    expect(screen.getByText('What should happen next?')).toBeInTheDocument()
+    // Center: NextActionCard renders the deterministic recommendation. The
+    // mocked overdue reminder ("Follow up on transcript upload" with a past
+    // dueAt) is the highest-priority kind, so the picker surfaces it as the
+    // headline with an Urgent badge.
     expect(screen.getByText('Follow up on transcript upload')).toBeInTheDocument()
-    expect(screen.getByText('Working signals')).toBeInTheDocument()
+    expect(screen.getByText('Urgent')).toBeInTheDocument()
 
     // Action rail (right): the canonical write entry points
     expect(screen.getAllByRole('button', { name: 'Record Outcome' }).length).toBeGreaterThan(0)
@@ -500,10 +500,12 @@ describe('StudentDetailPage', () => {
     renderWithProviders(<StudentDetailPage params={Promise.resolve({ id: 'student-1' })} />)
 
     await waitFor(() => {
-      expect(screen.getByText('Operational Summary')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Next action' })).toBeInTheDocument()
     })
 
-    expect(screen.getByText('Campaign pack unavailable (manual)')).toBeInTheDocument()
+    // Legacy campaign with null pack still renders in the read-only Work tab
+    // without crashing — the read view shows the fallback title
+    expect(screen.getByText('Campaign pack unavailable')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'History' }))
     expect(screen.getByText('Tried to confirm next document step.')).toBeInTheDocument()
   })
