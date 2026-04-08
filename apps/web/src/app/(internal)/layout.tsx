@@ -15,9 +15,9 @@ export default function InternalLayout({
       <RoleGuard allowed={['admin', 'counsellor']}>
         <div className="flex min-h-screen">
           <Sidebar />
-          <div className="internal-app-shell ml-[260px] flex-1">
+          <div className="internal-app-shell ml-[260px] flex-1 min-w-0">
             <Topbar />
-            <main className="p-6">
+            <main className="p-6 min-w-0 overflow-x-hidden">
               {children}
             </main>
           </div>

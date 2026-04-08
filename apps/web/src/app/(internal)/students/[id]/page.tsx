@@ -175,7 +175,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       />
 
       {/* Stage pipeline */}
-      <Card className="mb-6" padding="sm">
+      <Card className="mb-6 min-w-0" padding="sm">
         <div className="flex items-center gap-0.5 overflow-x-auto py-1 px-1">
           {STAGE_ORDER.map((s, idx) => {
             const isCurrent = s === student.stage
@@ -184,7 +184,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
               <div
                 key={s}
                 className={`
-                  flex-1 min-w-0 px-2 py-1.5 rounded-md text-center text-[10px] font-medium truncate
+                  shrink-0 min-w-[5.5rem] px-2 py-1.5 rounded-md text-center text-[10px] font-medium truncate
                   transition-colors
                   ${isCurrent
                     ? 'bg-primary-600 text-white'
