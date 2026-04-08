@@ -32,7 +32,6 @@ import {
   useStudentTimeline,
   useStudentCaseLog,
   useStudentNotes,
-  useChangeStudentStage,
   useCreateNote,
   useStudentActivities,
   useCreateActivity,
@@ -42,7 +41,7 @@ import {
 } from '@/features/students/hooks/use-students'
 import { useStudentApplications } from '@/features/applications/hooks/use-applications'
 import { useStudentDocuments, useStudentRequirements, useVerifyDocument, useRejectDocument } from '@/features/documents/hooks/use-documents'
-import { useMeetingOutcomes, useRecordMeetingOutcome, useCreateReminder, useCounsellorReminders } from '@/features/counsellor/hooks/use-counsellor'
+import { useMeetingOutcomes, useCounsellorReminders } from '@/features/counsellor/hooks/use-counsellor'
 import { useBookings } from '@/features/bookings/hooks/use-bookings'
 import {
   useStudentCampaigns,
@@ -56,22 +55,20 @@ import {
   useCampaignHistory,
 } from '@/features/campaigns/hooks/use-campaigns'
 import { fetchTeamMembers } from '@/features/team/lib/team-cache'
+import { OutcomeDrawer } from './_drawers/outcome-drawer'
+import { ReminderDrawer } from './_drawers/reminder-drawer'
+import { StageDrawer } from './_drawers/stage-drawer'
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { user } = useAuth()
   const { data: student, isLoading, error } = useStudent(id)
-  const changeStage = useChangeStudentStage(id)
   const assignCounsellor = useAssignStudentCounsellor(id)
-  const [showStageModal, setShowStageModal] = useState(false)
+  const [showOutcomeDrawer, setShowOutcomeDrawer] = useState(false)
+  const [showReminderDrawer, setShowReminderDrawer] = useState(false)
+  const [showStageDrawer, setShowStageDrawer] = useState(false)
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [activeTab, setActiveTab] = useState('work')
-  const [meetingIntent, setMeetingIntent] = useState<'outcome' | 'reminder' | null>(null)
-  const [stageForm, setStageForm] = useState({
-    toStage: '',
-    reasonCode: 'manual_review',
-    reasonNote: '',
-  })
   const [assignForm, setAssignForm] = useState({
     counsellorId: '',
     reason: '',
@@ -106,15 +103,26 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
 
   const stageIndex = STAGE_ORDER.indexOf(student.stage)
   const availableCounsellors = (teamQuery.data ?? []).filter((member) => member.role === 'counsellor' && member.status !== 'deactivated')
+  // Drawer openers are exclusive — only one drawer is ever open at a time so
+  // the user never has to click through layered slide-overs.
+  const closeAllDrawers = () => {
+    setShowOutcomeDrawer(false)
+    setShowReminderDrawer(false)
+    setShowStageDrawer(false)
+  }
   const openOutcomeFlow = () => {
-    setActiveTab('work')
-    setMeetingIntent('outcome')
+    closeAllDrawers()
+    setShowOutcomeDrawer(true)
   }
   const openReminderFlow = () => {
-    setActiveTab('work')
-    setMeetingIntent('reminder')
+    closeAllDrawers()
+    setShowReminderDrawer(true)
   }
   const openHistoryFlow = () => setActiveTab('history')
+  const openChangeStage = () => {
+    closeAllDrawers()
+    setShowStageDrawer(true)
+  }
 
   return (
     <div className="min-w-0 overflow-x-hidden">
@@ -149,14 +157,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             <Button size="sm" variant="ghost" onClick={openHistoryFlow}>
               View History
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => {
-              setStageForm({
-                toStage: student.stage,
-                reasonCode: 'manual_review',
-                reasonNote: '',
-              })
-              setShowStageModal(true)
-            }}>
+            <Button size="sm" variant="secondary" onClick={openChangeStage}>
               Change Stage
             </Button>
             {isAdmin ? (
@@ -208,14 +209,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         onRecordOutcome={openOutcomeFlow}
         onAddReminder={openReminderFlow}
         onViewHistory={openHistoryFlow}
-        onChangeStage={() => {
-          setStageForm({
-            toStage: student.stage,
-            reasonCode: 'manual_review',
-            reasonNote: '',
-          })
-          setShowStageModal(true)
-        }}
+        onChangeStage={openChangeStage}
         onReassign={() => {
           setAssignForm({
             counsellorId: student.assignedCounsellorId ?? '',
@@ -229,16 +223,13 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       <div className="min-w-0">
         <Tabs
           activeTab={activeTab}
-          onChange={(tabId) => {
-            setActiveTab(tabId)
-            if (tabId !== 'work') setMeetingIntent(null)
-          }}
+          onChange={(tabId) => setActiveTab(tabId)}
           defaultTab="work"
           items={[
             {
               id: 'work',
               label: 'Work',
-              content: <WorkTab studentId={id} intent={meetingIntent} />,
+              content: <WorkTab studentId={id} />,
             },
             {
               id: 'history',
@@ -254,64 +245,24 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         />
       </div>
 
-      <Modal
-        open={showStageModal}
-        onClose={() => setShowStageModal(false)}
-        title="Change Stage"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <Select
-            label="Move student to"
-            value={stageForm.toStage}
-            onChange={(e) => setStageForm((prev) => ({ ...prev, toStage: e.target.value }))}
-            options={STAGE_ORDER.map((stage) => ({
-              value: stage,
-              label: STAGE_DISPLAY_NAMES[stage],
-            }))}
-          />
-          <Select
-            label="Reason"
-            value={stageForm.reasonCode}
-            onChange={(e) => setStageForm((prev) => ({ ...prev, reasonCode: e.target.value }))}
-            options={[
-              { value: 'manual_review', label: 'Manual review' },
-              { value: 'consultation_complete', label: 'Consultation complete' },
-              { value: 'documents_progressed', label: 'Documents progressed' },
-              { value: 'campaign_progressed', label: 'Campaign progressed' },
-              { value: 'admin_override', label: 'Admin override' },
-              { value: 'other', label: 'Other' },
-            ]}
-          />
-          <Textarea
-            label="Internal note"
-            value={stageForm.reasonNote}
-            onChange={(e) => setStageForm((prev) => ({ ...prev, reasonNote: e.target.value }))}
-            placeholder="Why are you moving this student, and what should the next owner know?"
-          />
-          <div className="flex items-center justify-end gap-2">
-            <Button size="sm" variant="secondary" onClick={() => setShowStageModal(false)}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              loading={changeStage.isPending}
-              disabled={!stageForm.toStage || !stageForm.reasonNote.trim()}
-              onClick={() => {
-                changeStage.mutate({
-                  toStage: stageForm.toStage as typeof STAGE_ORDER[number],
-                  reasonCode: stageForm.reasonCode || undefined,
-                  reasonNote: stageForm.reasonNote.trim(),
-                }, {
-                  onSuccess: () => setShowStageModal(false),
-                })
-              }}
-            >
-              Save stage change
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <OutcomeDrawer
+        open={showOutcomeDrawer}
+        onClose={() => setShowOutcomeDrawer(false)}
+        studentId={id}
+      />
+
+      <ReminderDrawer
+        open={showReminderDrawer}
+        onClose={() => setShowReminderDrawer(false)}
+        studentId={id}
+      />
+
+      <StageDrawer
+        open={showStageDrawer}
+        onClose={() => setShowStageDrawer(false)}
+        studentId={id}
+        currentStage={student.stage}
+      />
 
       <Modal
         open={showAssignModal}
@@ -1623,14 +1574,14 @@ function WorkflowSection({ title, description, children }: { title: string; desc
   )
 }
 
-function WorkTab({ studentId, intent }: { studentId: string; intent?: 'outcome' | 'reminder' | null }) {
+function WorkTab({ studentId }: { studentId: string }) {
   return (
     <div className="space-y-8">
       <WorkflowSection
         title="Meetings"
-        description="Record consultation outcomes, decide the next action, and set reminders that keep the case moving."
+        description="Read the recent meeting outcomes here. Use the Record Outcome action above to log a new one."
       >
-        <MeetingOutcomesTab studentId={studentId} intent={intent} />
+        <MeetingOutcomesTab studentId={studentId} />
       </WorkflowSection>
 
       <WorkflowSection
@@ -1785,37 +1736,8 @@ function MeetingPrepBlock({ studentId, student }: { studentId: string; student: 
 
 // ─── Meeting Outcomes Tab ───────────────────────────────────
 
-function MeetingOutcomesTab({ studentId, intent }: { studentId: string; intent?: 'outcome' | 'reminder' | null }) {
+function MeetingOutcomesTab({ studentId }: { studentId: string }) {
   const { data: outcomes, isLoading } = useMeetingOutcomes(studentId)
-  const { data: bookings } = useBookings()
-  const recordOutcome = useRecordMeetingOutcome()
-  const createReminder = useCreateReminder()
-  const [showForm, setShowForm] = useState(false)
-  const [showReminderForm, setShowReminderForm] = useState(false)
-  const [form, setForm] = useState({
-    bookingId: '',
-    outcome: '',
-    nextAction: '',
-    followUpDueAt: '',
-    privateNote: '',
-    stageAfter: '',
-  })
-  const [reminderForm, setReminderForm] = useState({ title: '', dueAt: '' })
-
-  useEffect(() => {
-    if (intent === 'outcome') {
-      setShowForm(true)
-      setShowReminderForm(false)
-    } else if (intent === 'reminder') {
-      setShowReminderForm(true)
-      setShowForm(false)
-    }
-  }, [intent])
-
-  // Filter bookings for this student (completed or assigned)
-  const studentBookings = (bookings ?? []).filter(
-    (b) => b.studentId === studentId && ['assigned', 'scheduled', 'completed'].includes(b.status),
-  )
 
   if (isLoading) return <LoadingSpinner size="md" />
 
@@ -1823,135 +1745,10 @@ function MeetingOutcomesTab({ studentId, intent }: { studentId: string; intent?:
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-text-primary">Meeting Outcomes</h3>
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={() => setShowReminderForm(!showReminderForm)}>
-            {showReminderForm ? 'Cancel' : 'Add reminder'}
-          </Button>
-          <Button size="sm" onClick={() => setShowForm(!showForm)}>
-            {showForm ? 'Cancel' : 'Record outcome'}
-          </Button>
-        </div>
+        <p className="text-xs text-text-muted">Use the Record Outcome action above to log a new meeting.</p>
       </div>
 
-      {showReminderForm && (
-        <Card>
-          <CardHeader><CardTitle>Create follow-up reminder</CardTitle></CardHeader>
-          <div className="space-y-4">
-            <Input
-              label="Reminder"
-              value={reminderForm.title}
-              onChange={(e) => setReminderForm({ ...reminderForm, title: e.target.value })}
-              placeholder="e.g., Follow up about transcripts"
-            />
-            <Input
-              label="Due date"
-              type="date"
-              value={reminderForm.dueAt}
-              onChange={(e) => setReminderForm({ ...reminderForm, dueAt: e.target.value })}
-            />
-            <Button
-              size="sm"
-              loading={createReminder.isPending}
-              disabled={!reminderForm.title || !reminderForm.dueAt}
-              onClick={() => {
-                createReminder.mutate({
-                  studentId,
-                  title: reminderForm.title,
-                  dueAt: new Date(reminderForm.dueAt).toISOString(),
-                }, {
-                  onSuccess: () => {
-                    setShowReminderForm(false)
-                    setReminderForm({ title: '', dueAt: '' })
-                  },
-                })
-              }}
-            >
-              Create reminder
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {showForm && (
-        <Card>
-          <div className="space-y-4">
-            <Select
-              label="Meeting"
-              options={[
-                { value: '', label: 'Select a booking...' },
-                ...studentBookings.map((b) => ({
-                  value: b.id,
-                  label: `${new Date(b.scheduledAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} — ${b.status}`,
-                })),
-              ]}
-              value={form.bookingId}
-              onChange={(e) => setForm({ ...form, bookingId: e.target.value })}
-            />
-            <Select
-              label="Outcome"
-              options={[
-                { value: 'qualified', label: 'Qualified' },
-                { value: 'needs_follow_up', label: 'Needs follow-up' },
-                { value: 'not_ready', label: 'Not ready' },
-                { value: 'disqualified', label: 'Disqualified' },
-              ]}
-              value={form.outcome}
-              onChange={(e) => setForm({ ...form, outcome: e.target.value })}
-            />
-            <Input
-              label="Next action"
-              value={form.nextAction}
-              onChange={(e) => setForm({ ...form, nextAction: e.target.value })}
-              placeholder="What needs to happen next?"
-            />
-            <Input
-              label="Follow-up due date"
-              type="date"
-              value={form.followUpDueAt}
-              onChange={(e) => setForm({ ...form, followUpDueAt: e.target.value })}
-            />
-            <Input
-              label="Private note (counsellor + admin only)"
-              value={form.privateNote}
-              onChange={(e) => setForm({ ...form, privateNote: e.target.value })}
-              placeholder="Internal notes..."
-            />
-            <Select
-              label="Update stage to (optional)"
-              options={[
-                { value: '', label: 'No change' },
-                ...STAGE_ORDER.map((s) => ({ value: s, label: STAGE_DISPLAY_NAMES[s] })),
-              ]}
-              value={form.stageAfter}
-              onChange={(e) => setForm({ ...form, stageAfter: e.target.value })}
-            />
-            <Button
-              loading={recordOutcome.isPending}
-              disabled={!form.bookingId || !form.outcome || !form.nextAction}
-              onClick={() => {
-                recordOutcome.mutate({
-                  studentId,
-                  bookingId: form.bookingId,
-                  outcome: form.outcome,
-                  nextAction: form.nextAction,
-                  followUpDueAt: form.followUpDueAt || undefined,
-                  privateNote: form.privateNote || undefined,
-                  stageAfter: form.stageAfter || undefined,
-                }, {
-                  onSuccess: () => {
-                    setShowForm(false)
-                    setForm({ bookingId: '', outcome: '', nextAction: '', followUpDueAt: '', privateNote: '', stageAfter: '' })
-                  },
-                })
-              }}
-            >
-              Save outcome
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {(outcomes ?? []).length === 0 && !showForm ? (
+      {(outcomes ?? []).length === 0 ? (
         <EmptyState title="No meeting outcomes recorded yet." />
       ) : (
         <div className="space-y-4">
