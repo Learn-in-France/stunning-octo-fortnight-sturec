@@ -7,6 +7,7 @@ import type {
   BookingListItem,
   NotificationItem,
   SupportRequestResponse,
+  UploadUrlResponse,
 } from '@sturec/shared'
 
 import * as repo from './repository.js'
@@ -241,6 +242,28 @@ export async function getDocuments(userId: string): Promise<DocumentListItem[] |
   if (!student) return null
   const docs = await repo.findStudentDocuments(student.id)
   return docs.map(mapDocument)
+}
+
+export async function requestDocumentUploadUrl(
+  userId: string,
+  data: { type: string; filename: string },
+): Promise<UploadUrlResponse | null> {
+  const student = await repo.findStudentByUserId(userId)
+  if (!student) return null
+
+  const { requestUploadUrl } = await import('../documents/service.js')
+  return requestUploadUrl(student.id, data, userId)
+}
+
+export async function completeDocumentUpload(
+  userId: string,
+  documentId: string,
+): Promise<DocumentListItem | null> {
+  const student = await repo.findStudentByUserId(userId)
+  if (!student) return null
+
+  const { completeUpload } = await import('../documents/service.js')
+  return completeUpload(student.id, documentId)
 }
 
 export async function shareDocument(userId: string, documentId: string): Promise<DocumentListItem | null> {

@@ -27,19 +27,19 @@ export async function studentRoutes(server: FastifyInstance) {
 
   // Detail
   server.get('/students/:id', {
-    preHandler: [authMiddleware, requireRole('admin', 'counsellor', 'student'), validateParams(schema.idParam)],
+    preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateParams(schema.idParam)],
     handler: ctrl.getStudent,
   })
 
   // Update
   server.patch('/students/:id', {
-    preHandler: [authMiddleware, requireRole('admin', 'counsellor', 'student'), validateParams(schema.idParam), validateBody(schema.updateStudentSchema)],
+    preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateParams(schema.idParam), validateBody(schema.updateStudentSchema)],
     handler: ctrl.updateStudent,
   })
 
   // Progress (student-facing)
   server.get('/students/:id/progress', {
-    preHandler: [authMiddleware, requireRole('admin', 'student'), validateParams(schema.idParam)],
+    preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateParams(schema.idParam)],
     handler: ctrl.getProgress,
   })
 
@@ -93,27 +93,27 @@ export async function studentRoutes(server: FastifyInstance) {
 
   // Contacts
   server.get('/students/:id/contacts', {
-    preHandler: [authMiddleware, requireRole('admin', 'counsellor', 'student'), validateParams(schema.idParam)],
+    preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateParams(schema.idParam)],
     handler: ctrl.listContacts,
   })
   server.post('/students/:id/contacts', {
-    preHandler: [authMiddleware, requireRole('admin', 'student'), validateParams(schema.idParam), validateBody(createContactSchema)],
+    preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateParams(schema.idParam), validateBody(createContactSchema)],
     handler: ctrl.createContact,
   })
 
   // Consents
   server.get('/students/:id/consents', {
-    preHandler: [authMiddleware, requireRole('admin', 'student'), validateParams(schema.idParam)],
+    preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateParams(schema.idParam)],
     handler: ctrl.listConsents,
   })
   server.post('/students/:id/consents', {
-    preHandler: [authMiddleware, requireRole('admin', 'student'), validateParams(schema.idParam), validateBody(createConsentEventSchema)],
+    preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateParams(schema.idParam), validateBody(createConsentEventSchema)],
     handler: ctrl.createConsent,
   })
 
   // Contacts — update (top-level route per API contract)
   server.patch('/student-contacts/:id', {
-    preHandler: [authMiddleware, requireRole('admin', 'student'), validateParams(schema.idParam), validateBody(updateContactSchema)],
+    preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateParams(schema.idParam), validateBody(updateContactSchema)],
     handler: ctrl.updateContact,
   })
 

@@ -271,6 +271,30 @@ describe('Route-level smoke tests', () => {
 
       expect(response.statusCode).toBe(403)
     })
+
+    it('student cannot access GET /students/:id', async () => {
+      authAs(STUDENT_USER)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
+
+    it('student cannot access generic student documents route', async () => {
+      authAs(STUDENT_USER)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/documents',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
   })
 
   // ─── Public catalog ────────────────────────────────────────
@@ -819,6 +843,52 @@ describe('Route-level smoke tests', () => {
       const body = JSON.parse(response.body)
       expect(body.status).toBe('awaiting_assignment')
       expect(body.counsellorId).toBeNull()
+    })
+
+    it('POST /bookings for student ignores foreign IDs and uses authenticated student record', async () => {
+      authAs(STUDENT_USER)
+      db.student.findFirst.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000010',
+        userId: STUDENT_USER.id,
+        assignedCounsellorId: '00000000-0000-0000-0000-000000000002',
+        deletedAt: null,
+      })
+      db.booking.create.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000062',
+        studentId: '00000000-0000-0000-0000-000000000010',
+        leadId: null,
+        counsellorId: '00000000-0000-0000-0000-000000000002',
+        scheduledAt: new Date('2026-04-01T10:00:00Z'),
+        status: 'assigned',
+        source: 'chat',
+        notes: 'hello',
+        createdAt: new Date('2026-03-17'),
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/bookings',
+        headers: authHeaders(),
+        payload: {
+          studentId: '00000000-0000-0000-0000-000000009999',
+          leadId: '00000000-0000-0000-0000-000000008888',
+          counsellorId: '00000000-0000-0000-0000-000000007777',
+          scheduledAt: '2026-04-01T10:00:00Z',
+          source: 'chat',
+          notes: 'hello',
+        },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(db.booking.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({
+          studentId: '00000000-0000-0000-0000-000000000010',
+          leadId: undefined,
+          counsellorId: '00000000-0000-0000-0000-000000000002',
+          source: 'chat',
+          status: 'assigned',
+        }),
+      }))
     })
 
     it('PATCH /bookings/:id returns 404 for missing booking', async () => {
@@ -1539,6 +1609,33 @@ describe('Route-level smoke tests', () => {
 
       expect(response.statusCode).toBe(200)
       expect(JSON.parse(response.body)).toEqual([])
+    })
+
+    it('POST /students/me/documents/upload-url creates a signed upload request', async () => {
+      authAs(STUDENT_USER)
+      db.student.findFirst.mockResolvedValue(STUDENT_RECORD)
+      db.document.create.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000071',
+        studentId: STUDENT_RECORD.id,
+        uploadedBy: STUDENT_USER.id,
+        type: 'passport',
+        filename: 'passport.pdf',
+        gcsPath: 'students/path/passport.pdf',
+        status: 'pending_upload',
+        createdAt: new Date(),
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/me/documents/upload-url',
+        headers: authHeaders(),
+        payload: { type: 'passport', filename: 'passport.pdf' },
+      })
+
+      expect(response.statusCode).toBe(201)
+      const body = JSON.parse(response.body)
+      expect(body).toHaveProperty('uploadUrl')
+      expect(body).toHaveProperty('documentId')
     })
 
     it('POST /students/me/documents/:id/share shares a document', async () => {

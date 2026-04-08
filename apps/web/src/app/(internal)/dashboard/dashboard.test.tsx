@@ -94,6 +94,7 @@ describe('DashboardPage', () => {
     setMockAuth({ user: makeUser({ firstName: 'Nadia', role: 'counsellor' }) })
     vi.mocked(api.get).mockImplementation((url: string) => {
       if (url === '/bookings') return Promise.resolve([] as never)
+      if (url === '/students') return Promise.resolve({ items: [], total: 4, page: 1, limit: 1 } as never)
       if (url === '/counsellor/agenda') return Promise.resolve({
         todayMeetings: [],
         overdueReminders: [],
@@ -107,12 +108,14 @@ describe('DashboardPage', () => {
     renderWithProviders(<DashboardPage />)
 
     await waitFor(() => {
-      expect(screen.getByText("Today's meetings")).toBeInTheDocument()
+      expect(screen.getByText('My Caseload')).toBeInTheDocument()
     })
 
+    expect(screen.getByText("Today's meetings")).toBeInTheDocument()
     expect(screen.getByText('Overdue follow-ups')).toBeInTheDocument()
     expect(screen.getByText('Documents to review')).toBeInTheDocument()
     expect(screen.getByText('Stale students')).toBeInTheDocument()
+    expect(screen.getByText('My students')).toBeInTheDocument()
     expect(screen.queryByText('Pending Assignment Queue')).toBeNull()
   })
 

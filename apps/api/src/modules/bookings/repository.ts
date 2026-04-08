@@ -12,6 +12,13 @@ export function findBookingById(id: string) {
   return prisma.booking.findUnique({ where: { id } })
 }
 
+export function findStudentByUserId(userId: string) {
+  return prisma.student.findFirst({
+    where: { userId, deletedAt: null },
+    select: { id: true, assignedCounsellorId: true },
+  })
+}
+
 export function createBooking(data: {
   studentId?: string
   leadId?: string

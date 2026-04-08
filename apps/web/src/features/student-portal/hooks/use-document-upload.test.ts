@@ -29,14 +29,13 @@ describe('useDocumentUpload', () => {
 
     await act(async () => {
       await result.current.mutateAsync({
-        studentId: 's-1',
         type: 'passport' as never,
         file: mockFile,
       })
     })
 
     // Verify step 1
-    expect(api.post).toHaveBeenCalledWith('/students/s-1/documents/upload-url', {
+    expect(api.post).toHaveBeenCalledWith('/students/me/documents/upload-url', {
       type: 'passport',
       filename: 'passport.pdf',
     })
@@ -51,7 +50,7 @@ describe('useDocumentUpload', () => {
     )
 
     // Verify step 3 — confirm
-    expect(api.post).toHaveBeenCalledWith('/students/s-1/documents/complete', {
+    expect(api.post).toHaveBeenCalledWith('/students/me/documents/complete', {
       documentId: 'doc-123',
     })
 
@@ -66,7 +65,6 @@ describe('useDocumentUpload', () => {
     await act(async () => {
       await expect(
         result.current.mutateAsync({
-          studentId: 's-1',
           type: 'passport' as never,
           file: mockFile,
         }),

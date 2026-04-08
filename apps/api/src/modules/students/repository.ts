@@ -115,6 +115,7 @@ export function createAssignment(data: {
   studentId: string
   counsellorId: string
   assignedBy: string
+  reason?: string
 }) {
   return prisma.studentAssignment.create({ data })
 }

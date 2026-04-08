@@ -3,15 +3,14 @@ import type { DocumentType, UploadUrlResponse } from '@sturec/shared'
 import api from '@/lib/api/client'
 
 interface UploadParams {
-  studentId: string
   type: DocumentType
   file: File
 }
 
-async function uploadDocument({ studentId, type, file }: UploadParams): Promise<void> {
+async function uploadDocument({ type, file }: UploadParams): Promise<void> {
   // 1. Get signed upload URL
   const { uploadUrl, documentId } = await api.post(
-    `/students/${studentId}/documents/upload-url`,
+    '/students/me/documents/upload-url',
     { type, filename: file.name },
   ) as unknown as UploadUrlResponse
 
@@ -23,7 +22,7 @@ async function uploadDocument({ studentId, type, file }: UploadParams): Promise<
   })
 
   // 3. Confirm upload
-  await api.post(`/students/${studentId}/documents/complete`, { documentId })
+  await api.post('/students/me/documents/complete', { documentId })
 }
 
 export function useDocumentUpload() {

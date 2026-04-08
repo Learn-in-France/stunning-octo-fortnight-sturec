@@ -1,7 +1,8 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
 
 import type {
   ApplicationListItem,
@@ -14,28 +15,33 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
 import { Select } from '@/components/ui/select'
 import { Tabs } from '@/components/ui/tabs'
 import { Table, type Column } from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StageBadge } from '@/components/shared/stage-badge'
 import { ScoreBar } from '@/components/shared/score-bar'
+import { useAuth } from '@/providers/auth-provider'
 import {
   useStudent,
   useStudentAssessments,
   useStudentTimeline,
   useStudentCaseLog,
   useStudentNotes,
+  useChangeStudentStage,
   useCreateNote,
   useStudentActivities,
   useCreateActivity,
   useStudentContacts,
   useCreateContact,
+  useAssignStudentCounsellor,
 } from '@/features/students/hooks/use-students'
 import { useStudentApplications } from '@/features/applications/hooks/use-applications'
 import { useStudentDocuments, useStudentRequirements, useVerifyDocument, useRejectDocument } from '@/features/documents/hooks/use-documents'
-import { useMeetingOutcomes, useRecordMeetingOutcome, useCreateReminder } from '@/features/counsellor/hooks/use-counsellor'
+import { useMeetingOutcomes, useRecordMeetingOutcome, useCreateReminder, useCounsellorReminders } from '@/features/counsellor/hooks/use-counsellor'
 import { useBookings } from '@/features/bookings/hooks/use-bookings'
 import {
   useStudentCampaigns,
@@ -48,10 +54,35 @@ import {
   useUpdateCampaignMode,
   useCampaignHistory,
 } from '@/features/campaigns/hooks/use-campaigns'
+import { fetchTeamMembers } from '@/features/team/lib/team-cache'
 
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const { user } = useAuth()
   const { data: student, isLoading, error } = useStudent(id)
+  const changeStage = useChangeStudentStage(id)
+  const assignCounsellor = useAssignStudentCounsellor(id)
+  const [showStageModal, setShowStageModal] = useState(false)
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [activeTab, setActiveTab] = useState('case-log')
+  const [meetingIntent, setMeetingIntent] = useState<'outcome' | 'reminder' | null>(null)
+  const [stageForm, setStageForm] = useState({
+    toStage: '',
+    reasonCode: 'manual_review',
+    reasonNote: '',
+  })
+  const [assignForm, setAssignForm] = useState({
+    counsellorId: '',
+    reason: '',
+  })
+
+  const isAdmin = user?.role === 'admin'
+  const teamQuery = useQuery({
+    queryKey: ['team', 'invite-and-assignment-options'],
+    queryFn: fetchTeamMembers,
+    enabled: showAssignModal && isAdmin,
+    staleTime: 60_000,
+  })
 
   if (isLoading) {
     return (
@@ -73,6 +104,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const stageIndex = STAGE_ORDER.indexOf(student.stage)
+  const availableCounsellors = (teamQuery.data ?? []).filter((member) => member.role === 'counsellor' && member.status !== 'deactivated')
 
   return (
     <div>
@@ -87,6 +119,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
 
       <PageHeader
         title={student.fullName}
+        description="Use this page to assess current progress, understand what happened last, and decide the next internal action."
         badge={
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full">
@@ -96,13 +129,46 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           </div>
         }
         actions={
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="secondary">
+          <div className="flex max-w-[42rem] flex-wrap justify-end gap-2">
+            <Button size="sm" variant="ghost" onClick={() => {
+              setActiveTab('meetings')
+              setMeetingIntent('outcome')
+            }}>
+              Record Outcome
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => {
+              setActiveTab('meetings')
+              setMeetingIntent('reminder')
+            }}>
+              Add Reminder
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setActiveTab('case-log')}>
+              Add Note
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setActiveTab('campaigns')}>
+              Manage Campaigns
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => {
+              setStageForm({
+                toStage: student.stage,
+                reasonCode: 'manual_review',
+                reasonNote: '',
+              })
+              setShowStageModal(true)
+            }}>
               Change Stage
             </Button>
-            <Button size="sm" variant="secondary">
-              Assign
-            </Button>
+            {isAdmin ? (
+              <Button size="sm" variant="secondary" onClick={() => {
+                setAssignForm({
+                  counsellorId: student.assignedCounsellorId ?? '',
+                  reason: '',
+                })
+                setShowAssignModal(true)
+              }}>
+                {student.assignedCounsellorId ? 'Reassign Counsellor' : 'Assign Counsellor'}
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -134,11 +200,19 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </Card>
 
+      <OperationalSummaryBlock studentId={id} student={student} />
+
       {/* Meeting prep summary */}
       <MeetingPrepBlock studentId={id} student={student} />
 
       {/* Tabbed content */}
       <Tabs
+        activeTab={activeTab}
+        onChange={(tabId) => {
+          setActiveTab(tabId)
+          if (tabId !== 'meetings') setMeetingIntent(null)
+        }}
+        defaultTab="case-log"
         items={[
           {
             id: 'overview',
@@ -148,22 +222,12 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           {
             id: 'case-log',
             label: 'Case Log',
-            content: <CaseLogTab studentId={id} />,
+            content: <CaseManagementTab studentId={id} />,
           },
           {
             id: 'meetings',
             label: 'Meetings',
-            content: <MeetingOutcomesTab studentId={id} />,
-          },
-          {
-            id: 'campaigns',
-            label: 'Campaigns',
-            content: <CampaignsTab studentId={id} />,
-          },
-          {
-            id: 'applications',
-            label: 'Applications',
-            content: <ApplicationsTab studentId={id} />,
+            content: <MeetingOutcomesTab studentId={id} intent={meetingIntent} />,
           },
           {
             id: 'documents',
@@ -171,32 +235,122 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             content: <DocumentsTab studentId={id} />,
           },
           {
-            id: 'ai',
-            label: 'AI Assessments',
-            content: <AiAssessmentsTab studentId={id} />,
+            id: 'campaigns',
+            label: 'Campaigns',
+            content: <CampaignsTab studentId={id} />,
           },
           {
-            id: 'timeline',
-            label: 'Timeline',
-            content: <TimelineTab studentId={id} />,
-          },
-          {
-            id: 'notes',
-            label: 'Notes',
-            content: <NotesTab studentId={id} />,
-          },
-          {
-            id: 'contacts',
-            label: 'Contacts',
-            content: <ContactsTab studentId={id} />,
-          },
-          {
-            id: 'activity',
-            label: 'Activity',
-            content: <ActivityTab studentId={id} />,
+            id: 'profile',
+            label: 'Profile',
+            content: <ProfileWorkspaceTab student={student} studentId={id} />,
           },
         ]}
       />
+
+      <Modal
+        open={showStageModal}
+        onClose={() => setShowStageModal(false)}
+        title="Change Stage"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <Select
+            label="Move student to"
+            value={stageForm.toStage}
+            onChange={(e) => setStageForm((prev) => ({ ...prev, toStage: e.target.value }))}
+            options={STAGE_ORDER.map((stage) => ({
+              value: stage,
+              label: STAGE_DISPLAY_NAMES[stage],
+            }))}
+          />
+          <Select
+            label="Reason"
+            value={stageForm.reasonCode}
+            onChange={(e) => setStageForm((prev) => ({ ...prev, reasonCode: e.target.value }))}
+            options={[
+              { value: 'manual_review', label: 'Manual review' },
+              { value: 'consultation_complete', label: 'Consultation complete' },
+              { value: 'documents_progressed', label: 'Documents progressed' },
+              { value: 'campaign_progressed', label: 'Campaign progressed' },
+              { value: 'admin_override', label: 'Admin override' },
+              { value: 'other', label: 'Other' },
+            ]}
+          />
+          <Textarea
+            label="Internal note"
+            value={stageForm.reasonNote}
+            onChange={(e) => setStageForm((prev) => ({ ...prev, reasonNote: e.target.value }))}
+            placeholder="Why are you moving this student, and what should the next owner know?"
+          />
+          <div className="flex items-center justify-end gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setShowStageModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              loading={changeStage.isPending}
+              disabled={!stageForm.toStage || !stageForm.reasonNote.trim()}
+              onClick={() => {
+                changeStage.mutate({
+                  toStage: stageForm.toStage as typeof STAGE_ORDER[number],
+                  reasonCode: stageForm.reasonCode || undefined,
+                  reasonNote: stageForm.reasonNote.trim(),
+                }, {
+                  onSuccess: () => setShowStageModal(false),
+                })
+              }}
+            >
+              Save stage change
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        title="Reassign Counsellor"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <Select
+            label="Counsellor"
+            value={assignForm.counsellorId}
+            onChange={(e) => setAssignForm((prev) => ({ ...prev, counsellorId: e.target.value }))}
+            options={availableCounsellors.map((member) => ({
+              value: member.id,
+              label: `${member.firstName} ${member.lastName}`,
+            }))}
+            placeholder="Select counsellor"
+          />
+          <Textarea
+            label="Handoff note"
+            value={assignForm.reason}
+            onChange={(e) => setAssignForm((prev) => ({ ...prev, reason: e.target.value }))}
+            placeholder="Why is this case being reassigned, and what should the next counsellor pick up first?"
+          />
+          <div className="flex items-center justify-end gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setShowAssignModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              loading={assignCounsellor.isPending}
+              disabled={!assignForm.counsellorId || !assignForm.reason.trim()}
+              onClick={() => {
+                assignCounsellor.mutate({
+                  counsellorId: assignForm.counsellorId,
+                  reason: assignForm.reason.trim(),
+                }, {
+                  onSuccess: () => setShowAssignModal(false),
+                })
+              }}
+            >
+              Save reassignment
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
@@ -1184,6 +1338,239 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+function OperationalSummaryBlock({ studentId, student }: { studentId: string; student: ReturnType<typeof useStudent>['data'] }) {
+  const { data: assessments } = useStudentAssessments(studentId)
+  const { data: outcomes } = useMeetingOutcomes(studentId)
+  const { data: reminders } = useCounsellorReminders()
+  const { data: requirements } = useStudentRequirements(studentId)
+  const { data: campaigns } = useStudentCampaigns(studentId)
+  const latestAssessment = assessments?.[0]
+  const latestOutcome = outcomes?.[0]
+  const studentReminders = (reminders ?? []).filter((reminder: { student: { id: string } | null; status: string }) => reminder.student?.id === studentId && reminder.status === 'pending')
+  const overdueReminder = studentReminders
+    .filter((reminder: { dueAt: string }) => new Date(reminder.dueAt).getTime() < Date.now())
+    .sort((a: { dueAt: string }, b: { dueAt: string }) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0]
+  const pendingRequirements = (requirements?.items ?? []).filter((requirement: { status: string }) => ['missing', 'requested', 'rejected'].includes(requirement.status))
+  const activeCampaign = (campaigns ?? []).find((campaign) => campaign.status === 'active')
+
+  if (!student) return null
+
+  const nextAction = (() => {
+    if (!student.assignedCounsellorId) {
+      return {
+        label: 'Assign a counsellor',
+        detail: 'This case cannot progress until a counsellor owns it.',
+        tone: 'warning' as const,
+      }
+    }
+    if (overdueReminder) {
+      return {
+        label: overdueReminder.title,
+        detail: `Follow-up is overdue since ${formatDate(overdueReminder.dueAt)}.`,
+        tone: 'danger' as const,
+      }
+    }
+    if (pendingRequirements.length > 0) {
+      return {
+        label: `Review ${pendingRequirements.length} document requirement${pendingRequirements.length === 1 ? '' : 's'}`,
+        detail: 'The document checklist still has open items blocking progress.',
+        tone: 'warning' as const,
+      }
+    }
+    if (latestOutcome?.nextAction) {
+      return {
+        label: latestOutcome.nextAction,
+        detail: latestOutcome.followUpDueAt
+          ? `Follow-up planned for ${formatDate(latestOutcome.followUpDueAt)}.`
+          : 'This came from the latest recorded meeting outcome.',
+        tone: 'info' as const,
+      }
+    }
+    if (!activeCampaign) {
+      return {
+        label: 'Start the phase campaign',
+        detail: 'No active campaign is running for this student yet.',
+        tone: 'info' as const,
+      }
+    }
+    return {
+      label: 'Continue active case management',
+      detail: 'No urgent blocker is recorded right now.',
+      tone: 'success' as const,
+    }
+  })()
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <div>
+          <CardTitle>Operational Summary</CardTitle>
+          <p className="mt-1 text-xs text-text-muted">This is the internal working summary for counsellors and admins.</p>
+        </div>
+        <Badge variant={
+          nextAction.tone === 'danger' ? 'danger' :
+          nextAction.tone === 'warning' ? 'warning' :
+          nextAction.tone === 'success' ? 'success' : 'info'
+        } dot>
+          Next: {nextAction.tone === 'danger' ? 'urgent' : nextAction.tone}
+        </Badge>
+      </CardHeader>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <SummaryMetric
+          label="Current Stage"
+          value={STAGE_DISPLAY_NAMES[student.stage]}
+          hint={`Updated ${formatDate(student.stageUpdatedAt)}`}
+        />
+        <SummaryMetric
+          label="Owner"
+          value={student.counsellorName}
+          hint={student.assignedAt ? `Assigned ${formatDate(student.assignedAt)}` : 'Needs ownership'}
+        />
+        <SummaryMetric
+          label="Lead Heat"
+          value={latestAssessment?.leadHeat ? latestAssessment.leadHeat.replace(/_/g, ' ') : 'Not assessed'}
+          hint={latestAssessment ? `AI updated ${formatDate(latestAssessment.createdAt)}` : 'No AI assessment yet'}
+        />
+        <SummaryMetric
+          label="Profile Completeness"
+          value={latestAssessment?.profileCompleteness != null ? `${Math.round(Number(latestAssessment.profileCompleteness) * 100)}%` : 'No data'}
+          hint={pendingRequirements.length > 0 ? `${pendingRequirements.length} open requirement${pendingRequirements.length === 1 ? '' : 's'}` : 'No open document blockers'}
+        />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
+        <div className="rounded-2xl border border-border bg-surface-sunken/35 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">What should happen next?</p>
+          <p className="mt-2 text-sm font-semibold text-text-primary">{nextAction.label}</p>
+          <p className="mt-1 text-sm leading-6 text-text-secondary">{nextAction.detail}</p>
+          {latestOutcome?.privateNote ? (
+            <div className="mt-3 rounded-xl bg-white/70 p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Latest internal note</p>
+              <p className="mt-1 text-sm text-text-secondary">{latestOutcome.privateNote}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface-sunken/35 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">Working signals</p>
+          <div className="mt-3 space-y-3">
+            <SignalRow label="Latest outcome" value={latestOutcome ? latestOutcome.outcome.replace(/_/g, ' ') : 'No meeting recorded'} />
+            <SignalRow label="Follow-up due" value={overdueReminder ? formatDate(overdueReminder.dueAt) : studentReminders[0]?.dueAt ? formatDate(studentReminders[0].dueAt) : 'No reminder set'} />
+            <SignalRow label="Campaign" value={activeCampaign ? `${activeCampaign.pack.name} (${activeCampaign.mode})` : 'No active campaign'} />
+            <SignalRow label="Docs to action" value={pendingRequirements.length > 0 ? `${pendingRequirements.length} open` : 'Clear'} />
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function SummaryMetric({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface-sunken/35 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-text-primary">{value}</p>
+      <p className="mt-1 text-xs text-text-muted">{hint}</p>
+    </div>
+  )
+}
+
+function SignalRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs text-text-muted">{label}</span>
+      <span className="text-sm font-medium text-text-primary text-right">{value}</span>
+    </div>
+  )
+}
+
+function WorkflowSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
+        {description ? <p className="mt-1 text-xs text-text-muted">{description}</p> : null}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function CaseManagementTab({ studentId }: { studentId: string }) {
+  return (
+    <div className="space-y-8">
+      <WorkflowSection
+        title="Case Log"
+        description="This is the internal running trail for decisions, meetings, reminders, assignments, and major activities."
+      >
+        <CaseLogTab studentId={studentId} />
+      </WorkflowSection>
+
+      <WorkflowSection
+        title="Notes"
+        description="Add private working notes for continuity, blockers, and reassignment context."
+      >
+        <NotesTab studentId={studentId} />
+      </WorkflowSection>
+
+      <WorkflowSection
+        title="Activity"
+        description="Log outreach and internal actions when they matter to the audit trail."
+      >
+        <ActivityTab studentId={studentId} />
+      </WorkflowSection>
+    </div>
+  )
+}
+
+function ProfileWorkspaceTab({
+  student,
+  studentId,
+}: {
+  student: ReturnType<typeof useStudent>['data']
+  studentId: string
+}) {
+  return (
+    <div className="space-y-8">
+      <WorkflowSection
+        title="Profile"
+        description="Raw student profile, readiness signals, and ownership details."
+      >
+        <OverviewTab student={student} />
+      </WorkflowSection>
+
+      <WorkflowSection
+        title="AI Assessments"
+        description="Assessment snapshots and internal scoring details."
+      >
+        <AiAssessmentsTab studentId={studentId} />
+      </WorkflowSection>
+
+      <WorkflowSection
+        title="Applications"
+        description="Current application pipeline and offer progress."
+      >
+        <ApplicationsTab studentId={studentId} />
+      </WorkflowSection>
+
+      <WorkflowSection
+        title="Contacts"
+        description="Emergency and family contacts linked to this student."
+      >
+        <ContactsTab studentId={studentId} />
+      </WorkflowSection>
+
+      <WorkflowSection
+        title="Stage History"
+        description="Formal stage movements and the reasons recorded for them."
+      >
+        <TimelineTab studentId={studentId} />
+      </WorkflowSection>
+    </div>
+  )
+}
+
 // ─── Meeting Prep Block ─────────────────────────────────────
 
 function MeetingPrepBlock({ studentId, student }: { studentId: string; student: ReturnType<typeof useStudent>['data'] }) {
@@ -1245,7 +1632,7 @@ function MeetingPrepBlock({ studentId, student }: { studentId: string; student: 
 
 // ─── Meeting Outcomes Tab ───────────────────────────────────
 
-function MeetingOutcomesTab({ studentId }: { studentId: string }) {
+function MeetingOutcomesTab({ studentId, intent }: { studentId: string; intent?: 'outcome' | 'reminder' | null }) {
   const { data: outcomes, isLoading } = useMeetingOutcomes(studentId)
   const { data: bookings } = useBookings()
   const recordOutcome = useRecordMeetingOutcome()
@@ -1261,6 +1648,16 @@ function MeetingOutcomesTab({ studentId }: { studentId: string }) {
     stageAfter: '',
   })
   const [reminderForm, setReminderForm] = useState({ title: '', dueAt: '' })
+
+  useEffect(() => {
+    if (intent === 'outcome') {
+      setShowForm(true)
+      setShowReminderForm(false)
+    } else if (intent === 'reminder') {
+      setShowReminderForm(true)
+      setShowForm(false)
+    }
+  }, [intent])
 
   // Filter bookings for this student (completed or assigned)
   const studentBookings = (bookings ?? []).filter(
