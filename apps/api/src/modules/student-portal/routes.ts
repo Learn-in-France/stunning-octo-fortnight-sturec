@@ -5,7 +5,7 @@ import { authMiddleware } from '../../middleware/auth.js'
 import { requireRole } from '../../middleware/rbac.js'
 import { validateBody, validateParams } from '../../middleware/validation.js'
 import * as ctrl from './controller.js'
-import { updateOwnProfileSchema, createSupportRequestSchema, updateNotificationPreferencesSchema } from '@sturec/shared/validation'
+import { updateOwnProfileSchema, createSupportRequestSchema, updateNotificationPreferencesSchema, completeOnboardingSchema } from '@sturec/shared/validation'
 
 const idParamSchema = z.object({ id: z.string().uuid() })
 
@@ -16,6 +16,10 @@ export async function studentPortalRoutes(server: FastifyInstance) {
   server.patch('/students/me', {
     preHandler: [...preHandler, validateBody(updateOwnProfileSchema)],
     handler: ctrl.updateOwnProfile,
+  })
+  server.post('/students/me/onboarding', {
+    preHandler: [...preHandler, validateBody(completeOnboardingSchema)],
+    handler: ctrl.completeOnboarding,
   })
   server.get('/students/me/progress', { preHandler, handler: ctrl.getProgress })
   server.get('/students/me/applications', { preHandler, handler: ctrl.getApplications })

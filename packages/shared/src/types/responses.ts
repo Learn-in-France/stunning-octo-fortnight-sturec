@@ -158,6 +158,13 @@ export interface StudentOwnProfile {
   referenceCode: string
   stage: StudentStage
   stageUpdatedAt: string
+  // Identity (mirrored from User for the portal — students can edit
+  // these via the onboarding gate so they can correct bad Google name
+  // data and add their phone number)
+  firstName: string
+  lastName: string
+  email: string
+  phone: string | null
   // Profile
   degreeLevel: string | null
   bachelorDegree: string | null
@@ -175,9 +182,24 @@ export interface StudentOwnProfile {
   whatsappConsent: boolean
   emailConsent: boolean
   parentInvolvement: boolean
+  // Onboarding gate — null means the student still owes us the contact
+  // capture form before they can use the rest of the portal.
+  onboardingCompletedAt: string | null
   // Meta
   createdAt: string
   updatedAt: string
+}
+
+/** Onboarding completion request body */
+export interface CompleteOnboardingRequest {
+  firstName: string
+  lastName: string
+  /** Country dial code without the leading + (e.g. "33", "91"). */
+  countryDialCode: string
+  /** Local phone number as the user typed it; the server normalizes. */
+  phoneLocal: string
+  /** Explicit yes/no decision — required, no default. */
+  whatsappConsent: boolean
 }
 
 /** Student progress — safe for student portal display */

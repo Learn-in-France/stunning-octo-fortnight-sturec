@@ -13,6 +13,27 @@ export async function updateOwnProfile(request: FastifyRequest, reply: FastifyRe
   return reply.send(result)
 }
 
+export async function completeOnboarding(request: FastifyRequest, reply: FastifyReply) {
+  const body = request.body as {
+    firstName: string
+    lastName: string
+    countryDialCode: string
+    phoneLocal: string
+    whatsappConsent: boolean
+  }
+  const result = await portalService.completeOnboarding(request.user.id, body)
+  if (!result.ok) {
+    if (result.reason === 'student_not_found') {
+      return reply.code(404).send({ error: 'Student profile not found', code: 'STUDENT_NOT_FOUND' })
+    }
+    return reply.code(400).send({
+      error: 'Phone number could not be normalized to a valid international format',
+      code: 'INVALID_PHONE',
+    })
+  }
+  return reply.send(result.profile)
+}
+
 export async function getProgress(request: FastifyRequest, reply: FastifyReply) {
   const result = await portalService.getProgress(request.user.id)
   if (!result) return reply.code(404).send({ error: 'Student profile not found', code: 'STUDENT_NOT_FOUND' })

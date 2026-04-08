@@ -1,7 +1,79 @@
 import prisma from '../../lib/prisma.js'
 
 export function findStudentByUserId(userId: string) {
-  return prisma.student.findFirst({ where: { userId, deletedAt: null } })
+  return prisma.student.findFirst({
+    where: { userId, deletedAt: null },
+    include: {
+      user: {
+        select: { firstName: true, lastName: true, email: true, phone: true },
+      },
+    },
+  })
+}
+
+/**
+ * Apply the onboarding gate completion atomically: update the user's
+ * name + phone, the student's WhatsApp consent + audit trail, and
+ * stamp `onboarding_completed_at`. Returns the refreshed student row
+ * with the user join so the caller can map it straight to a DTO.
+ */
+export async function completeOnboardingTx(args: {
+  userId: string
+  studentId: string
+  firstName: string
+  lastName: string
+  phoneE164: string
+  whatsappConsent: boolean
+}) {
+  const now = new Date()
+  const [, , refreshed] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: args.userId },
+      data: {
+        firstName: args.firstName,
+        lastName: args.lastName,
+        phone: args.phoneE164,
+      },
+    }),
+    prisma.student.update({
+      where: { id: args.studentId },
+      data: {
+        whatsappConsent: args.whatsappConsent,
+        whatsappConsentAt: args.whatsappConsent ? now : null,
+        whatsappConsentSource: 'portal_onboarding',
+        onboardingCompletedAt: now,
+      },
+    }),
+    prisma.student.findFirstOrThrow({
+      where: { id: args.studentId, deletedAt: null },
+      include: {
+        user: {
+          select: { firstName: true, lastName: true, email: true, phone: true },
+        },
+      },
+    }),
+  ])
+  return refreshed
+}
+
+/**
+ * Idempotent backfill: if a student already has first/last name and a
+ * phone number that looks like a usable E.164, mark them
+ * `onboarding_completed_at = NOW()` so they aren't redirected to the
+ * gate. Called lazily on the next /students/me read.
+ */
+export async function maybeBackfillOnboarding(args: {
+  studentId: string
+  firstName: string | null
+  lastName: string | null
+  phone: string | null
+}) {
+  if (!args.firstName?.trim() || !args.lastName?.trim()) return
+  if (!args.phone || !/^\+[1-9]\d{7,14}$/.test(args.phone)) return
+  await prisma.student.update({
+    where: { id: args.studentId },
+    data: { onboardingCompletedAt: new Date() },
+  })
 }
 
 export function findLeadByUserId(userId: string) {
