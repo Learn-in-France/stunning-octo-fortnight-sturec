@@ -360,6 +360,9 @@ describe('StudentDetailPage', () => {
       expect(screen.getByText('Operational Summary')).toBeInTheDocument()
     })
 
+    expect(screen.getByText('How to Work This Case')).toBeInTheDocument()
+    expect(screen.getByText('Action Center')).toBeInTheDocument()
+    expect(screen.getByText('Overview Workspace')).toBeInTheDocument()
     expect(screen.getByText('What should happen next?')).toBeInTheDocument()
     expect(screen.getByText('Follow up on transcript upload')).toBeInTheDocument()
     expect(screen.getByText('Working signals')).toBeInTheDocument()
@@ -379,17 +382,19 @@ describe('StudentDetailPage', () => {
     renderWithProviders(<StudentDetailPage params={Promise.resolve({ id: 'student-1' })} />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Record Outcome' })).toBeInTheDocument()
+      expect(screen.getAllByRole('button', { name: 'Record Outcome' }).length).toBeGreaterThan(0)
     })
 
-    await user.click(screen.getByRole('button', { name: 'Record Outcome' }))
+    await user.click(screen.getAllByRole('button', { name: 'Record Outcome' })[0])
     expect(screen.getByText('Meeting Outcomes')).toBeInTheDocument()
+    expect(screen.getByText('Meetings Workspace')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save outcome' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Add Reminder' }))
+    await user.click(screen.getAllByRole('button', { name: 'Add Reminder' })[0])
     expect(screen.getByText('Create follow-up reminder')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Manage Campaigns' }))
+    await user.click(screen.getAllByRole('button', { name: 'Manage Campaigns' })[0])
+    expect(screen.getByText('Campaigns Workspace')).toBeInTheDocument()
     expect(screen.getByText('Start a campaign pack')).toBeInTheDocument()
   })
 
@@ -400,15 +405,59 @@ describe('StudentDetailPage', () => {
     renderWithProviders(<StudentDetailPage params={Promise.resolve({ id: 'student-1' })} />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Reassign Counsellor' })).toBeInTheDocument()
+      expect(screen.getAllByRole('button', { name: 'Reassign Counsellor' }).length).toBeGreaterThan(0)
     })
 
-    await user.click(screen.getByRole('button', { name: 'Reassign Counsellor' }))
+    await user.click(screen.getAllByRole('button', { name: 'Reassign Counsellor' })[0])
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Reassign Counsellor' })).toBeInTheDocument()
     })
     expect(screen.getByLabelText('Counsellor')).toBeInTheDocument()
     expect(screen.getByLabelText('Handoff note')).toBeInTheDocument()
+  })
+
+  it('does not crash on legacy campaign and activity records with missing nested relations', async () => {
+    setMockAuth({ user: makeUser({ role: 'counsellor', firstName: 'Sarah' }) })
+    const user = userEvent.setup()
+    useStudentActivitiesMock.mockReturnValue({
+      data: {
+        items: [{
+          id: 'activity-1',
+          activityType: 'call',
+          channel: 'phone',
+          direction: 'outbound',
+          outcome: 'Reached voicemail',
+          summary: 'Tried to confirm next document step.',
+          createdAt: '2026-04-04T00:00:00.000Z',
+          createdBy: null,
+        }],
+        total: 1,
+        page: 1,
+        limit: 20,
+      },
+      isLoading: false,
+    })
+    useStudentCampaignsMock.mockReturnValue({
+      data: [{
+        id: 'campaign-legacy',
+        phaseKey: 'consultation',
+        mode: 'manual',
+        status: 'active',
+        pack: null,
+        steps: null,
+      }],
+      isLoading: false,
+    })
+
+    renderWithProviders(<StudentDetailPage params={Promise.resolve({ id: 'student-1' })} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Operational Summary')).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('Campaign pack unavailable (manual)')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Case Log' }))
+    expect(screen.getByText('Tried to confirm next document step.')).toBeInTheDocument()
   })
 })
