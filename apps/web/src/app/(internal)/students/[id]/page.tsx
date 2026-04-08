@@ -56,7 +56,11 @@ import { NextActionCard } from './_sections/next-action-card'
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { user } = useAuth()
-  const { data: student, isLoading, error } = useStudent(id)
+  const isAdmin = user?.role === 'admin'
+  const { data: student, isLoading, error } = useStudent(id, {
+    resolveCounsellorNames: isAdmin,
+    currentUserId: user?.id,
+  })
   const [showOutcomeDrawer, setShowOutcomeDrawer] = useState(false)
   const [showReminderDrawer, setShowReminderDrawer] = useState(false)
   const [showStageDrawer, setShowStageDrawer] = useState(false)
@@ -64,8 +68,6 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const [showReassignDrawer, setShowReassignDrawer] = useState(false)
   const [showCampaignDrawer, setShowCampaignDrawer] = useState(false)
   const [activeTab, setActiveTab] = useState('work')
-
-  const isAdmin = user?.role === 'admin'
 
   if (isLoading) {
     return (

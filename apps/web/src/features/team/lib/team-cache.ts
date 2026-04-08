@@ -22,3 +22,22 @@ export function resolveName(nameMap: Map<string, string>, id: string | null): st
   if (!id) return 'Unassigned'
   return nameMap.get(id) ?? 'Unknown'
 }
+
+interface ResolveCounsellorNameOptions {
+  currentUserId?: string
+}
+
+/**
+ * Resolve counsellor labels for role-limited screens.
+ * When the viewer cannot access /team, fall back to "You" or a generic label
+ * instead of forcing an admin-only lookup that will 403.
+ */
+export function resolveCounsellorName(
+  nameMap: Map<string, string>,
+  id: string | null,
+  options: ResolveCounsellorNameOptions = {},
+): string {
+  if (!id) return 'Unassigned'
+  if (options.currentUserId && id === options.currentUserId) return 'You'
+  return nameMap.get(id) ?? 'Assigned counsellor'
+}

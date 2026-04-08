@@ -10,6 +10,7 @@ import { Pagination } from '@/components/ui/pagination'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useAuth } from '@/providers/auth-provider'
 import { useApplications, useApplicationStats } from '@/features/applications/hooks/use-applications'
 
 const STATUS_VARIANTS: Record<string, 'muted' | 'info' | 'warning' | 'success' | 'danger'> = {
@@ -21,6 +22,8 @@ const STATUS_VARIANTS: Record<string, 'muted' | 'info' | 'warning' | 'success' |
 }
 
 export default function ApplicationsPage() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [status, setStatus] = useState<ApplicationStatus | ''>('')
   const [page, setPage] = useState(1)
   const [sortBy, setSortBy] = useState('createdAt')
@@ -28,8 +31,31 @@ export default function ApplicationsPage() {
 
   const { data, isLoading } = useApplications({
     page, limit: 20, status, sortBy, sortOrder,
-  })
-  const { data: stats } = useApplicationStats()
+  }, { enabled: isAdmin })
+  const { data: stats } = useApplicationStats({ enabled: isAdmin })
+
+  if (!isAdmin) {
+    return (
+      <div>
+        <PageHeader
+          title="Applications"
+          description="Application oversight is available to admins only."
+        />
+        <div className="rounded-2xl bg-white/50 border border-white/70 backdrop-blur-sm">
+          <EmptyState
+            title="Admin access required"
+            description="Counsellors should manage applications from each student record instead of the global applications queue."
+            icon={
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="22" width="32" height="18" rx="4" stroke="currentColor" strokeWidth="2" />
+                <path d="M16 22v-4a8 8 0 1116 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            }
+          />
+        </div>
+      </div>
+    )
+  }
 
   const hasFilters = !!status
 

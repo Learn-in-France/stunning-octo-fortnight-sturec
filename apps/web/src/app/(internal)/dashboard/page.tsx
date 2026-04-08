@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
   const { data: overview, isLoading } = useAnalyticsOverview({}, { enabled: isAdmin })
-  const { data: bookings } = useBookings()
+  const { data: bookings } = useBookings({}, { enabled: isAdmin })
   const { data: counsellors } = useCounsellorAnalytics({ enabled: isAdmin })
   const updateBooking = useUpdateBooking()
   const queryClient = useQueryClient()
@@ -345,6 +345,9 @@ function CounsellorAgendaView() {
     counsellorId: user?.id,
     page: 1,
     limit: 1,
+  }, {
+    resolveCounsellorNames: false,
+    currentUserId: user?.id,
   })
   const completeReminder = useCompleteReminder()
   const dismissReminder = useDismissReminder()
@@ -377,7 +380,7 @@ function CounsellorAgendaView() {
           <Link href="/students" className="text-xs text-primary-600 hover:underline">
             Open students list
           </Link>
-          <span className="text-xs text-text-muted">Your owned students are now one slice of the shared internal caseload.</span>
+          <span className="text-xs text-text-muted">These are the students currently assigned to you.</span>
         </div>
       </Card>
 
