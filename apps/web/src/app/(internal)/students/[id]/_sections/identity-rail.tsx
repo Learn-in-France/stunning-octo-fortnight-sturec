@@ -104,17 +104,17 @@ export function IdentityRail({ student, studentId }: IdentityRailProps) {
 
       <div className="border-t border-border" />
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-2">
-        <KpiTile label="Readiness" value={readinessValue} />
-        <KpiTile label="Completeness" value={completenessValue} />
-        <KpiTile
+      {/* KPIs — single column so labels never wrap and values have room */}
+      <div className="space-y-1.5">
+        <KpiRow label="Readiness" value={readinessValue} />
+        <KpiRow label="Completeness" value={completenessValue} />
+        <KpiRow
           label="Doc blockers"
           value={blockerValue}
           tone={pendingRequirements.length > 0 ? 'warning' : 'neutral'}
         />
-        <KpiTile
-          label="Follow-up due"
+        <KpiRow
+          label="Follow-up"
           value={followUpValue}
           tone={isFollowUpOverdue ? 'danger' : 'neutral'}
         />
@@ -177,7 +177,7 @@ function RailRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function KpiTile({
+function KpiRow({
   label,
   value,
   tone = 'neutral',
@@ -186,18 +186,22 @@ function KpiTile({
   value: string
   tone?: 'neutral' | 'warning' | 'danger'
 }) {
-  const toneClasses =
+  // One label/value pair per row. Label sits on the left, value on the right
+  // (right-aligned). Tone only colours the value pill so the row reads cleanly.
+  const valueToneClasses =
     tone === 'danger'
       ? 'bg-rose-50 text-rose-700 border-rose-200'
       : tone === 'warning'
         ? 'bg-amber-50 text-amber-700 border-amber-200'
-        : 'bg-surface-sunken/50 text-text-primary border-border'
+        : 'bg-surface-sunken/60 text-text-primary border-border'
   return (
-    <div className={`rounded-lg border px-2.5 py-2 ${toneClasses}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-75">
-        {label}
-      </p>
-      <p className="mt-0.5 truncate text-xs font-semibold">{value}</p>
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[11px] text-text-muted">{label}</span>
+      <span
+        className={`max-w-[60%] truncate rounded-md border px-2 py-0.5 text-xs font-semibold ${valueToneClasses}`}
+      >
+        {value}
+      </span>
     </div>
   )
 }
