@@ -14,10 +14,13 @@ import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { SearchInput } from '@/components/ui/search-input'
+import { useAuth } from '@/providers/auth-provider'
 import { useStudents, useStudentStats, type StudentListItemView } from '@/features/students/hooks/use-students'
 
 export default function StudentsPage() {
   const router = useRouter()
+  const { user } = useAuth()
+  const isCounsellor = user?.role === 'counsellor'
   const [search, setSearch] = useState('')
   const [stage, setStage] = useState<StudentStage | ''>('')
   const [visaRisk, setVisaRisk] = useState<VisaRisk | ''>('')
@@ -26,9 +29,19 @@ export default function StudentsPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   const { data, isLoading } = useStudents({
-    page, limit: 20, search, stage, visaRisk, sortBy, sortOrder,
+    page,
+    limit: 20,
+    search,
+    stage,
+    visaRisk,
+    sortBy,
+    sortOrder,
+    counsellorId: isCounsellor ? user?.id : undefined,
+  }, {
+    resolveCounsellorNames: !isCounsellor,
+    currentUserId: user?.id,
   })
-  const { data: stats } = useStudentStats()
+  const { data: stats } = useStudentStats({ enabled: !isCounsellor })
 
   const hasFilters = !!(search || stage || visaRisk)
 
@@ -114,7 +127,9 @@ export default function StudentsPage() {
     <div>
       <PageHeader
         title="Students"
-        description="Track enrolled students through the 13-stage lifecycle."
+        description={isCounsellor
+          ? 'Track your assigned students and move each case forward.'
+          : 'Track enrolled students through the 13-stage lifecycle.'}
         badge={data ? <Badge variant="muted">{data.total} total</Badge> : null}
       />
 
@@ -185,7 +200,9 @@ export default function StudentsPage() {
             title="No students found"
             description={hasFilters
               ? 'No students match your current filters. Try broadening your search.'
-              : 'Students will appear here when leads are converted. Go to the Leads page to manage your pipeline.'}
+              : isCounsellor
+                ? 'No students are currently assigned to you. New assignments will appear here once an admin hands them over.'
+                : 'Students will appear here when leads are converted. Go to the Leads page to manage your pipeline.'}
             icon={
               <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                 <circle cx="24" cy="16" r="8" stroke="currentColor" strokeWidth="2" />

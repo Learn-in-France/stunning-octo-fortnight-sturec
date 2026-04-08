@@ -60,6 +60,7 @@ const NAV_SECTIONS: { label?: string; items: NavItem[] }[] = [
       {
         label: 'Applications',
         href: '/applications',
+        roles: ['admin'],
         icon: (
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <rect x="2" y="1.5" width="14" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />

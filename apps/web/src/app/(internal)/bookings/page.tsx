@@ -9,6 +9,7 @@ import { Select } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useAuth } from '@/providers/auth-provider'
 import { useBookings, useBookingStats, type BookingListItemView } from '@/features/bookings/hooks/use-bookings'
 
 const STATUS_VARIANTS: Record<BookingStatus, 'muted' | 'info' | 'warning' | 'success' | 'danger'> = {
@@ -30,10 +31,15 @@ const STATUS_LABELS: Record<BookingStatus, string> = {
 }
 
 export default function BookingsPage() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [status, setStatus] = useState<BookingStatus | ''>('')
 
-  const { data: bookings, isLoading } = useBookings({ status })
-  const { data: stats } = useBookingStats()
+  const { data: bookings, isLoading } = useBookings({ status }, {
+    resolveCounsellorNames: isAdmin,
+    currentUserId: user?.id,
+  })
+  const { data: stats } = useBookingStats({ enabled: isAdmin })
 
   const hasFilters = !!status
 
@@ -83,7 +89,9 @@ export default function BookingsPage() {
     <div>
       <PageHeader
         title="Bookings"
-        description="Manage counsellor booking sessions and consultations."
+        description={isAdmin
+          ? 'Manage counsellor booking sessions and consultations.'
+          : 'Review your consultation bookings and recent handoffs.'}
         badge={bookings ? <Badge variant="muted">{bookings.length} total</Badge> : null}
       />
 

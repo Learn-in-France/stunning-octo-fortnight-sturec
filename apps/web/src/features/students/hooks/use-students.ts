@@ -15,7 +15,11 @@ import type {
   CaseLogItem,
 } from '@sturec/shared'
 import api from '@/lib/api/client'
-import { fetchTeamMembers, buildNameMap, resolveName } from '@/features/team/lib/team-cache'
+import {
+  fetchTeamMembers,
+  buildNameMap,
+  resolveCounsellorName,
+} from '@/features/team/lib/team-cache'
 
 // ─── View models (display extensions not in the API response) ────
 
@@ -43,11 +47,17 @@ interface UseStudentsParams {
   sortOrder?: 'asc' | 'desc'
 }
 
+interface StudentHookOptions {
+  resolveCounsellorNames?: boolean
+  currentUserId?: string
+  enabled?: boolean
+}
+
 // ─── List hook ───────────────────────────────────────────────────
 
-export function useStudents(params: UseStudentsParams = {}) {
+export function useStudents(params: UseStudentsParams = {}, options: StudentHookOptions = {}) {
   return useQuery({
-    queryKey: ['students', params],
+    queryKey: ['students', params, options],
     queryFn: async () => {
       const apiParams: Record<string, unknown> = {
         page: params.page ?? 1,
@@ -60,42 +70,43 @@ export function useStudents(params: UseStudentsParams = {}) {
       if (params.visaRisk) apiParams.visaRisk = params.visaRisk
       if (params.counsellorId) apiParams.assignedCounsellorId = params.counsellorId
 
-      const [response, team] = await Promise.all([
-        api.get('/students', { params: apiParams }) as unknown as PaginatedResponse<StudentListItem>,
-        fetchTeamMembers(),
-      ])
+      const response = await api.get('/students', { params: apiParams }) as unknown as PaginatedResponse<StudentListItem>
+      const team = options.resolveCounsellorNames === false ? [] : await fetchTeamMembers()
 
       const nameMap = buildNameMap(team)
       const items: StudentListItemView[] = response.items.map((s) => ({
         ...s,
-        counsellorName: resolveName(nameMap, s.assignedCounsellorId),
+        counsellorName: resolveCounsellorName(nameMap, s.assignedCounsellorId, {
+          currentUserId: options.currentUserId,
+        }),
       }))
 
       return { ...response, items }
     },
+    enabled: options.enabled ?? true,
   })
 }
 
 // ─── Detail hook ─────────────────────────────────────────────────
 
-export function useStudent(id: string) {
+export function useStudent(id: string, options: StudentHookOptions = {}) {
   return useQuery({
-    queryKey: ['students', id],
+    queryKey: ['students', id, options],
     queryFn: async (): Promise<StudentDetailView> => {
-      const [student, team] = await Promise.all([
-        api.get(`/students/${id}`) as unknown as StudentDetail,
-        fetchTeamMembers(),
-      ])
+      const student = await api.get(`/students/${id}`) as unknown as StudentDetail
+      const team = options.resolveCounsellorNames === false ? [] : await fetchTeamMembers()
 
       const nameMap = buildNameMap(team)
 
       return {
         ...student,
-        counsellorName: resolveName(nameMap, student.assignedCounsellorId),
+        counsellorName: resolveCounsellorName(nameMap, student.assignedCounsellorId, {
+          currentUserId: options.currentUserId,
+        }),
         fullName: `${student.firstName} ${student.lastName}`,
       }
     },
-    enabled: !!id,
+    enabled: !!id && (options.enabled ?? true),
   })
 }
 
@@ -103,11 +114,12 @@ export function useStudent(id: string) {
 
 export type StudentStats = AnalyticsOverview['data']['students']
 
-export function useStudentStats() {
+export function useStudentStats(options: Pick<StudentHookOptions, 'enabled'> = {}) {
   return useQuery({
     queryKey: ['analytics', 'overview', {}],
     queryFn: () => api.get('/analytics/overview') as unknown as AnalyticsOverview,
     select: (overview) => overview.data.students,
+    enabled: options.enabled ?? true,
   })
 }
 

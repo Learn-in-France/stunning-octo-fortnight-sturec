@@ -12,7 +12,7 @@ export async function listStudents(request: FastifyRequest, reply: FastifyReply)
 }
 
 export async function getStudent(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const student = await studentService.getStudent(request.params.id)
+  const student = await studentService.getStudent(request.params.id, request.user)
   if (!student) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(student)
 }
@@ -25,7 +25,7 @@ export async function updateStudent(request: FastifyRequest<{ Params: { id: stri
 export async function getProgress(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
   // Progress is a computed view — delegate to service when backend computes it
   // For now return the student detail which contains the data needed
-  const student = await studentService.getStudent(request.params.id)
+  const student = await studentService.getStudent(request.params.id, request.user)
   if (!student) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(student)
 }

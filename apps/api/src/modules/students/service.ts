@@ -40,6 +40,7 @@ export async function listStudents(
   const args = toPrismaArgs(filters)
   const where = repo.buildStudentWhere({
     ...filters,
+    counsellorIdScope: user.role === 'counsellor' ? user.id : undefined,
   })
 
   const [items, total] = await Promise.all([
@@ -53,9 +54,10 @@ export async function listStudents(
   )
 }
 
-export async function getStudent(id: string): Promise<StudentDetail | null> {
+export async function getStudent(id: string, user?: RequestUser): Promise<StudentDetail | null> {
   const student = await repo.findStudentById(id)
   if (!student) return null
+  if (user?.role === 'counsellor' && student.assignedCounsellorId !== user.id) return null
   return mapStudentToDetail(student)
 }
 

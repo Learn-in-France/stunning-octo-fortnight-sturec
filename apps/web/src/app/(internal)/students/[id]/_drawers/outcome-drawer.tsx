@@ -7,6 +7,7 @@ import { Drawer } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { useAuth } from '@/providers/auth-provider'
 import { useBookings } from '@/features/bookings/hooks/use-bookings'
 import { useRecordMeetingOutcome } from '@/features/counsellor/hooks/use-counsellor'
 
@@ -31,7 +32,11 @@ const EMPTY_FORM = {
  * of switching tabs and scrolling.
  */
 export function OutcomeDrawer({ open, onClose, studentId }: OutcomeDrawerProps) {
-  const { data: bookings } = useBookings()
+  const { user } = useAuth()
+  const { data: bookings } = useBookings({}, {
+    resolveCounsellorNames: false,
+    currentUserId: user?.id,
+  })
   const recordOutcome = useRecordMeetingOutcome()
   const [form, setForm] = useState(EMPTY_FORM)
 

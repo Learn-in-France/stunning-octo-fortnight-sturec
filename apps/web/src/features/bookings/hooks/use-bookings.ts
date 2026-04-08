@@ -2,7 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import type { BookingListItem, BookingStatus, AnalyticsOverview } from '@sturec/shared'
 import api from '@/lib/api/client'
-import { fetchTeamMembers, buildNameMap, resolveName } from '@/features/team/lib/team-cache'
+import {
+  fetchTeamMembers,
+  buildNameMap,
+  resolveCounsellorName,
+} from '@/features/team/lib/team-cache'
 
 // ─── View model ─────────────────────────────────────────────────
 
@@ -16,19 +20,25 @@ interface UseBookingsParams {
   status?: BookingStatus | ''
 }
 
-export function useBookings(params: UseBookingsParams = {}) {
+interface BookingHookOptions {
+  resolveCounsellorNames?: boolean
+  currentUserId?: string
+  enabled?: boolean
+}
+
+export function useBookings(params: UseBookingsParams = {}, options: BookingHookOptions = {}) {
   return useQuery({
-    queryKey: ['bookings', params],
+    queryKey: ['bookings', params, options],
     queryFn: async (): Promise<BookingListItemView[]> => {
-      const [bookings, team] = await Promise.all([
-        api.get('/bookings') as unknown as BookingListItem[],
-        fetchTeamMembers(),
-      ])
+      const bookings = await api.get('/bookings') as unknown as BookingListItem[]
+      const team = options.resolveCounsellorNames === false ? [] : await fetchTeamMembers()
 
       const nameMap = buildNameMap(team)
       let items: BookingListItemView[] = bookings.map((b) => ({
         ...b,
-        counsellorName: resolveName(nameMap, b.counsellorId),
+        counsellorName: resolveCounsellorName(nameMap, b.counsellorId, {
+          currentUserId: options.currentUserId,
+        }),
       }))
 
       if (params.status) {
@@ -37,6 +47,7 @@ export function useBookings(params: UseBookingsParams = {}) {
 
       return items
     },
+    enabled: options.enabled ?? true,
   })
 }
 
@@ -44,11 +55,12 @@ export function useBookings(params: UseBookingsParams = {}) {
 
 export type BookingStats = AnalyticsOverview['data']['bookings']
 
-export function useBookingStats() {
+export function useBookingStats(options: Pick<BookingHookOptions, 'enabled'> = {}) {
   return useQuery({
     queryKey: ['analytics', 'overview', {}],
     queryFn: () => api.get('/analytics/overview') as unknown as AnalyticsOverview,
     select: (overview) => overview.data.bookings,
+    enabled: options.enabled ?? true,
   })
 }
 

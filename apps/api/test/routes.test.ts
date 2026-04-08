@@ -453,9 +453,47 @@ describe('Route-level smoke tests', () => {
       expect(body).toHaveProperty('total', 0)
     })
 
+    it('GET /students scopes counsellor list to assigned students', async () => {
+      authAs(COUNSELLOR_USER)
+      db.student.findMany.mockResolvedValue([])
+      db.student.count.mockResolvedValue(0)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/students',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(db.student.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          assignedCounsellorId: COUNSELLOR_USER.id,
+          deletedAt: null,
+        }),
+      }))
+    })
+
     it('GET /students/:id returns 404 for missing student', async () => {
       authAs(ADMIN_USER)
       db.student.findFirst.mockResolvedValue(null)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(404)
+    })
+
+    it('GET /students/:id returns 404 when counsellor is not assigned to the student', async () => {
+      authAs(COUNSELLOR_USER)
+      db.student.findFirst.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000010',
+        userId: STUDENT_USER.id,
+        assignedCounsellorId: '00000000-0000-0000-0000-000000000099',
+        user: STUDENT_USER,
+      })
 
       const response = await app.inject({
         method: 'GET',

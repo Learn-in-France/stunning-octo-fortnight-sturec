@@ -19,9 +19,16 @@ interface UseApplicationsParams extends PaginationParams {
   intakeId?: string
 }
 
+interface ApplicationHookOptions {
+  enabled?: boolean
+}
+
 // ─── Global list (admin) ─────────────────────────────────────────
 
-export function useApplications(params: UseApplicationsParams = {}) {
+export function useApplications(
+  params: UseApplicationsParams = {},
+  options: ApplicationHookOptions = {},
+) {
   return useQuery({
     queryKey: ['applications', params],
     queryFn: async () => {
@@ -39,6 +46,7 @@ export function useApplications(params: UseApplicationsParams = {}) {
 
       return api.get('/applications', { params: apiParams }) as unknown as PaginatedResponse<ApplicationListItem>
     },
+    enabled: options.enabled ?? true,
   })
 }
 
@@ -46,11 +54,12 @@ export function useApplications(params: UseApplicationsParams = {}) {
 
 export type ApplicationStats = AnalyticsOverview['data']['applications']
 
-export function useApplicationStats() {
+export function useApplicationStats(options: ApplicationHookOptions = {}) {
   return useQuery({
     queryKey: ['analytics', 'overview', {}],
     queryFn: () => api.get('/analytics/overview') as unknown as AnalyticsOverview,
     select: (overview) => overview.data.applications,
+    enabled: options.enabled ?? true,
   })
 }
 
