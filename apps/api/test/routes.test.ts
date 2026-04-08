@@ -65,6 +65,7 @@ vi.mock('../src/lib/queue/index.js', () => {
 vi.mock('../src/lib/prisma.js', () => {
   const m = () => ({
     findFirst: vi.fn(),
+    findFirstOrThrow: vi.fn(),
     findUnique: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
@@ -78,6 +79,17 @@ vi.mock('../src/lib/prisma.js', () => {
   return {
     default: {
       $queryRaw: (..._args: any[]) => Promise.resolve([{ '?column?': 1 }]),
+      // $transaction default: pass-through that resolves the array of
+      // promises (mirrors prisma's array-form $transaction). Tests can
+      // still mock the individual user/student methods to control what
+      // each step inside the transaction returns. Tests that want to
+      // override the transaction return value entirely can call
+      // db.$transaction.mockResolvedValueOnce(...).
+      $transaction: vi.fn((arg: any) => {
+        if (Array.isArray(arg)) return Promise.all(arg)
+        if (typeof arg === 'function') return Promise.resolve(arg())
+        return Promise.resolve(arg)
+      }),
       user: m(),
       lead: m(),
       student: m(),
@@ -1539,11 +1551,20 @@ describe('Route-level smoke tests', () => {
       housingNeeded: null,
       sourcePartner: null,
       whatsappConsent: false,
+      whatsappConsentAt: null,
+      whatsappConsentSource: null,
       emailConsent: false,
       parentInvolvement: false,
+      onboardingCompletedAt: new Date('2026-02-20'),
       deletedAt: null,
       createdAt: new Date('2026-02-20'),
       updatedAt: new Date('2026-03-05'),
+      user: {
+        firstName: 'Aisha',
+        lastName: 'Khan',
+        email: STUDENT_USER.email,
+        phone: '+919876543210',
+      },
     }
 
     it('GET /students/me returns own profile for student', async () => {
@@ -1585,6 +1606,108 @@ describe('Route-level smoke tests', () => {
       })
 
       expect(response.statusCode).toBe(403)
+    })
+
+    it('POST /students/me/onboarding normalizes phone, sets consent + completion timestamp', async () => {
+      authAs(STUDENT_USER)
+      // Pre-onboarding state: name is junk, phone is missing,
+      // onboardingCompletedAt is null.
+      const incompleteRecord = {
+        ...STUDENT_RECORD,
+        onboardingCompletedAt: null,
+        whatsappConsent: false,
+        whatsappConsentAt: null,
+        whatsappConsentSource: null,
+        user: {
+          firstName: 'Unknown',
+          lastName: '',
+          email: STUDENT_USER.email,
+          phone: null,
+        },
+      }
+      const refreshedRecord = {
+        ...STUDENT_RECORD,
+        onboardingCompletedAt: new Date('2026-04-08T12:00:00Z'),
+        whatsappConsent: true,
+        whatsappConsentAt: new Date('2026-04-08T12:00:00Z'),
+        whatsappConsentSource: 'portal_onboarding',
+        user: {
+          firstName: 'Aisha',
+          lastName: 'Khan',
+          email: STUDENT_USER.email,
+          phone: '+919876543210',
+        },
+      }
+      db.student.findFirst.mockResolvedValueOnce(incompleteRecord)
+      // The transaction runs three statements; mock each so the
+      // pass-through $transaction wrapper can resolve them.
+      db.user.update.mockResolvedValueOnce({})
+      db.student.update.mockResolvedValueOnce({})
+      db.student.findFirstOrThrow.mockResolvedValueOnce(refreshedRecord)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/me/onboarding',
+        headers: authHeaders(),
+        payload: {
+          firstName: 'Aisha',
+          lastName: 'Khan',
+          countryDialCode: '91',
+          phoneLocal: '98765 43210',
+          whatsappConsent: true,
+        },
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+      expect(body.firstName).toBe('Aisha')
+      expect(body.lastName).toBe('Khan')
+      expect(body.phone).toBe('+919876543210')
+      expect(body.whatsappConsent).toBe(true)
+      expect(body.onboardingCompletedAt).not.toBeNull()
+    })
+
+    it('POST /students/me/onboarding rejects an unparseable phone', async () => {
+      authAs(STUDENT_USER)
+      db.student.findFirst.mockResolvedValueOnce(STUDENT_RECORD)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/me/onboarding',
+        headers: authHeaders(),
+        payload: {
+          firstName: 'Aisha',
+          lastName: 'Khan',
+          countryDialCode: '91',
+          // Too short — should fail E.164 normalization on the server
+          phoneLocal: '12',
+          whatsappConsent: false,
+        },
+      })
+
+      // Either the Zod schema (min 4 chars) or the server-side normalizer rejects it.
+      // Both produce a 4xx response.
+      expect(response.statusCode).toBeGreaterThanOrEqual(400)
+      expect(response.statusCode).toBeLessThan(500)
+    })
+
+    it('POST /students/me/onboarding requires an explicit WhatsApp consent decision', async () => {
+      authAs(STUDENT_USER)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/me/onboarding',
+        headers: authHeaders(),
+        payload: {
+          firstName: 'Aisha',
+          lastName: 'Khan',
+          countryDialCode: '91',
+          phoneLocal: '9876543210',
+          // whatsappConsent intentionally omitted — Zod must reject
+        },
+      })
+
+      expect(response.statusCode).toBe(400)
     })
 
     it('GET /students/me/progress returns cumulative intake capture for student', async () => {

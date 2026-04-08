@@ -429,8 +429,13 @@ model Student {
   mauticSyncedAt        DateTime?     @map("mautic_synced_at")
   // Consent
   whatsappConsent       Boolean       @default(false) @map("whatsapp_consent")
+  whatsappConsentAt     DateTime?     @map("whatsapp_consent_at")
+  whatsappConsentSource String?       @map("whatsapp_consent_source")
   emailConsent          Boolean       @default(false) @map("email_consent")
   parentInvolvement     Boolean       @default(false) @map("parent_involvement")
+  // Onboarding gate — students must complete a short contact-info step
+  // on first portal entry. Cleared = the gate hasn't been passed yet.
+  onboardingCompletedAt DateTime?     @map("onboarding_completed_at")
   // Meta
   createdAt             DateTime      @default(now()) @map("created_at")
   updatedAt             DateTime      @updatedAt @map("updated_at")

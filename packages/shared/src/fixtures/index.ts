@@ -206,6 +206,10 @@ export const FIXTURE_STUDENT_OWN_PROFILE: StudentOwnProfile = {
   referenceCode: 'STU-2026-00001',
   stage: 'counsellor_consultation',
   stageUpdatedAt: '2026-03-05T11:00:00.000Z',
+  firstName: 'Aisha',
+  lastName: 'Khan',
+  email: 'aisha@example.com',
+  phone: '+919876543210',
   degreeLevel: 'Bachelors',
   bachelorDegree: 'B.Tech Computer Science',
   gpa: 3.5,
@@ -221,6 +225,7 @@ export const FIXTURE_STUDENT_OWN_PROFILE: StudentOwnProfile = {
   whatsappConsent: true,
   emailConsent: true,
   parentInvolvement: false,
+  onboardingCompletedAt: '2026-02-20T08:00:00.000Z',
   createdAt: '2026-02-20T08:00:00.000Z',
   updatedAt: '2026-03-05T11:00:00.000Z',
 }

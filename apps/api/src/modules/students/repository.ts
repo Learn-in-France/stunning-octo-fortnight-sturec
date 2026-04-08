@@ -24,7 +24,7 @@ export function countStudents(where?: Prisma.StudentWhereInput) {
   return prisma.student.count({ where: { ...where, deletedAt: null } })
 }
 
-const userSelect = { select: { firstName: true, lastName: true, email: true } } as const
+const userSelect = { select: { firstName: true, lastName: true, email: true, phone: true } } as const
 
 export function findStudentById(id: string) {
   return prisma.student.findFirst({
@@ -34,7 +34,10 @@ export function findStudentById(id: string) {
 }
 
 export function findStudentByUserId(userId: string) {
-  return prisma.student.findFirst({ where: { userId, deletedAt: null } })
+  return prisma.student.findFirst({
+    where: { userId, deletedAt: null },
+    include: { user: userSelect },
+  })
 }
 
 export function updateStudent(id: string, data: Prisma.StudentUncheckedUpdateInput) {

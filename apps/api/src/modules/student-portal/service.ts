@@ -89,7 +89,71 @@ function visaStatusFromStage(stage: string): string | null {
 export async function getOwnProfile(userId: string): Promise<StudentOwnProfile | null> {
   const student = await repo.findStudentByUserId(userId)
   if (!student) return null
+
+  // Lazy backfill: if the student record predates the onboarding gate
+  // and already has clean first/last name + an E.164 phone, mark them
+  // complete now so they don't get redirected to the onboarding page.
+  // Idempotent — only fires once per record.
+  if (!student.onboardingCompletedAt) {
+    await repo.maybeBackfillOnboarding({
+      studentId: student.id,
+      firstName: student.user.firstName,
+      lastName: student.user.lastName,
+      phone: student.user.phone,
+    })
+    const refreshed = await repo.findStudentByUserId(userId)
+    if (refreshed) return mapStudentToOwnProfile(refreshed)
+  }
+
   return mapStudentToOwnProfile(student)
+}
+
+// ─── Onboarding gate ────────────────────────────────────────
+
+/**
+ * Normalize a phone number that the user typed into strict E.164.
+ * Country dial code is captured separately by the form (digits only,
+ * no leading +). Local part can contain spaces, dashes, parentheses,
+ * and an optional leading 0 — we strip the noise and concatenate.
+ */
+function normalizePhoneToE164(countryDialCode: string, phoneLocal: string): string | null {
+  const cc = countryDialCode.replace(/\D/g, '')
+  if (!cc) return null
+  let local = phoneLocal.replace(/\D/g, '')
+  // Strip a leading trunk zero (very common in FR/IN/UK input)
+  if (local.startsWith('0')) local = local.replace(/^0+/, '')
+  if (local.length < 6) return null
+  const e164 = `+${cc}${local}`
+  if (!/^\+[1-9]\d{7,14}$/.test(e164)) return null
+  return e164
+}
+
+export async function completeOnboarding(
+  userId: string,
+  data: {
+    firstName: string
+    lastName: string
+    countryDialCode: string
+    phoneLocal: string
+    whatsappConsent: boolean
+  },
+): Promise<{ ok: true; profile: StudentOwnProfile } | { ok: false; reason: 'student_not_found' | 'invalid_phone' }> {
+  const student = await repo.findStudentByUserId(userId)
+  if (!student) return { ok: false, reason: 'student_not_found' }
+
+  const phoneE164 = normalizePhoneToE164(data.countryDialCode, data.phoneLocal)
+  if (!phoneE164) return { ok: false, reason: 'invalid_phone' }
+
+  const refreshed = await repo.completeOnboardingTx({
+    userId,
+    studentId: student.id,
+    firstName: data.firstName.trim(),
+    lastName: data.lastName.trim(),
+    phoneE164,
+    whatsappConsent: data.whatsappConsent,
+  })
+
+  return { ok: true, profile: mapStudentToOwnProfile(refreshed) }
 }
 
 // ─── Progress ───────────────────────────────────────────────

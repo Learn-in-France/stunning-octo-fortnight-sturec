@@ -234,12 +234,20 @@ export function mapStudentToDetail(
 
 // ─── Student → StudentOwnProfile ─────────────────────────────
 
-export function mapStudentToOwnProfile(student: PrismaStudent): StudentOwnProfile {
+export function mapStudentToOwnProfile(
+  student: PrismaStudent & {
+    user: { firstName: string; lastName: string; email: string; phone: string | null }
+  },
+): StudentOwnProfile {
   return {
     id: student.id,
     referenceCode: student.referenceCode,
     stage: student.stage as StudentOwnProfile['stage'],
     stageUpdatedAt: student.stageUpdatedAt.toISOString(),
+    firstName: student.user.firstName,
+    lastName: student.user.lastName,
+    email: student.user.email,
+    phone: student.user.phone,
     degreeLevel: student.degreeLevel,
     bachelorDegree: student.bachelorDegree,
     gpa: student.gpa ? Number(student.gpa) : null,
@@ -255,6 +263,7 @@ export function mapStudentToOwnProfile(student: PrismaStudent): StudentOwnProfil
     whatsappConsent: student.whatsappConsent,
     emailConsent: student.emailConsent,
     parentInvolvement: student.parentInvolvement,
+    onboardingCompletedAt: student.onboardingCompletedAt?.toISOString() ?? null,
     createdAt: student.createdAt.toISOString(),
     updatedAt: student.updatedAt.toISOString(),
   }

@@ -101,6 +101,29 @@ export function useUpdateProfile() {
   })
 }
 
+// ─── Onboarding gate ─────────────────────────────────────────────
+
+export interface CompleteOnboardingPayload {
+  firstName: string
+  lastName: string
+  countryDialCode: string
+  phoneLocal: string
+  whatsappConsent: boolean
+}
+
+export function useCompleteOnboarding() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: CompleteOnboardingPayload) =>
+      api.post('/students/me/onboarding', data) as unknown as StudentOwnProfile,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['student-portal', 'profile'] })
+      qc.invalidateQueries({ queryKey: ['student-portal', 'progress'] })
+      qc.invalidateQueries({ queryKey: ['student-portal', 'notification-preferences'] })
+    },
+  })
+}
+
 // ─── Notification preferences ────────────────────────────────────
 
 export interface NotificationPreferences {

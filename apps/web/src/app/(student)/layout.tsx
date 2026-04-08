@@ -1,14 +1,17 @@
 'use client'
 
-import { useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { AuthGuard } from '@/lib/guards/auth-guard'
 import { RoleGuard } from '@/lib/guards/role-guard'
 import { useAuth } from '@/providers/auth-provider'
-import { useStudentProgress } from '@/features/student-portal/hooks/use-student-portal'
+import {
+  useStudentProfile,
+  useStudentProgress,
+} from '@/features/student-portal/hooks/use-student-portal'
 import { BrandLogo } from '@/components/branding/brand-logo'
 import { STAGE_STUDENT_LABELS } from '@sturec/shared'
 
@@ -90,8 +93,28 @@ const NAV_ITEMS: NavItem[] = [
 export default function StudentLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { user, signOut } = useAuth()
   const { data: progress } = useStudentProgress()
+  const { data: profile } = useStudentProfile()
+
+  // Onboarding gate: if the student hasn't completed the contact-info
+  // capture step, push them to /portal/onboarding before they can use
+  // anything else in the portal. The onboarding page itself bypasses
+  // the gate (otherwise we'd loop).
+  useEffect(() => {
+    if (!profile) return
+    if (profile.onboardingCompletedAt !== null) return
+    if (pathname === '/portal/onboarding') return
+    router.replace('/portal/onboarding')
+  }, [profile, pathname, router])
+
+  // While onboarding is incomplete the sidebar nav and progress card
+  // are hidden so the student can't accidentally navigate away mid-form
+  // and lose what they typed (the layout would just bounce them back
+  // and remount the form clean). Sign-out stays available.
+  const onboardingIncomplete =
+    profile !== undefined && profile?.onboardingCompletedAt === null
 
   const stageName = progress
     ? (STAGE_STUDENT_LABELS[progress.stage as keyof typeof STAGE_STUDENT_LABELS] ?? progress.stage)
@@ -137,70 +160,92 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
               </button>
             </div>
 
-            {/* Progress card */}
-            <div className="mx-3 mt-4 rounded-2xl border border-sidebar-border bg-sidebar-hover/60 p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-text/50 mb-2">
-                Your Progress
-              </p>
-              {progress ? (
-                <>
-                  <p className="text-sm font-medium text-sidebar-text-active mb-1">
-                    {stageName}
-                  </p>
-                  <div className="w-full h-1.5 rounded-full bg-sidebar-border overflow-hidden">
-                    <div
-                      className="h-1.5 rounded-full bg-sidebar-accent transition-all duration-500"
-                      style={{ width: `${progress.progressPercent}%` }}
-                    />
+            {/* Progress card — hidden during onboarding gate so it
+                doesn't fight for attention with the form */}
+            {!onboardingIncomplete && (
+              <div className="mx-3 mt-4 rounded-2xl border border-sidebar-border bg-sidebar-hover/60 p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-text/50 mb-2">
+                  Your Progress
+                </p>
+                {progress ? (
+                  <>
+                    <p className="text-sm font-medium text-sidebar-text-active mb-1">
+                      {stageName}
+                    </p>
+                    <div className="w-full h-1.5 rounded-full bg-sidebar-border overflow-hidden">
+                      <div
+                        className="h-1.5 rounded-full bg-sidebar-accent transition-all duration-500"
+                        style={{ width: `${progress.progressPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-sidebar-text mt-1 font-mono">
+                      {progress.progressPercent}% complete
+                    </p>
+                  </>
+                ) : (
+                  <div className="h-10 flex items-center">
+                    <p className="text-sm font-medium text-sidebar-text-active mb-1">Getting started</p>
+                    <div className="w-full h-1.5 rounded-full bg-sidebar-border" />
                   </div>
-                  <p className="text-[11px] text-sidebar-text mt-1 font-mono">
-                    {progress.progressPercent}% complete
-                  </p>
-                </>
-              ) : (
-                <div className="h-10 flex items-center">
-                  <p className="text-sm font-medium text-sidebar-text-active mb-1">Getting started</p>
-                  <div className="w-full h-1.5 rounded-full bg-sidebar-border" />
-                </div>
-              )}
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto py-4 px-3">
-              <div className="space-y-0.5">
-                {NAV_ITEMS.map((item) => {
-                  const active = isActive(item.href)
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`
-                        group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium
-                        transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-accent
-                        ${
-                          active
-                            ? 'bg-[linear-gradient(135deg,rgba(23,48,80,1),rgba(26,58,122,0.4))] text-sidebar-text-active shadow-[0_16px_30px_rgba(0,0,0,0.18)]'
-                            : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active'
-                        }
-                      `}
-                    >
-                      <span
-                        className={`shrink-0 transition-colors ${
-                          active ? 'text-sidebar-accent' : 'text-sidebar-text group-hover:text-sidebar-text-active'
-                        }`}
-                      >
-                        {item.icon}
-                      </span>
-                      <span className="truncate">{item.label}</span>
-                      {active && (
-                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-accent" />
-                      )}
-                    </Link>
-                  )
-                })}
+                )}
               </div>
-            </nav>
+            )}
+
+            {/* Navigation — hidden during onboarding gate so the student
+                cannot navigate away mid-form and lose state. A short
+                copy block tells them why the rest of the portal is
+                locked until they finish. */}
+            {onboardingIncomplete ? (
+              <div className="mx-3 mt-4 flex-1 rounded-2xl border border-sidebar-border bg-sidebar-hover/40 p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-text/60">
+                  Step 1 of 1
+                </p>
+                <p className="mt-2 text-sm font-medium text-sidebar-text-active">
+                  Finish onboarding to unlock your portal
+                </p>
+                <p className="mt-2 text-[11px] leading-5 text-sidebar-text">
+                  Tell us your name and a phone number we can reach you on. The rest of
+                  your dashboard, AI advisor, documents, and bookings unlock as soon as
+                  you submit this form.
+                </p>
+              </div>
+            ) : (
+              <nav className="flex-1 overflow-y-auto py-4 px-3">
+                <div className="space-y-0.5">
+                  {NAV_ITEMS.map((item) => {
+                    const active = isActive(item.href)
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`
+                          group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium
+                          transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-accent
+                          ${
+                            active
+                              ? 'bg-[linear-gradient(135deg,rgba(23,48,80,1),rgba(26,58,122,0.4))] text-sidebar-text-active shadow-[0_16px_30px_rgba(0,0,0,0.18)]'
+                              : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active'
+                          }
+                        `}
+                      >
+                        <span
+                          className={`shrink-0 transition-colors ${
+                            active ? 'text-sidebar-accent' : 'text-sidebar-text group-hover:text-sidebar-text-active'
+                          }`}
+                        >
+                          {item.icon}
+                        </span>
+                        <span className="truncate">{item.label}</span>
+                        {active && (
+                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-accent" />
+                        )}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </nav>
+            )}
 
             {/* User card */}
             {user && (

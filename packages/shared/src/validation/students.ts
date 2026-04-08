@@ -122,6 +122,38 @@ export const updateOwnProfileSchema = z.object({
   housingNeeded: z.boolean().optional(),
 })
 
+// ─── Student onboarding gate ─────────────────────────────────
+//
+// Required on the first portal visit. Captures the contact info we
+// can't reliably get from Firebase auth (especially Google sign-ins,
+// which often return a junky display name and never give us a phone).
+//
+// The phone is split into a country dial code (digits only, no '+')
+// and a local part the user typed. The server normalizes both into
+// strict E.164 before storing.
+export const completeOnboardingSchema = z.object({
+  firstName: z
+    .string()
+    .trim()
+    .min(1, 'First name is required')
+    .max(100),
+  lastName: z
+    .string()
+    .trim()
+    .min(1, 'Last name is required')
+    .max(100),
+  countryDialCode: z
+    .string()
+    .trim()
+    .regex(/^[1-9]\d{0,3}$/, 'Invalid country dial code'),
+  phoneLocal: z
+    .string()
+    .trim()
+    .min(4, 'Phone number is too short')
+    .max(20),
+  whatsappConsent: z.boolean(),
+})
+
 export const studentProgressSchema = z.object({
   stage: studentStageSchema,
   progressPercent: z.number(),
