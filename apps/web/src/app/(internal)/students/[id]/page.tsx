@@ -649,18 +649,24 @@ function AiAssessmentsTab({ studentId }: { studentId: string }) {
 
   return (
     <div className="space-y-4">
-      {assessments.map((a) => (
+      {assessments.map((a, index) => (
         <Card key={a.id}>
           <CardHeader>
             <div className="flex items-center gap-2">
               <CardTitle>Assessment</CardTitle>
               <Badge variant="muted">{a.sourceType}</Badge>
+              {index === 0 && <Badge variant="info">Latest</Badge>}
             </div>
             <span className="text-xs text-text-muted font-mono">{formatDate(a.createdAt)}</span>
           </CardHeader>
 
-          {/* Summary */}
-          <p className="text-sm text-text-secondary mb-4">{a.summaryForTeam}</p>
+          {/* Summary — only on the latest assessment to avoid repeating the
+              same paragraph N times. Meeting Prep at the top of the page is
+              the canonical "current summary" surface; older assessment cards
+              focus on score deltas, not the prose. */}
+          {index === 0 && a.summaryForTeam && (
+            <p className="text-sm text-text-secondary mb-4">{a.summaryForTeam}</p>
+          )}
 
           {/* Top-level scores */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
