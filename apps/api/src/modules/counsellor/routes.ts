@@ -15,7 +15,6 @@ const meetingOutcomeSchema = z.object({
   nextAction: z.string().min(1),
   followUpDueAt: z.string().optional(),
   privateNote: z.string().optional(),
-  studentVisibleNote: z.string().optional(),
   stageAfter: z.string().optional(),
 })
 

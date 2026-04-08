@@ -11,7 +11,6 @@ export function createMeetingOutcome(data: {
   nextAction: string
   followUpDueAt?: Date
   privateNote?: string
-  studentVisibleNote?: string
   stageAfter?: string
 }) {
   return prisma.meetingOutcomeLog.create({
@@ -23,7 +22,6 @@ export function createMeetingOutcome(data: {
       nextAction: data.nextAction,
       followUpDueAt: data.followUpDueAt,
       privateNote: data.privateNote,
-      studentVisibleNote: data.studentVisibleNote,
       stageAfter: data.stageAfter,
     },
   })

@@ -11,6 +11,7 @@ import type {
   ConsentEventItem,
   AiAssessmentSummary,
   AssignmentHistoryItem,
+  CaseLogItem,
 } from '@sturec/shared'
 import type { RequestUser } from '../../middleware/auth.js'
 
@@ -160,6 +161,87 @@ export async function assignCounsellor(id: string, counsellorId: string, assigne
 export async function listAssignments(studentId: string): Promise<AssignmentHistoryItem[]> {
   const assignments = await repo.findAssignments(studentId)
   return assignments.map((a) => mapAssignment(a, a.counsellor))
+}
+
+export async function listCaseLog(studentId: string): Promise<CaseLogItem[]> {
+  const data = await repo.findCaseLogData(studentId)
+
+  const items: CaseLogItem[] = [
+    ...data.transitions.map((transition) => ({
+      id: transition.id,
+      kind: 'stage_change' as const,
+      title: transition.fromStage
+        ? `Stage changed: ${transition.fromStage} → ${transition.toStage}`
+        : `Stage set to ${transition.toStage}`,
+      summary: transition.reasonNote ?? transition.reasonCode ?? null,
+      detail: null,
+      actorName: transition.changedByUser
+        ? `${transition.changedByUser.firstName} ${transition.changedByUser.lastName}`.trim()
+        : null,
+      status: transition.toStage,
+      dueAt: null,
+      createdAt: transition.timestamp.toISOString(),
+    })),
+    ...data.notes.map((note) => ({
+      id: note.id,
+      kind: 'note' as const,
+      title: `Note · ${note.noteType.replace(/_/g, ' ')}`,
+      summary: null,
+      detail: note.content,
+      actorName: `${note.author.firstName} ${note.author.lastName}`.trim(),
+      status: note.noteType,
+      dueAt: null,
+      createdAt: note.createdAt.toISOString(),
+    })),
+    ...data.activities.map((activity) => ({
+      id: activity.id,
+      kind: 'activity' as const,
+      title: `${activity.activityType.replace(/_/g, ' ')} · ${activity.channel.replace(/_channel$/, '').replace(/_/g, ' ')}`,
+      summary: activity.outcome ?? null,
+      detail: activity.summary ?? null,
+      actorName: `${activity.createdByUser.firstName} ${activity.createdByUser.lastName}`.trim(),
+      status: activity.direction,
+      dueAt: activity.nextActionDueAt?.toISOString() ?? null,
+      createdAt: activity.createdAt.toISOString(),
+    })),
+    ...data.outcomes.map((outcome) => ({
+      id: outcome.id,
+      kind: 'meeting_outcome' as const,
+      title: `Meeting outcome · ${outcome.outcome.replace(/_/g, ' ')}`,
+      summary: outcome.nextAction,
+      detail: outcome.privateNote ?? null,
+      actorName: `${outcome.counsellor.firstName} ${outcome.counsellor.lastName}`.trim(),
+      status: outcome.stageAfter ?? outcome.outcome,
+      dueAt: outcome.followUpDueAt?.toISOString() ?? null,
+      createdAt: outcome.createdAt.toISOString(),
+    })),
+    ...data.reminders.map((reminder) => ({
+      id: reminder.id,
+      kind: 'reminder' as const,
+      title: reminder.title,
+      summary: `Reminder source: ${reminder.source.replace(/_/g, ' ')}`,
+      detail: null,
+      actorName: `${reminder.counsellor.firstName} ${reminder.counsellor.lastName}`.trim(),
+      status: reminder.status,
+      dueAt: reminder.dueAt.toISOString(),
+      createdAt: reminder.createdAt.toISOString(),
+    })),
+    ...data.assignments.map((assignment) => ({
+      id: assignment.id,
+      kind: 'assignment' as const,
+      title: `Assigned to ${assignment.counsellor.firstName} ${assignment.counsellor.lastName}`.trim(),
+      summary: assignment.unassignedAt
+        ? 'Assignment later ended'
+        : 'Current assignment created',
+      detail: null,
+      actorName: `${assignment.assignedByUser.firstName} ${assignment.assignedByUser.lastName}`.trim(),
+      status: assignment.unassignedAt ? 'unassigned' : 'active',
+      dueAt: null,
+      createdAt: assignment.assignedAt.toISOString(),
+    })),
+  ]
+
+  return items.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
 }
 
 // ─── Timeline ────────────────────────────────────────────────

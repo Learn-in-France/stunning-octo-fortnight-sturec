@@ -54,6 +54,10 @@ export async function studentRoutes(server: FastifyInstance) {
     preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateParams(schema.idParam)],
     handler: ctrl.listTimeline,
   })
+  server.get('/students/:id/case-log', {
+    preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateParams(schema.idParam)],
+    handler: ctrl.listCaseLog,
+  })
 
   // Assign counsellor
   server.post('/students/:id/assign', {

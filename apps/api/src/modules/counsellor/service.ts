@@ -12,7 +12,6 @@ export async function recordMeetingOutcome(
     nextAction: string
     followUpDueAt?: string
     privateNote?: string
-    studentVisibleNote?: string
     stageAfter?: string
   },
 ) {
@@ -24,13 +23,12 @@ export async function recordMeetingOutcome(
     nextAction: data.nextAction,
     followUpDueAt: data.followUpDueAt ? new Date(data.followUpDueAt) : undefined,
     privateNote: data.privateNote,
-    studentVisibleNote: data.studentVisibleNote,
     stageAfter: data.stageAfter,
   })
 
   // If counsellor set a stage change, apply it
   if (data.stageAfter) {
-    await changeStage(data.studentId, counsellorId, data.stageAfter, 'Meeting outcome')
+    await changeStage(data.studentId, data.stageAfter, counsellorId, 'meeting_outcome', 'Stage updated from meeting outcome')
       .catch((err) => console.error('[counsellor] Failed to change stage after meeting:', err))
   }
 

@@ -63,7 +63,7 @@ export async function campaignRoutes(server: FastifyInstance) {
   })
 
   // ── Admin: Packs ──
-  server.get('/campaign-packs', { preHandler: adminOnly, handler: ctrl.listPacks })
+  server.get('/campaign-packs', { preHandler: counsellorOrAdmin, handler: ctrl.listPacks })
   server.post('/campaign-packs', {
     preHandler: [...adminOnly, validateBody(createPackSchema)],
     handler: ctrl.createPack,

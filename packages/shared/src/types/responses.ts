@@ -21,6 +21,14 @@ export interface AuthUserResponse {
   updatedAt: string
 }
 
+export interface InviteValidationResponse {
+  email: string
+  role: Exclude<UserRole, 'student'>
+  firstName: string
+  lastName: string
+  expiresAt: string
+}
+
 // ─── Lead Responses ────────────────────────────────────────────
 
 /** Lead list item — includes internal qualification block for admin/counsellor */
@@ -303,6 +311,26 @@ export interface NoteItem {
   content: string
   createdByUserId: string
   createdByName: string
+  createdAt: string
+}
+
+export type CaseLogItemKind =
+  | 'meeting_outcome'
+  | 'stage_change'
+  | 'note'
+  | 'activity'
+  | 'reminder'
+  | 'assignment'
+
+export interface CaseLogItem {
+  id: string
+  kind: CaseLogItemKind
+  title: string
+  summary: string | null
+  detail: string | null
+  actorName: string | null
+  status: string | null
+  dueAt: string | null
   createdAt: string
 }
 

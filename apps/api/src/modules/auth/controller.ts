@@ -35,14 +35,32 @@ export async function register(
   return reply.status(201).send(result.user)
 }
 
-export async function acceptInvite(request: FastifyRequest, reply: FastifyReply) {
+export async function validateInvite(
+  request: FastifyRequest<{ Body: { token: string; email: string } }>,
+  reply: FastifyReply,
+) {
+  const invite = await authService.validateInvite(request.body)
+  if (!invite) {
+    return reply.status(404).send({
+      error: 'Invite is invalid or expired',
+      code: 'INVITE_INVALID',
+    })
+  }
+
+  return reply.send(invite)
+}
+
+export async function acceptInvite(
+  request: FastifyRequest<{ Body: { token: string; firstName: string; lastName: string } }>,
+  reply: FastifyReply,
+) {
   const decoded = await getDecodedToken(request, reply)
-  const user = await authService.acceptInvite(decoded)
+  const user = await authService.acceptInvite(decoded, request.body)
 
   if (!user) {
     return reply.status(404).send({
-      error: 'No pending invite found for this email',
-      code: 'INVITE_NOT_FOUND',
+      error: 'Invite is invalid, expired, or already accepted',
+      code: 'INVITE_INVALID',
     })
   }
 

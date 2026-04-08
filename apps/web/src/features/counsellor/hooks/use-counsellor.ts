@@ -64,9 +64,10 @@ export function useCreateReminder() {
   return useMutation({
     mutationFn: (data: { studentId: string; title: string; dueAt: string }) =>
       api.post('/counsellor/reminders', data),
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['counsellor', 'reminders'] })
       qc.invalidateQueries({ queryKey: ['counsellor', 'agenda'] })
+      qc.invalidateQueries({ queryKey: ['students', vars.studentId, 'case-log'] })
     },
   })
 }
@@ -105,7 +106,6 @@ export function useMeetingOutcomes(studentId: string) {
       nextAction: string
       followUpDueAt: string | null
       privateNote: string | null
-      studentVisibleNote: string | null
       stageAfter: string | null
       createdAt: string
     }>>,
@@ -122,12 +122,12 @@ export function useRecordMeetingOutcome() {
       nextAction: string
       followUpDueAt?: string
       privateNote?: string
-      studentVisibleNote?: string
       stageAfter?: string
     }) => api.post(`/students/${data.studentId}/meeting-outcome`, data),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['students', vars.studentId] })
       qc.invalidateQueries({ queryKey: ['students', vars.studentId, 'meeting-outcomes'] })
+      qc.invalidateQueries({ queryKey: ['students', vars.studentId, 'case-log'] })
       qc.invalidateQueries({ queryKey: ['counsellor', 'agenda'] })
       qc.invalidateQueries({ queryKey: ['counsellor', 'reminders'] })
       qc.invalidateQueries({ queryKey: ['bookings'] })
