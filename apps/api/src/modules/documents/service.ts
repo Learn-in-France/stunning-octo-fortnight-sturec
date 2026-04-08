@@ -184,9 +184,16 @@ export async function updateRequirement(
 
 // ─── Download URL ───────────────────────────────────────────
 
-export async function getDownloadUrl(id: string): Promise<{ downloadUrl: string } | null> {
+export async function getDownloadUrl(
+  id: string,
+  user: { id: string; role: 'admin' | 'counsellor' | 'student' },
+): Promise<{ downloadUrl: string } | null> {
   const doc = await repo.findDocumentById(id)
   if (!doc) return null
+  if (user.role === 'counsellor') {
+    if (doc.sharedWithCounsellorId !== user.id || doc.revokedAt) return null
+  }
+  if (user.role === 'student') return null
 
   const downloadUrl = gcs.generateSignedDownloadUrl(doc.gcsPath)
   return { downloadUrl }

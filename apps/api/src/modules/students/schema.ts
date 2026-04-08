@@ -22,6 +22,7 @@ export const updateStudentSchema = z.object({
 
 export const assignStudentSchema = z.object({
   counsellorId: z.string().uuid(),
+  reason: z.string().trim().min(1).max(2000).optional(),
 })
 
 export { studentFilterSchema, stageChangeSchema }

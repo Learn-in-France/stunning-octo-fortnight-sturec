@@ -20,6 +20,7 @@ export async function listBookings(user: RequestUser): Promise<BookingListItem[]
 }
 
 export async function createBooking(
+  user: RequestUser,
   data: {
     studentId?: string
     leadId?: string
@@ -29,35 +30,36 @@ export async function createBooking(
     source?: 'chat' | 'portal'
   },
 ): Promise<BookingListItem> {
+  const bookingTarget = await resolveBookingTarget(user, data)
   const booking = await repo.createBooking({
-    studentId: data.studentId,
-    leadId: data.leadId,
-    counsellorId: data.counsellorId ?? null,
+    studentId: bookingTarget.studentId,
+    leadId: bookingTarget.leadId,
+    counsellorId: bookingTarget.counsellorId,
     scheduledAt: new Date(data.scheduledAt),
     notes: data.notes,
     source: data.source,
-    status: data.counsellorId ? 'assigned' : 'awaiting_assignment',
+    status: bookingTarget.counsellorId ? 'assigned' : 'awaiting_assignment',
   })
 
   // Trigger AI summary generation for counsellor handoff
-  if (data.studentId || data.leadId) {
+  if (bookingTarget.studentId || bookingTarget.leadId) {
     getAiProcessingQueue().add('booking-summary', {
-      entityType: data.studentId ? 'student' : 'lead',
-      entityId: (data.studentId || data.leadId)!,
+      entityType: bookingTarget.studentId ? 'student' : 'lead',
+      entityId: (bookingTarget.studentId || bookingTarget.leadId)!,
       sourceType: 'booking',
       sourceId: booking.id,
     }).catch((err) => console.error('[bookings] Failed to enqueue booking summary:', err))
   }
 
   // Notify admin about new booking awaiting assignment
-  if (!data.counsellorId) {
+  if (!bookingTarget.counsellorId) {
     getNotificationsQueue().add('booking-awaiting-assignment', {
       recipientId: 'admin-team',
       channel: 'email',
       templateKey: 'booking_created',
       data: {
-        studentId: data.studentId || null,
-        leadId: data.leadId || null,
+        studentId: bookingTarget.studentId || null,
+        leadId: bookingTarget.leadId || null,
         scheduledAt: data.scheduledAt,
         triggeringActionId: booking.id,
         status: 'awaiting_assignment',
@@ -66,14 +68,14 @@ export async function createBooking(
   }
 
   // If counsellor is already assigned, notify them directly
-  if (data.counsellorId) {
+  if (bookingTarget.counsellorId) {
     getNotificationsQueue().add('booking-created', {
-      recipientId: data.counsellorId,
+      recipientId: bookingTarget.counsellorId,
       channel: 'email',
       templateKey: 'booking_created',
       data: {
-        studentId: data.studentId || null,
-        leadId: data.leadId || null,
+        studentId: bookingTarget.studentId || null,
+        leadId: bookingTarget.leadId || null,
         scheduledAt: data.scheduledAt,
         triggeringActionId: booking.id,
       },
@@ -81,6 +83,36 @@ export async function createBooking(
   }
 
   return mapBooking(booking)
+}
+
+async function resolveBookingTarget(
+  user: RequestUser,
+  data: {
+    studentId?: string
+    leadId?: string
+    counsellorId?: string | null
+  },
+) {
+  if (user.role !== 'student') {
+    return {
+      studentId: data.studentId,
+      leadId: data.leadId,
+      counsellorId: data.counsellorId ?? null,
+    }
+  }
+
+  const student = await repo.findStudentByUserId(user.id)
+  if (!student) {
+    const error = new Error('Student profile not found')
+    Object.assign(error, { statusCode: 404, code: 'STUDENT_NOT_FOUND' })
+    throw error
+  }
+
+  return {
+    studentId: student.id,
+    leadId: undefined,
+    counsellorId: student.assignedCounsellorId ?? null,
+  }
 }
 
 export async function updateBooking(

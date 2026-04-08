@@ -7,7 +7,7 @@ export async function listBookings(request: FastifyRequest, reply: FastifyReply)
 }
 
 export async function createBooking(request: FastifyRequest, reply: FastifyReply) {
-  const booking = await bookingService.createBooking(request.body as any)
+  const booking = await bookingService.createBooking(request.user, request.body as any)
   return reply.status(201).send(booking)
 }
 

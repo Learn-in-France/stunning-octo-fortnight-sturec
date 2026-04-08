@@ -478,6 +478,7 @@ export interface AssignmentHistoryItem {
   counsellorName: string
   assignedAt: string
   unassignedAt: string | null
+  reason?: string | null
 }
 
 // ─── Analytics Responses ─────────────────────────────────────

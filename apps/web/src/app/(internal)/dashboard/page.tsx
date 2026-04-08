@@ -11,10 +11,12 @@ import { Card, CardHeader, CardTitle, CardValue } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useAnalyticsOverview, useCounsellorAnalytics } from '@/features/analytics/hooks/use-analytics'
 import { useBookings, useUpdateBooking, type BookingListItemView } from '@/features/bookings/hooks/use-bookings'
 import { useCounsellorAgenda, useCompleteReminder, useDismissReminder } from '@/features/counsellor/hooks/use-counsellor'
+import { useStudents } from '@/features/students/hooks/use-students'
 import { STAGE_DISPLAY_NAMES } from '@sturec/shared'
 
 export default function DashboardPage() {
@@ -34,6 +36,7 @@ export default function DashboardPage() {
   const bookingStats = overview?.data.bookings
 
   const [selectedCounsellorByBooking, setSelectedCounsellorByBooking] = useState<Record<string, string>>({})
+  const [assignmentReasonByBooking, setAssignmentReasonByBooking] = useState<Record<string, string>>({})
 
   const pendingAssignments = useMemo(
     () => (bookings ?? []).filter((booking) => booking.status === 'awaiting_assignment'),
@@ -42,8 +45,9 @@ export default function DashboardPage() {
 
   const assignMutation = useMutation({
     mutationFn: async ({ booking, counsellorId }: { booking: BookingListItemView; counsellorId: string }) => {
+      const reason = assignmentReasonByBooking[booking.id]?.trim() || undefined
       if (booking.studentId) {
-        await api.post(`/students/${booking.studentId}/assign`, { counsellorId })
+        await api.post(`/students/${booking.studentId}/assign`, { counsellorId, reason })
       } else if (booking.leadId) {
         await api.post(`/leads/${booking.leadId}/assign`, { counsellorId })
       }
@@ -60,6 +64,7 @@ export default function DashboardPage() {
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
       queryClient.invalidateQueries({ queryKey: ['students'] })
       queryClient.invalidateQueries({ queryKey: ['leads'] })
+      setAssignmentReasonByBooking({})
     },
   })
 
@@ -126,6 +131,17 @@ export default function DashboardPage() {
                                   [booking.id]: e.target.value,
                                 }))}
                               />
+                              {booking.studentId && (
+                                <Textarea
+                                  rows={3}
+                                  value={assignmentReasonByBooking[booking.id] ?? ''}
+                                  onChange={(e) => setAssignmentReasonByBooking((prev) => ({
+                                    ...prev,
+                                    [booking.id]: e.target.value,
+                                  }))}
+                                  placeholder="Optional handoff note for the next counsellor"
+                                />
+                              )}
                               <Button
                                 size="sm"
                                 disabled={!selected || assignMutation.isPending}
@@ -323,14 +339,49 @@ function formatDateTime(iso: string): string {
 }
 
 function CounsellorAgendaView() {
+  const { user } = useAuth()
   const { data: agenda, isLoading } = useCounsellorAgenda()
+  const { data: myStudents } = useStudents({
+    counsellorId: user?.id,
+    page: 1,
+    limit: 1,
+  })
   const completeReminder = useCompleteReminder()
   const dismissReminder = useDismissReminder()
 
   if (isLoading) return <LoadingSpinner size="md" />
 
+  const myCaseloadCount = myStudents?.total ?? 0
+  const needsActionCount =
+    (agenda?.todayMeetings?.length ?? 0) +
+    (agenda?.overdueReminders?.length ?? 0) +
+    (agenda?.docsWaitingReview?.length ?? 0)
+
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>My Caseload</CardTitle>
+          <Badge variant={needsActionCount > 0 ? 'warning' : 'success'} dot>
+            {needsActionCount > 0 ? `${needsActionCount} actions due` : 'On track'}
+          </Badge>
+        </CardHeader>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <WorkloadPill label="My students" value={myCaseloadCount} />
+          <WorkloadPill label="Meetings" value={agenda?.todayMeetings?.length ?? 0} />
+          <WorkloadPill label="Overdue" value={agenda?.overdueReminders?.length ?? 0} />
+          <WorkloadPill label="Docs" value={agenda?.docsWaitingReview?.length ?? 0} />
+          <WorkloadPill label="Stale" value={agenda?.staleStudents?.length ?? 0} />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link href="/students" className="text-xs text-primary-600 hover:underline">
+            Open students list
+          </Link>
+          <span className="text-xs text-text-muted">Your owned students are now one slice of the shared internal caseload.</span>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {/* Today's meetings */}
       <Card>
         <CardHeader>
@@ -457,6 +508,7 @@ function CounsellorAgendaView() {
           </div>
         )}
       </Card>
+      </div>
     </div>
   )
 }

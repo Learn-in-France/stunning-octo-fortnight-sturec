@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import type { DocumentStatus, DocumentType } from '@sturec/shared'
-import { useStudentPortalDocuments, useStudentProfile } from '@/features/student-portal/hooks/use-student-portal'
+import { useStudentPortalDocuments } from '@/features/student-portal/hooks/use-student-portal'
 import { useDocumentUpload } from '@/features/student-portal/hooks/use-document-upload'
 
 const STATUS_CONFIG: Record<DocumentStatus, { label: string; variant: 'muted' | 'warning' | 'success' | 'danger' }> = {
@@ -40,7 +40,6 @@ function formatDate(iso: string): string {
 
 export default function DocumentsPage() {
   const { data: documents, isLoading } = useStudentPortalDocuments()
-  const { data: profile } = useStudentProfile()
   const upload = useDocumentUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -67,13 +66,13 @@ export default function DocumentsPage() {
 
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (!file || !profile) return
+    if (!file) return
 
     setUploadError(null)
     setUploadSuccess(false)
 
     try {
-      await upload.mutateAsync({ studentId: profile.id, type: selectedType, file })
+      await upload.mutateAsync({ type: selectedType, file })
       setUploadSuccess(true)
       setShowUpload(false)
       // Reset file input

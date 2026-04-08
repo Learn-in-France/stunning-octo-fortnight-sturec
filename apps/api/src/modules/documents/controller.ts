@@ -73,7 +73,7 @@ export async function downloadDocument(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
-  const result = await documentService.getDownloadUrl(request.params.id)
+  const result = await documentService.getDownloadUrl(request.params.id, request.user)
   if (!result) return reply.status(404).send({ error: 'Document not found', code: 'NOT_FOUND' })
   return reply.send(result)
 }

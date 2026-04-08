@@ -24,6 +24,14 @@ export async function studentPortalRoutes(server: FastifyInstance) {
     handler: ctrl.getApplicationDetail,
   })
   server.get('/students/me/documents', { preHandler, handler: ctrl.getDocuments })
+  server.post('/students/me/documents/upload-url', {
+    preHandler: [...preHandler, validateBody(z.object({ type: z.string(), filename: z.string() }))],
+    handler: ctrl.requestDocumentUploadUrl,
+  })
+  server.post('/students/me/documents/complete', {
+    preHandler: [...preHandler, validateBody(z.object({ documentId: z.string().uuid() }))],
+    handler: ctrl.completeDocumentUpload,
+  })
   server.post('/students/me/documents/:id/share', {
     preHandler: [...preHandler, validateParams(idParamSchema)],
     handler: ctrl.shareDocument,

@@ -12,11 +12,21 @@ export interface TabItem {
 interface TabsProps {
   items: TabItem[]
   defaultTab?: string
+  activeTab?: string
+  onChange?: (tabId: string) => void
 }
 
-export function Tabs({ items, defaultTab }: TabsProps) {
-  const [active, setActive] = useState(defaultTab ?? items[0]?.id)
+export function Tabs({ items, defaultTab, activeTab, onChange }: TabsProps) {
+  const [internalActive, setInternalActive] = useState(defaultTab ?? items[0]?.id)
+  const active = activeTab ?? internalActive
   const activeItem = items.find((t) => t.id === active)
+
+  const setActive = (tabId: string) => {
+    if (activeTab === undefined) {
+      setInternalActive(tabId)
+    }
+    onChange?.(tabId)
+  }
 
   return (
     <div>

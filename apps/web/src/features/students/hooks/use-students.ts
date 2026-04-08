@@ -142,6 +142,37 @@ export function useStudentCaseLog(studentId: string) {
   })
 }
 
+export function useChangeStudentStage(studentId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { toStage: StudentStage; reasonCode?: string; reasonNote?: string }) =>
+      api.post(`/students/${studentId}/stage`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students', studentId] })
+      queryClient.invalidateQueries({ queryKey: ['students', studentId, 'timeline'] })
+      queryClient.invalidateQueries({ queryKey: ['students', studentId, 'case-log'] })
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
+    },
+  })
+}
+
+export function useAssignStudentCounsellor(studentId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { counsellorId: string; reason?: string }) =>
+      api.post(`/students/${studentId}/assign`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students', studentId] })
+      queryClient.invalidateQueries({ queryKey: ['students', studentId, 'case-log'] })
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics', 'counsellors'] })
+      queryClient.invalidateQueries({ queryKey: ['bookings'] })
+    },
+  })
+}
+
 // ─── Notes hook ───────────────────────────────────────────────────
 
 export function useStudentNotes(studentId: string, page = 1) {

@@ -478,6 +478,7 @@ export function mapAssignment(
     counsellorName: `${counsellor.firstName} ${counsellor.lastName}`.trim(),
     assignedAt: assignment.assignedAt.toISOString(),
     unassignedAt: isoOrNull(assignment.unassignedAt),
+    reason: assignment.reason ?? null,
   }
 }
 

@@ -38,8 +38,8 @@ export async function changeStage(request: FastifyRequest<{ Params: { id: string
 }
 
 export async function assignCounsellor(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const { counsellorId } = request.body as { counsellorId: string }
-  const result = await studentService.assignCounsellor(request.params.id, counsellorId, request.user.id)
+  const { counsellorId, reason } = request.body as { counsellorId: string; reason?: string }
+  const result = await studentService.assignCounsellor(request.params.id, counsellorId, request.user.id, reason)
   return reply.send(result)
 }
 

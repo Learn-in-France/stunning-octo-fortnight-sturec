@@ -40,6 +40,19 @@ export async function getDocuments(request: FastifyRequest, reply: FastifyReply)
   return reply.send(result)
 }
 
+export async function requestDocumentUploadUrl(request: FastifyRequest, reply: FastifyReply) {
+  const result = await portalService.requestDocumentUploadUrl(request.user.id, request.body as any)
+  if (!result) return reply.code(404).send({ error: 'Student profile not found', code: 'STUDENT_NOT_FOUND' })
+  return reply.code(201).send(result)
+}
+
+export async function completeDocumentUpload(request: FastifyRequest, reply: FastifyReply) {
+  const { documentId } = request.body as { documentId: string }
+  const result = await portalService.completeDocumentUpload(request.user.id, documentId)
+  if (!result) return reply.code(404).send({ error: 'Document not found or invalid state', code: 'NOT_FOUND' })
+  return reply.send(result)
+}
+
 export async function shareDocument(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,

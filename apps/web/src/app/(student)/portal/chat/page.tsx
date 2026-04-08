@@ -16,6 +16,8 @@ import {
   useSendMessage,
   useEndSession,
 } from '@/features/chat/hooks/use-chat'
+import { useCreateBooking } from '@/features/bookings/hooks/use-bookings'
+import { useStudentProfile, useStudentProgress } from '@/features/student-portal/hooks/use-student-portal'
 
 export default function ChatPage() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
@@ -23,6 +25,10 @@ export default function ChatPage() {
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessageItem[]>([])
   const [options, setOptions] = useState<string[] | null>(null)
   const [showBookingPrompt, setShowBookingPrompt] = useState(false)
+  const [bookingScheduledAt, setBookingScheduledAt] = useState('')
+  const [bookingNotes, setBookingNotes] = useState('')
+  const [bookingError, setBookingError] = useState('')
+  const [bookingSubmitted, setBookingSubmitted] = useState(false)
   const [showSessions, setShowSessions] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -30,9 +36,12 @@ export default function ChatPage() {
 
   const { data: sessions, isLoading: loadingSessions } = useChatSessions()
   const { data: serverMessages } = useChatMessages(activeSessionId)
+  const { data: profile } = useStudentProfile()
+  const { data: progress } = useStudentProgress()
   const startSession = useStartSession()
   const sendMessage = useSendMessage(activeSessionId)
   const endSession = useEndSession()
+  const createBooking = useCreateBooking()
 
   // Auto-select active session on load
   useEffect(() => {
@@ -74,6 +83,10 @@ export default function ChatPage() {
     setActiveSessionId(session.id)
     setOptions(null)
     setShowBookingPrompt(false)
+    setBookingScheduledAt('')
+    setBookingNotes('')
+    setBookingError('')
+    setBookingSubmitted(false)
     setOptimisticMessages([])
   }, [startSession])
 
@@ -99,6 +112,10 @@ export default function ChatPage() {
         setOptions(response.options)
       }
       setShowBookingPrompt(response.shouldSuggestBooking === true)
+      if (response.shouldSuggestBooking === true) {
+        setBookingError('')
+        setBookingSubmitted(false)
+      }
     } catch {
       // Remove failed optimistic message
       setOptimisticMessages((prev) => prev.filter((m) => m.id !== tempId))
@@ -113,12 +130,44 @@ export default function ChatPage() {
     setActiveSessionId(null)
     setOptions(null)
     setShowBookingPrompt(false)
+    setBookingScheduledAt('')
+    setBookingNotes('')
+    setBookingError('')
+    setBookingSubmitted(false)
     setOptimisticMessages([])
   }, [activeSessionId, endSession])
 
   const handleOptionClick = useCallback((option: string) => {
     handleSend(option)
   }, [handleSend])
+
+  const handleInlineBooking = useCallback(async () => {
+    setBookingError('')
+
+    if (!profile?.id) {
+      setBookingError('We could not load your student profile. Please refresh and try again.')
+      return
+    }
+
+    if (!bookingScheduledAt) {
+      setBookingError('Choose a preferred meeting time first.')
+      return
+    }
+
+    try {
+      await createBooking.mutateAsync({
+        scheduledAt: new Date(bookingScheduledAt).toISOString(),
+        notes: bookingNotes.trim() || undefined,
+        source: 'chat',
+      })
+      setBookingSubmitted(true)
+      setBookingScheduledAt('')
+      setBookingNotes('')
+    } catch (err) {
+      const apiError = err as { error?: string }
+      setBookingError(apiError.error ?? 'We could not submit your booking request. Please try again.')
+    }
+  }, [bookingNotes, bookingScheduledAt, createBooking, profile?.id])
 
   if (loadingSessions) {
     return (
@@ -261,19 +310,65 @@ export default function ChatPage() {
 
           {showBookingPrompt && isSessionActive && (
             <div className="mx-4 mb-2 rounded-2xl border border-primary-200 bg-primary-50/80 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-text-primary">Ready to speak with a counsellor?</p>
-                  <p className="mt-1 text-xs leading-6 text-text-secondary">
-                    You have shared enough context for a useful human handoff. You can book a counsellor session now or keep chatting if you want to refine your goals first.
-                  </p>
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-text-primary">Ready to speak with a counsellor?</p>
+                    <p className="mt-1 text-xs leading-6 text-text-secondary">
+                      You have shared enough context for a useful human handoff. Book right here or open the full booking page if you want more control.
+                    </p>
+                    {progress?.assignedCounsellorId && (
+                      <p className="mt-1 text-[11px] text-text-muted">
+                        Your current counsellor context will stay attached to this booking.
+                      </p>
+                    )}
+                  </div>
+                  <Link
+                    href="/portal/bookings?source=chat"
+                    className="inline-flex items-center justify-center rounded-full border border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-700 transition-colors hover:bg-primary-100"
+                  >
+                    Open full booking page
+                  </Link>
                 </div>
-                <Link
-                  href="/portal/bookings?source=chat"
-                  className="inline-flex items-center justify-center rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-700"
-                >
-                  Book counsellor session
-                </Link>
+
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                  <label className="block">
+                    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Preferred meeting time</span>
+                    <input
+                      type="datetime-local"
+                      value={bookingScheduledAt}
+                      onChange={(e) => setBookingScheduledAt(e.target.value)}
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </label>
+                  <Button onClick={handleInlineBooking} disabled={!bookingScheduledAt || createBooking.isPending}>
+                    {createBooking.isPending ? 'Submitting…' : 'Request session'}
+                  </Button>
+                </div>
+
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Notes for the counsellor</span>
+                  <textarea
+                    value={bookingNotes}
+                    onChange={(e) => setBookingNotes(e.target.value)}
+                    rows={3}
+                    placeholder="Goals, blockers, or what you want covered in the first conversation."
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </label>
+
+                {bookingError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                    {bookingError}
+                  </div>
+                )}
+
+                {bookingSubmitted && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                    Your counsellor handoff request has been created.
+                  </div>
+                )}
               </div>
             </div>
           )}

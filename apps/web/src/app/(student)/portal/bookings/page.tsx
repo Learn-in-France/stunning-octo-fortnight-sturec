@@ -110,11 +110,9 @@ export default function BookingsPage() {
 
     try {
       const booking = await createBooking.mutateAsync({
-        studentId: profile.id,
         scheduledAt: new Date(scheduledAt).toISOString(),
         notes: compiledNotes || undefined,
         source,
-        counsellorId: progress?.assignedCounsellorId ?? null,
       }) as BookingListItem
 
       setSubmittedId(booking.id)

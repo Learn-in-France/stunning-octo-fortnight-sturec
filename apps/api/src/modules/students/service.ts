@@ -40,7 +40,6 @@ export async function listStudents(
   const args = toPrismaArgs(filters)
   const where = repo.buildStudentWhere({
     ...filters,
-    counsellorIdScope: user.role === 'counsellor' ? user.id : undefined,
   })
 
   const [items, total] = await Promise.all([
@@ -131,12 +130,12 @@ export async function changeStage(
 
 // ─── Assignment ──────────────────────────────────────────────
 
-export async function assignCounsellor(id: string, counsellorId: string, assignedBy: string) {
+export async function assignCounsellor(id: string, counsellorId: string, assignedBy: string, reason?: string) {
   // Unassign current
   await repo.unassignCurrent(id)
 
   // Create new assignment
-  const assignment = await repo.createAssignment({ studentId: id, counsellorId, assignedBy })
+  const assignment = await repo.createAssignment({ studentId: id, counsellorId, assignedBy, reason })
 
   // Update student
   const student = await repo.updateStudent(id, {
@@ -230,10 +229,10 @@ export async function listCaseLog(studentId: string): Promise<CaseLogItem[]> {
       id: assignment.id,
       kind: 'assignment' as const,
       title: `Assigned to ${assignment.counsellor.firstName} ${assignment.counsellor.lastName}`.trim(),
-      summary: assignment.unassignedAt
+      summary: assignment.reason ?? (assignment.unassignedAt
         ? 'Assignment later ended'
-        : 'Current assignment created',
-      detail: null,
+        : 'Current assignment created'),
+      detail: assignment.reason ?? null,
       actorName: `${assignment.assignedByUser.firstName} ${assignment.assignedByUser.lastName}`.trim(),
       status: assignment.unassignedAt ? 'unassigned' : 'active',
       dueAt: null,
