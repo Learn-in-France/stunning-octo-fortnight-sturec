@@ -71,8 +71,8 @@ export default function WhyFrancePage() {
         label="Why France"
         title={
           <>
-            Study in France because it matters.{' '}
-            <span className="public-accent">Not because it is cheap.</span>
+            Study in France for where it can take you.{' '}
+            <span className="public-accent">A gateway to Europe.</span>
           </>
         }
         description="France is one of the few study destinations that combines academic credibility, strong industries, European mobility, and long-term career relevance. For the right student, it is not just a degree destination. It is a serious market."
