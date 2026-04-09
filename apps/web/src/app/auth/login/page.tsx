@@ -121,11 +121,11 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      eyebrow="Sign in"
+      eyebrow="Already a member"
       title={<>Return to your <BrandName inverse /> workspace.</>}
-      description="Students come back here to continue their plan. Team members use the same sign-in page after accepting an invitation."
-      sideTitle="Before you sign in"
-      sideCopy="The login page supports two very different paths, and the copy should make that distinction obvious."
+      description="Students come back here to continue their plan. Team members use the same page after accepting an invitation."
+      sideTitle="Before you continue"
+      sideCopy="This page is for students and team members who already have an account."
       sidePoints={[
         'Students who do not have an account yet should register first.',
         'Internal team members do not self-register; they use an invite link from an admin.',
@@ -136,7 +136,7 @@ export default function LoginPage() {
         Welcome back
       </h2>
       <p className="mt-3 text-sm leading-7 text-text-secondary">
-        Sign in to your workspace
+        Continue to your workspace
       </p>
 
       {error && (
