@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Learn in France wordmark</title>
+  <desc id="desc">LIF monogram with Learn in France lockup</desc>
+  <rect width="512" height="512" rx="64" fill="#fffaf3" />
+  <g transform="translate(256 120)">
+    <text
+      x="0"
+      y="0"
+      text-anchor="middle"
+      font-family="Georgia, 'Times New Roman', serif"
+      font-size="144"
+      font-weight="700"
+      letter-spacing="-8"
+      fill="#173763"
+    >
+      L<tspan fill="#c0392b">I</tspan>F
+    </text>
+    <rect x="-124" y="30" width="248" height="3" rx="1.5" fill="#173763" opacity="0.25" />
+    <text
+      x="0"
+      y="95"
+      text-anchor="middle"
+      font-family="Georgia, 'Times New Roman', serif"
+      font-size="42"
+      font-weight="700"
+      letter-spacing="5"
+      fill="#173763"
+    >
+      LEARN IN
+    </text>
+    <text
+      x="0"
+      y="148"
+      text-anchor="middle"
+      font-family="Georgia, 'Times New Roman', serif"
+      font-size="42"
+      font-weight="700"
+      letter-spacing="5"
+      fill="#c0392b"
+    >
+      FRANCE
+    </text>
+    <text
+      x="0"
+      y="202"
+      text-anchor="middle"
+      font-family="Georgia, 'Times New Roman', serif"
+      font-size="22"
+      font-style="italic"
+      letter-spacing="1.2"
+      fill="#596579"
+    >
+      France-based Education Advisory
+    </text>
+  </g>
+</svg>
