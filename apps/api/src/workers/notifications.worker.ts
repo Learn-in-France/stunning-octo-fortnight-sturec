@@ -15,6 +15,8 @@ import { getRedisConnection } from '../lib/queue/connection.js'
 import { buildIdempotencyKey, withIdempotency } from '../lib/queue/idempotency.js'
 import type { NotificationJobData } from '../lib/queue/queues.js'
 import prisma from '../lib/prisma.js'
+import { sendTransactionalEmail } from '../integrations/brevo/index.js'
+import { renderEmailTemplate } from '../lib/email-templates.js'
 
 export function startNotificationsWorker() {
   const worker = new Worker<NotificationJobData>(
@@ -119,7 +121,7 @@ export function startNotificationsWorker() {
 
 function getProvider(channel: string): string {
   switch (channel) {
-    case 'email': return 'sendgrid'
+    case 'email': return 'brevo'
     case 'whatsapp': return 'sensy'
     case 'sms': return 'sensy'
     default: return 'unknown'
@@ -149,7 +151,17 @@ async function dispatch(
 }
 
 /**
- * Email dispatch via SendGrid or a compatible transactional email provider.
+ * Email dispatch via Brevo's transactional API.
+ *
+ * Content comes from the in-code email template registry in
+ * lib/email-templates.ts keyed by the semantic templateKey the
+ * notification job carries ('booking_created', 'stage_changed',
+ * etc.). Unknown keys fall back to a generic branded shell so the
+ * queue never loses an email.
+ *
+ * The integrations/brevo module gracefully degrades if BREVO_API_KEY
+ * is missing — it logs a warning and returns { sent: false } instead
+ * of throwing, so dev / staging work without a live key.
  */
 async function sendEmail(
   to: string,
@@ -157,35 +169,18 @@ async function sendEmail(
   data: Record<string, unknown>,
   user: { firstName: string; lastName: string },
 ): Promise<void> {
-  const apiKey = process.env.SENDGRID_API_KEY
-  if (!apiKey) {
-    console.warn(`[notifications] SENDGRID_API_KEY not set, skipping email to ${to}`)
-    return
-  }
-
-  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      personalizations: [{
-        to: [{ email: to, name: `${user.firstName} ${user.lastName}`.trim() }],
-        dynamic_template_data: { ...data, firstName: user.firstName },
-      }],
-      from: {
-        email: process.env.SENDGRID_FROM_EMAIL || 'noreply@sturec.com',
-        name: process.env.SENDGRID_FROM_NAME || 'STUREC',
-      },
-      template_id: templateKey,
-    }),
+  const rendered = renderEmailTemplate(templateKey, {
+    recipientFirstName: user.firstName,
+    data,
   })
-
-  if (!response.ok) {
-    const body = await response.text()
-    throw new Error(`SendGrid error ${response.status}: ${body}`)
-  }
+  await sendTransactionalEmail({
+    to,
+    toName: `${user.firstName} ${user.lastName}`.trim() || undefined,
+    subject: rendered.subject,
+    htmlContent: rendered.html,
+    textContent: rendered.text,
+    tags: [templateKey],
+  })
 }
 
 /**

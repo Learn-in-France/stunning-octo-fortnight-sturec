@@ -14,6 +14,10 @@ import {
   getImportsQueue,
   getWebhooksQueue,
 } from '../../lib/queue/index.js'
+import { pingFirebase } from '../../integrations/firebase/index.js'
+import { pingGroq } from '../../integrations/groq/index.js'
+import { pingGcs } from '../../integrations/gcs/index.js'
+import { pingBrevo } from '../../integrations/brevo/index.js'
 
 const QUEUE_GETTERS = {
   'ai-processing': getAiProcessingQueue,
@@ -212,27 +216,56 @@ export async function getIntegrationHealth() {
     checks.push({ name: 'database', status: 'error', latencyMs: Date.now() - dbStart, error: (err as Error).message })
   }
 
-  // Mautic — real connectivity check
-  const mauticPing = await pingMautic()
-  const mauticEnvOk = !!process.env.MAUTIC_API_URL && !!process.env.MAUTIC_API_USER
+  // Real liveness pings for all outbound integrations in parallel so
+  // one slow check can't dominate the endpoint response time. Each
+  // ping has its own 5s AbortSignal timeout internally. allSettled
+  // guarantees a single ping throwing (e.g. a bad service account in
+  // test env) can't break the whole health endpoint.
+  type PingResult = { ok: boolean; latencyMs: number; error?: string }
+  const safePing = async (fn: () => Promise<PingResult>): Promise<PingResult> => {
+    try {
+      return await fn()
+    } catch (err) {
+      return {
+        ok: false,
+        latencyMs: 0,
+        error: err instanceof Error ? err.message : 'ping threw unexpectedly',
+      }
+    }
+  }
+  const [
+    mauticPing,
+    firebasePing,
+    groqPing,
+    gcsPing,
+    brevoPing,
+  ] = await Promise.all([
+    safePing(pingMautic),
+    safePing(pingFirebase),
+    safePing(pingGroq),
+    safePing(pingGcs),
+    safePing(pingBrevo),
+  ])
 
   // Fetch last-event timestamps from log tables in parallel
   const [
     lastMauticSuccess, lastMauticError,
     lastWebhookBooking,
     lastWhatsAppDelivery, lastWhatsAppError,
+    lastEmailDelivery, lastEmailError,
   ] = await Promise.all([
     safeFind(() => prisma.mauticSyncLog.findFirst({ where: { status: 'sent' }, orderBy: { completedAt: 'desc' }, select: { completedAt: true } })),
     safeFind(() => prisma.mauticSyncLog.findFirst({ where: { status: 'failed' }, orderBy: { createdAt: 'desc' }, select: { createdAt: true, lastError: true } })),
     safeFind(() => prisma.booking.findFirst({ where: { calcomEventId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } })),
     safeFind(() => prisma.notificationLog.findFirst({ where: { status: 'delivered', channel: 'whatsapp' }, orderBy: { deliveredAt: 'desc' }, select: { deliveredAt: true, provider: true } })),
     safeFind(() => prisma.notificationLog.findFirst({ where: { status: 'failed', channel: 'whatsapp' }, orderBy: { createdAt: 'desc' }, select: { createdAt: true, errorMessage: true } })),
+    safeFind(() => prisma.notificationLog.findFirst({ where: { status: 'delivered', channel: 'email' }, orderBy: { deliveredAt: 'desc' }, select: { deliveredAt: true } })),
+    safeFind(() => prisma.notificationLog.findFirst({ where: { status: 'failed', channel: 'email' }, orderBy: { createdAt: 'desc' }, select: { createdAt: true, errorMessage: true } })),
   ])
 
-  // Mautic check — prefer real ping, fall back to env+log
   checks.push({
     name: 'mautic',
-    status: mauticPing.ok ? 'ok' : (mauticEnvOk ? 'error' : 'error'),
+    status: mauticPing.ok ? 'ok' : 'error',
     ...(mauticPing.latencyMs > 0 && { latencyMs: mauticPing.latencyMs }),
     ...(!mauticPing.ok && { error: mauticPing.error ?? 'Connectivity check failed' }),
     lastSuccess: lastMauticSuccess?.completedAt?.toISOString() ?? null,
@@ -240,11 +273,41 @@ export async function getIntegrationHealth() {
     lastErrorMessage: lastMauticError?.lastError ?? null,
   })
 
-  // Env-only checks for services without adapters yet
+  checks.push({
+    name: 'firebase',
+    status: firebasePing.ok ? 'ok' : 'error',
+    ...(firebasePing.latencyMs > 0 && { latencyMs: firebasePing.latencyMs }),
+    ...(!firebasePing.ok && { error: firebasePing.error ?? 'Ping failed' }),
+  })
+
+  checks.push({
+    name: 'groq',
+    status: groqPing.ok ? 'ok' : 'error',
+    ...(groqPing.latencyMs > 0 && { latencyMs: groqPing.latencyMs }),
+    ...(!groqPing.ok && { error: groqPing.error ?? 'Ping failed' }),
+  })
+
+  checks.push({
+    name: 'gcs',
+    status: gcsPing.ok ? 'ok' : 'error',
+    ...(gcsPing.latencyMs > 0 && { latencyMs: gcsPing.latencyMs }),
+    ...(!gcsPing.ok && { error: gcsPing.error ?? 'Ping failed' }),
+  })
+
+  checks.push({
+    name: 'brevo',
+    status: brevoPing.ok ? 'ok' : 'error',
+    ...(brevoPing.latencyMs > 0 && { latencyMs: brevoPing.latencyMs }),
+    ...(!brevoPing.ok && { error: brevoPing.error ?? 'Ping failed' }),
+    lastSuccess: lastEmailDelivery?.deliveredAt?.toISOString() ?? null,
+    lastError: lastEmailError?.createdAt?.toISOString() ?? null,
+    lastErrorMessage: lastEmailError?.errorMessage ?? null,
+  })
+
+  // Cal.com and WhatsApp are webhook-receive-only — there's no
+  // outbound API to ping, so we keep the env-var + last-log approach
+  // for those.
   const envChecks = [
-    { name: 'firebase', vars: ['FIREBASE_PROJECT_ID'] },
-    { name: 'groq', vars: ['GROQ_API_KEY'] },
-    { name: 'gcs', vars: ['GCS_BUCKET'] },
     { name: 'calcom', vars: ['CALCOM_WEBHOOK_SECRET'] },
     { name: 'whatsapp', vars: ['WHATSAPP_WEBHOOK_SECRET'] },
   ]
@@ -258,9 +321,6 @@ export async function getIntegrationHealth() {
       lastError: lastWhatsAppError?.createdAt?.toISOString() ?? null,
       lastErrorMessage: lastWhatsAppError?.errorMessage ?? null,
     },
-    firebase: {},
-    groq: {},
-    gcs: {},
   }
 
   for (const check of envChecks) {

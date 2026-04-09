@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 vi.mock('../src/integrations/firebase/index.js', () => ({
   verifyFirebaseToken: vi.fn(),
   initFirebase: vi.fn(),
+  pingFirebase: () => Promise.resolve({ ok: false, latencyMs: 0, error: 'test env' }),
   AuthError: class AuthError extends Error {
     code: string
     statusCode: number
@@ -22,6 +23,7 @@ vi.mock('../src/integrations/groq/index.js', () => ({
     content: 'Hello! ```json\n{"summary_for_team":"test","options":null}\n```',
     usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
   }),
+  pingGroq: () => Promise.resolve({ ok: false, latencyMs: 0, error: 'test env' }),
 }))
 
 // Mock GCS integration — use stable functions (not vi.fn) to survive restoreMocks
@@ -29,6 +31,13 @@ vi.mock('../src/integrations/gcs/index.js', () => ({
   generateSignedUploadUrl: () => 'https://storage.googleapis.com/test-upload-url',
   generateSignedDownloadUrl: () => 'https://storage.googleapis.com/test-download-url',
   getObjectMetadata: () => Promise.resolve({ size: 12345, contentType: 'application/pdf' }),
+  pingGcs: () => Promise.resolve({ ok: false, latencyMs: 0, error: 'test env' }),
+}))
+
+// Mock Brevo integration
+vi.mock('../src/integrations/brevo/index.js', () => ({
+  sendTransactionalEmail: () => Promise.resolve({ sent: false, skipped: 'no_api_key' }),
+  pingBrevo: () => Promise.resolve({ ok: false, latencyMs: 0, error: 'test env' }),
 }))
 
 // Mock queue modules (lazy-init, avoid Redis connections in tests)
@@ -2516,7 +2525,7 @@ describe('Route-level smoke tests', () => {
     it('GET /ops/history/notifications returns paginated list for admin', async () => {
       authAs(ADMIN_USER)
       db.notificationLog.findMany.mockResolvedValue([
-        { id: 'n1', recipient: 'user@test.com', channel: 'email', provider: 'sendgrid', templateKey: 'welcome', status: 'delivered', errorMessage: null, sentAt: new Date(), deliveredAt: new Date(), createdAt: new Date() },
+        { id: 'n1', recipient: 'user@test.com', channel: 'email', provider: 'brevo', templateKey: 'welcome', status: 'delivered', errorMessage: null, sentAt: new Date(), deliveredAt: new Date(), createdAt: new Date() },
       ])
       db.notificationLog.count.mockResolvedValue(1)
 
