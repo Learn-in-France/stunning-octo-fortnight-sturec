@@ -10,6 +10,11 @@ import { z } from 'zod'
 const idParamSchema = z.object({ id: z.string().uuid() })
 
 export async function analyticsRoutes(server: FastifyInstance) {
+  server.get('/admin/pending-assignments', {
+    preHandler: [authMiddleware, requireRole('admin')],
+    handler: ctrl.listPendingAssignments,
+  })
+
   server.get('/analytics/overview', {
     preHandler: [authMiddleware, requireRole('admin'), validateQuery(analyticsDateRangeSchema)],
     handler: ctrl.getOverview,

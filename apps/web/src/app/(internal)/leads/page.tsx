@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import type { LeadStatus, LeadSource, PriorityLevel } from '@sturec/shared'
@@ -15,10 +15,20 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { SearchInput } from '@/components/ui/search-input'
-import { useLeads, useLeadStats, type LeadListItemView } from '@/features/leads/hooks/use-leads'
+import { Modal } from '@/components/ui/modal'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { useAuth } from '@/providers/auth-provider'
+import { useToast } from '@/providers/toast-provider'
+import { parseLeadImportCsv, type LeadImportRow } from '@/features/leads/lib/import'
+import { useImportLeads, useLeads, useLeadStats, type LeadListItemView } from '@/features/leads/hooks/use-leads'
 
 export default function LeadsPage() {
   const router = useRouter()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const { addToast } = useToast()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<LeadStatus | ''>('')
   const [source, setSource] = useState<LeadSource | ''>('')
@@ -26,11 +36,17 @@ export default function LeadsPage() {
   const [page, setPage] = useState(1)
   const [sortBy, setSortBy] = useState('priorityLevel')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [csvText, setCsvText] = useState('')
+  const [sourcePartner, setSourcePartner] = useState('')
+  const [parsedRows, setParsedRows] = useState<LeadImportRow[]>([])
+  const [importErrors, setImportErrors] = useState<string[]>([])
 
   const { data, isLoading } = useLeads({
     page, limit: 20, search, status, source, priority, sortBy, sortOrder,
   })
-  const { data: stats } = useLeadStats()
+  const { data: stats } = useLeadStats({ enabled: isAdmin })
+  const importLeads = useImportLeads()
 
   const hasFilters = !!(search || status || source || priority)
 
@@ -48,6 +64,52 @@ export default function LeadsPage() {
     } else {
       setSortBy(key)
       setSortOrder('asc')
+    }
+  }
+
+  function resetImportForm() {
+    setCsvText('')
+    setSourcePartner('')
+    setParsedRows([])
+    setImportErrors([])
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  function handleCloseImport() {
+    setShowImportModal(false)
+    resetImportForm()
+  }
+
+  function applyParsedContent(content: string, nextSourcePartner = sourcePartner) {
+    setCsvText(content)
+    const parsed = parseLeadImportCsv(content, { sourcePartner: nextSourcePartner.trim() || undefined })
+    setParsedRows(parsed.rows)
+    setImportErrors(parsed.errors)
+  }
+
+  async function handleFileSelected(file: File | null) {
+    if (!file) return
+    const text = await file.text()
+    applyParsedContent(text)
+  }
+
+  async function handleImportSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const parsed = parseLeadImportCsv(csvText, { sourcePartner: sourcePartner.trim() || undefined })
+    setParsedRows(parsed.rows)
+    setImportErrors(parsed.errors)
+
+    if (parsed.errors.length > 0 || parsed.rows.length === 0) {
+      addToast('error', 'Fix the CSV errors before importing.')
+      return
+    }
+
+    try {
+      const result = await importLeads.mutateAsync(parsed.rows)
+      addToast('success', `${result.rowCount} leads queued for import.`)
+      handleCloseImport()
+    } catch {
+      addToast('error', 'Failed to queue lead import.')
     }
   }
 
@@ -137,15 +199,15 @@ export default function LeadsPage() {
         title="Leads"
         description="Manage incoming leads and qualification pipeline."
         badge={data ? <Badge variant="muted">{data.total} total</Badge> : null}
-        actions={
-          <Button size="sm" icon={
+        actions={isAdmin ? (
+          <Button size="sm" onClick={() => setShowImportModal(true)} icon={
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           }>
             Import CSV
           </Button>
-        }
+        ) : undefined}
       />
 
       {/* Summary metrics */}
@@ -259,6 +321,84 @@ export default function LeadsPage() {
           />
         </>
       )}
+
+      <Modal open={showImportModal} onClose={handleCloseImport} title="Import Leads from CSV" size="lg">
+        <form onSubmit={handleImportSubmit} className="space-y-4">
+          <div className="rounded-xl border border-border bg-surface-sunken/40 p-4">
+            <p className="text-sm font-medium text-text-primary">Accepted columns</p>
+            <p className="mt-1 text-xs leading-6 text-text-secondary">
+              Required: <code>email</code>. Optional: <code>firstName</code> / <code>first_name</code>, <code>lastName</code> / <code>last_name</code>, <code>phone</code>, <code>sourcePartner</code>, <code>notes</code>.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
+            <Textarea
+              label="Paste CSV"
+              value={csvText}
+              onChange={(e) => applyParsedContent(e.target.value)}
+              placeholder={'email,first_name,last_name,phone,sourcePartner,notes\nstudent@example.com,Ana,Martin,+33123456789,Sorbonne,Interested in CS'}
+              className="min-h-[220px]"
+            />
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-text-secondary">Upload file</label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null
+                    void handleFileSelected(file)
+                  }}
+                  className="block w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary file:mr-3 file:rounded-md file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700"
+                />
+              </div>
+
+              <Input
+                label="Default source partner"
+                value={sourcePartner}
+                onChange={(e) => {
+                  const next = e.target.value
+                  setSourcePartner(next)
+                  if (csvText.trim()) applyParsedContent(csvText, next)
+                }}
+                placeholder="Applied if a row has no sourcePartner"
+              />
+
+              <div className="rounded-xl border border-border bg-surface-sunken/30 p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Preview</p>
+                <p className="mt-2 text-2xl font-bold font-display text-text-primary">{parsedRows.length}</p>
+                <p className="text-xs text-text-secondary">rows ready to queue</p>
+                {parsedRows.length > 0 && (
+                  <div className="mt-3 text-xs text-text-muted">
+                    First row: {parsedRows[0].email}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {importErrors.length > 0 && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+              <p className="text-sm font-medium text-red-700">Import errors</p>
+              <ul className="mt-2 space-y-1 text-xs text-red-700">
+                {importErrors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" size="sm" onClick={handleCloseImport}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" loading={importLeads.isPending} disabled={!csvText.trim()}>
+              Queue import
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

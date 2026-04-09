@@ -4,7 +4,7 @@ import { authMiddleware } from '../../middleware/auth.js'
 import { requireRole } from '../../middleware/rbac.js'
 import { validateParams, validateBody } from '../../middleware/validation.js'
 import * as ctrl from './controller.js'
-import { sendMessageSchema } from '@sturec/shared/validation'
+import { sendMessageSchema, chatIntakeCheckRequestSchema } from '@sturec/shared/validation'
 import { z } from 'zod'
 
 const idParamSchema = z.object({ id: z.string().uuid() })
@@ -37,6 +37,11 @@ export async function chatRoutes(server: FastifyInstance) {
   server.get('/chat/sessions/:id/messages', {
     preHandler: [...studentOnly, validateParams(idParamSchema)],
     handler: ctrl.getMessages,
+  })
+
+  server.post('/chat/intake-check', {
+    preHandler: [...studentOnly, validateBody(chatIntakeCheckRequestSchema)],
+    handler: ctrl.intakeCheck,
   })
 
   server.post('/chat/sessions/:id/messages', {

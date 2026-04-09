@@ -12,6 +12,7 @@ vi.mock('@sturec/shared', () => ({
 const MOCK_PROFILE = {
   id: 'user-1',
   email: 'admin@sturec.com',
+  emailVerified: true,
   role: 'admin',
   firstName: 'Jane',
   lastName: 'Admin',

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type {
   LeadListItem,
@@ -55,6 +55,17 @@ interface UseLeadsParams {
   counsellorId?: string
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
+}
+
+interface LeadImportRow {
+  email: string
+  firstName?: string
+  first_name?: string
+  lastName?: string
+  last_name?: string
+  phone?: string
+  sourcePartner?: string
+  notes?: string
 }
 
 // ─── List hook ───────────────────────────────────────────────────
@@ -143,10 +154,28 @@ function capitalize(s: string): string {
 
 export type LeadStats = AnalyticsOverview['data']['leads']
 
-export function useLeadStats() {
+export function useLeadStats(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['analytics', 'overview', {}],
     queryFn: () => api.get('/analytics/overview') as unknown as AnalyticsOverview,
     select: (overview) => overview.data.leads,
+    enabled: options.enabled ?? true,
+  })
+}
+
+export function useImportLeads() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (rows: LeadImportRow[]) =>
+      api.post('/leads/import', { rows }) as unknown as Promise<{
+        batchId: string
+        rowCount: number
+        status: 'queued'
+      }>,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
+    },
   })
 }

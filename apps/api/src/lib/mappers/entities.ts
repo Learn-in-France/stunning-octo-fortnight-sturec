@@ -68,10 +68,14 @@ function isoOrNull(d: Date | null | undefined): string | null {
 
 // ─── User → AuthUserResponse ─────────────────────────────────
 
-export function mapUserToAuthResponse(user: PrismaUser): AuthUserResponse {
+export function mapUserToAuthResponse(
+  user: PrismaUser,
+  emailVerified: boolean,
+): AuthUserResponse {
   return {
     id: user.id,
     email: user.email,
+    emailVerified,
     role: user.role as AuthUserResponse['role'],
     firstName: user.firstName,
     lastName: user.lastName,

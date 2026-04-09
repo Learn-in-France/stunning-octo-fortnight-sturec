@@ -23,6 +23,17 @@ export const chatMessageResponseSchema = z.object({
   shouldSuggestBooking: z.boolean(),
 })
 
+export const chatIntakeCheckRequestSchema = z.object({
+  sessionId: z.string().uuid().optional(),
+})
+
+export const chatIntakeCheckResponseSchema = z.object({
+  bookingReady: z.boolean(),
+  captured: z.number(),
+  total: z.number(),
+  missing: z.array(z.string()),
+})
+
 export const sendMessageSchema = z.object({
   content: z.string().min(1),
 })

@@ -13,7 +13,7 @@ export async function verifyUser(decoded: DecodedIdToken): Promise<AuthUserRespo
   const user = await authRepo.findUserByFirebaseUid(decoded.uid)
   if (!user) return null
   await ensurePortalReadyStudent(user)
-  return mapUserToAuthResponse(user)
+  return mapUserToAuthResponse(user, decoded.email_verified === true)
 }
 
 /**
@@ -35,7 +35,7 @@ export async function registerUser(
   const existing = await authRepo.findUserByFirebaseUid(decoded.uid)
   if (existing) {
     await ensurePortalReadyStudent(existing)
-    return { user: mapUserToAuthResponse(existing) }
+    return { user: mapUserToAuthResponse(existing, decoded.email_verified === true) }
   }
 
   // Guard: if an invited internal user exists for this email, reject
@@ -72,16 +72,19 @@ export async function registerUser(
   await authRepo.linkLeadToUser(decoded.email!, user.id)
   await ensurePortalReadyStudent(user)
 
-  return { user: mapUserToAuthResponse(user) }
+  return { user: mapUserToAuthResponse(user, decoded.email_verified === true) }
 }
 
 /**
  * GET /users/me — return current user profile.
  */
-export async function getUserProfile(userId: string): Promise<AuthUserResponse | null> {
+export async function getUserProfile(
+  userId: string,
+  emailVerified: boolean,
+): Promise<AuthUserResponse | null> {
   const user = await authRepo.findUserById(userId)
   if (!user) return null
-  return mapUserToAuthResponse(user)
+  return mapUserToAuthResponse(user, emailVerified)
 }
 
 /**
@@ -89,12 +92,13 @@ export async function getUserProfile(userId: string): Promise<AuthUserResponse |
  */
 export async function updateUserProfile(
   userId: string,
+  emailVerified: boolean,
   data: { firstName?: string; lastName?: string; phone?: string },
 ): Promise<AuthUserResponse | null> {
   const user = await authRepo.findUserById(userId)
   if (!user) return null
   const updated = await authRepo.updateUserProfile(userId, data)
-  return mapUserToAuthResponse(updated)
+  return mapUserToAuthResponse(updated, emailVerified)
 }
 
 /**
@@ -137,7 +141,7 @@ export async function acceptInvite(
     firstName: data.firstName,
     lastName: data.lastName,
   })
-  return mapUserToAuthResponse(user)
+  return mapUserToAuthResponse(user, decoded.email_verified === true)
 }
 
 async function ensurePortalReadyStudent(user: {

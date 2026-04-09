@@ -3,6 +3,7 @@ import type {
   ChatSessionItem,
   ChatMessageItem,
   ChatMessageResponse,
+  ChatIntakeCheckResponse,
 } from '@sturec/shared'
 import api from '@/lib/api/client'
 
@@ -10,14 +11,6 @@ export function useChatSessions() {
   return useQuery({
     queryKey: ['chat', 'sessions'],
     queryFn: () => api.get('/chat/sessions') as unknown as Promise<ChatSessionItem[]>,
-  })
-}
-
-export function useChatSession(id: string | null) {
-  return useQuery({
-    queryKey: ['chat', 'sessions', id],
-    queryFn: () => api.get(`/chat/sessions/${id}`) as unknown as Promise<ChatSessionItem>,
-    enabled: !!id,
   })
 }
 
@@ -29,6 +22,14 @@ export function useChatMessages(sessionId: string | null) {
   })
 }
 
+export function useChatIntakeCheck(sessionId?: string | null) {
+  return useQuery({
+    queryKey: ['chat', 'intake-check', sessionId ?? null],
+    queryFn: () =>
+      api.post('/chat/intake-check', sessionId ? { sessionId } : {}) as unknown as Promise<ChatIntakeCheckResponse>,
+  })
+}
+
 export function useStartSession() {
   const qc = useQueryClient()
   return useMutation({
@@ -36,6 +37,7 @@ export function useStartSession() {
       api.post('/chat/sessions') as unknown as ChatSessionItem,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['chat', 'sessions'] })
+      qc.invalidateQueries({ queryKey: ['chat', 'intake-check'] })
     },
   })
 }
@@ -47,6 +49,7 @@ export function useSendMessage(sessionId: string | null) {
       api.post(`/chat/sessions/${sessionId}/messages`, { content }) as unknown as ChatMessageResponse,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['chat', 'messages', sessionId] })
+      qc.invalidateQueries({ queryKey: ['chat', 'intake-check'] })
     },
   })
 }
@@ -59,6 +62,7 @@ export function useEndSession() {
     onSuccess: (_, sessionId) => {
       qc.invalidateQueries({ queryKey: ['chat', 'sessions'] })
       qc.invalidateQueries({ queryKey: ['chat', 'sessions', sessionId] })
+      qc.invalidateQueries({ queryKey: ['chat', 'intake-check'] })
     },
   })
 }

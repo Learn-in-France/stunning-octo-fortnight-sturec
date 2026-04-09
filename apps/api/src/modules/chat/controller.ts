@@ -43,6 +43,14 @@ export async function getMessages(
   return reply.send(messages)
 }
 
+export async function intakeCheck(
+  request: FastifyRequest<{ Body: { sessionId?: string } }>,
+  reply: FastifyReply,
+) {
+  const result = await chatService.getIntakeCheck(request.user.id, request.body?.sessionId)
+  return reply.send(result)
+}
+
 export async function sendMessage(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,

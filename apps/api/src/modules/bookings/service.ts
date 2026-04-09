@@ -30,6 +30,12 @@ export async function createBooking(
     source?: 'chat' | 'portal'
   },
 ): Promise<BookingListItem> {
+  if (user.role === 'student' && !user.emailVerified) {
+    const error = new Error('Please verify your email before booking a counsellor session')
+    Object.assign(error, { statusCode: 403, code: 'EMAIL_NOT_VERIFIED' })
+    throw error
+  }
+
   const bookingTarget = await resolveBookingTarget(user, data)
   const booking = await repo.createBooking({
     studentId: bookingTarget.studentId,

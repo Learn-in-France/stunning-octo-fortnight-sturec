@@ -1,6 +1,13 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import * as portalService from './service.js'
 
+function sendEmailVerificationGate(reply: FastifyReply) {
+  return reply.code(403).send({
+    error: 'Please verify your email before sharing documents with your counsellor',
+    code: 'EMAIL_NOT_VERIFIED',
+  })
+}
+
 export async function getOwnProfile(request: FastifyRequest, reply: FastifyReply) {
   const result = await portalService.getOwnProfile(request.user.id)
   if (!result) return reply.code(404).send({ error: 'Student profile not found', code: 'STUDENT_NOT_FOUND' })
@@ -78,6 +85,7 @@ export async function shareDocument(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
+  if (!request.user.emailVerified) return sendEmailVerificationGate(reply)
   const result = await portalService.shareDocument(request.user.id, request.params.id)
   if (!result) return reply.code(404).send({ error: 'Document not found or cannot be shared', code: 'NOT_FOUND' })
   return reply.send(result)
@@ -87,6 +95,7 @@ export async function revokeDocument(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
+  if (!request.user.emailVerified) return sendEmailVerificationGate(reply)
   const result = await portalService.revokeDocument(request.user.id, request.params.id)
   if (!result) return reply.code(404).send({ error: 'Document not found', code: 'NOT_FOUND' })
   return reply.send(result)

@@ -7,6 +7,7 @@ export interface RequestUser {
   id: string
   firebaseUid: string
   email: string
+  emailVerified: boolean
   firstName: string
   lastName: string
   role: 'student' | 'counsellor' | 'admin'
@@ -64,7 +65,10 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
       })
     }
 
-    request.user = user as RequestUser
+    request.user = {
+      ...(user as RequestUser),
+      emailVerified: decoded.email_verified === true,
+    }
   } catch (error) {
     if (error instanceof AuthError) {
       return reply.status(error.statusCode).send({

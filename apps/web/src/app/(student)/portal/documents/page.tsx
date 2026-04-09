@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import type { DocumentStatus, DocumentType } from '@sturec/shared'
 import { useStudentPortalDocuments } from '@/features/student-portal/hooks/use-student-portal'
 import { useDocumentUpload } from '@/features/student-portal/hooks/use-document-upload'
+import { useAuth } from '@/providers/auth-provider'
 
 const STATUS_CONFIG: Record<DocumentStatus, { label: string; variant: 'muted' | 'warning' | 'success' | 'danger' }> = {
   pending_upload: { label: 'Awaiting Upload', variant: 'muted' },
@@ -39,6 +40,7 @@ function formatDate(iso: string): string {
 }
 
 export default function DocumentsPage() {
+  const { user } = useAuth()
   const { data: documents, isLoading } = useStudentPortalDocuments()
   const upload = useDocumentUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -99,6 +101,15 @@ export default function DocumentsPage() {
           Upload Document
         </Button>
       </div>
+
+      {user?.emailVerified === false && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-semibold text-text-primary">Email verification still pending</p>
+          <p className="mt-1 text-sm leading-6 text-text-secondary">
+            You can upload documents now, but sharing them with your counsellor stays locked until your email is verified.
+          </p>
+        </div>
+      )}
 
       {/* Upload panel */}
       {showUpload && (

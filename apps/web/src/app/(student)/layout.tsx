@@ -115,6 +115,10 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
   // and remount the form clean). Sign-out stays available.
   const onboardingIncomplete =
     profile !== undefined && profile?.onboardingCompletedAt === null
+  const showEmailVerificationBanner =
+    !onboardingIncomplete &&
+    user?.role === 'student' &&
+    user.emailVerified === false
 
   const stageName = progress
     ? (STAGE_STUDENT_LABELS[progress.stage as keyof typeof STAGE_STUDENT_LABELS] ?? progress.stage)
@@ -287,7 +291,19 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
               <div className="w-9" /> {/* spacer for centering */}
             </header>
 
-            <main className="p-4 sm:p-6">{children}</main>
+            <main className="p-4 sm:p-6">
+              {showEmailVerificationBanner && (
+                <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-text-primary">
+                    Verify your email to unlock counsellor handoff actions
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-text-secondary">
+                    You can keep exploring the portal, but booking a counsellor session and sharing documents stay locked until your email is verified in Firebase.
+                  </p>
+                </div>
+              )}
+              {children}
+            </main>
           </div>
         </div>
       </RoleGuard>

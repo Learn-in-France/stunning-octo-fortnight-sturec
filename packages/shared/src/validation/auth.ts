@@ -3,6 +3,7 @@ import { z } from 'zod'
 const userResponseSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
+  emailVerified: z.boolean(),
   role: z.enum(['student', 'counsellor', 'admin']),
   firstName: z.string(),
   lastName: z.string(),

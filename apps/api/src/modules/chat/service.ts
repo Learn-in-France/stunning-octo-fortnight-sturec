@@ -3,6 +3,7 @@ import type {
   ChatSessionItem,
   ChatMessageItem,
   ChatMessageResponse,
+  ChatIntakeCheckResponse,
 } from '@sturec/shared'
 
 import * as repo from './repository.js'
@@ -272,6 +273,58 @@ export async function getMessages(
 
   const messages = await repo.findMessages(sessionId)
   return messages.map(mapMessage)
+}
+
+export async function getIntakeCheck(
+  userId: string,
+  sessionId?: string,
+): Promise<ChatIntakeCheckResponse> {
+  let leadId: string | undefined
+  let studentId: string | undefined
+
+  if (sessionId) {
+    const session = await repo.findSessionById(sessionId)
+    if (session && session.userId === userId) {
+      leadId = session.leadId
+      studentId = session.studentId ?? undefined
+    }
+  }
+
+  if (!leadId) {
+    const [lead, student] = await Promise.all([
+      repo.findLeadByUserId(userId),
+      repo.findStudentByUserId(userId),
+    ])
+    leadId = lead?.id
+    studentId = student?.id
+  }
+
+  if (!leadId && !studentId) {
+    return {
+      bookingReady: false,
+      captured: 0,
+      total: 7,
+      missing: [
+        'nationality',
+        'education level',
+        'field of interest',
+        'timeline',
+        'budget awareness',
+        'language level',
+        'source',
+      ],
+    }
+  }
+
+  const assessments = await repo.findAssessments({ studentId, leadId })
+  const intakeCapture = deriveCumulativeIntakeCapture(assessments)
+
+  return {
+    bookingReady: intakeCapture.bookingReady,
+    captured: intakeCapture.capturedFields.length,
+    total: 7,
+    missing: intakeCapture.missingFields.map((field) => field.replace(/_/g, ' ')),
+  }
 }
 
 export async function sendMessage(

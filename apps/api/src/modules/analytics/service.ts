@@ -5,9 +5,10 @@ import type {
   CounsellorAnalyticsDetail,
   StudentAnalyticsItem,
   StudentAnalyticsDetail,
+  BookingListItem,
 } from '@sturec/shared'
 
-import { mapActivityChannel } from '../../lib/mappers/index.js'
+import { mapActivityChannel, mapBooking } from '../../lib/mappers/index.js'
 import * as repo from './repository.js'
 
 function defaultPeriod(from?: string, to?: string) {
@@ -100,6 +101,11 @@ export async function getOverview(from?: string, to?: string): Promise<Analytics
       },
     },
   }
+}
+
+export async function getPendingAssignments(): Promise<BookingListItem[]> {
+  const bookings = await repo.findPendingAssignments()
+  return bookings.map(mapBooking)
 }
 
 const STAGE_ORDER = [
