@@ -66,7 +66,7 @@ export default function AdvisorPage() {
         description="Our AI advisor helps you explore programs, check eligibility, and understand the process. When you're ready for deeper support, a human counsellor takes over."
         actions={[
           { href: '/auth/register', label: 'Create free account' },
-          { href: '/auth/login', label: 'Sign in', variant: 'secondary' },
+          { href: '/auth/login', label: 'Already a member?', variant: 'secondary' },
         ]}
         aside={
           <div className="public-hero-image rotate-1 transition-transform duration-500 hover:rotate-0">
@@ -139,7 +139,7 @@ export default function AdvisorPage() {
         title="Your future in France starts with one question."
         description="Create a free account and talk to our AI advisor. No pressure, no forms — just answers about programs, eligibility, and the path ahead."
         primary={{ href: '/auth/register', label: 'Create free account' }}
-        secondary={{ href: '/auth/login', label: 'Sign in' }}
+        secondary={{ href: '/auth/login', label: 'Already a member?' }}
       />
     </>
   )

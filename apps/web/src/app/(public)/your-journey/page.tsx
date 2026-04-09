@@ -81,7 +81,7 @@ export default function YourJourneyPage() {
         description="We structured the process into five clear phases so nothing falls through the cracks. Our team supports you at every stage — including after you arrive."
         actions={[
           { href: '/auth/register', label: 'Talk to AI advisor' },
-          { href: '/auth/login', label: 'Sign in', variant: 'secondary' },
+          { href: '/auth/login', label: 'Already a member?', variant: 'secondary' },
         ]}
         aside={
           <div className="overflow-hidden rounded-[var(--radius-card)] shadow-card rotate-1 transition-transform duration-500 hover:rotate-0">
@@ -169,7 +169,7 @@ export default function YourJourneyPage() {
         title="The first step is a conversation."
         description="Talk to our AI advisor to understand where you stand, what programs fit, and what the process looks like for your situation."
         primary={{ href: '/auth/register', label: 'Talk to AI advisor' }}
-        secondary={{ href: '/auth/login', label: 'Sign in' }}
+        secondary={{ href: '/auth/login', label: 'Already a member?' }}
       />
     </>
   )

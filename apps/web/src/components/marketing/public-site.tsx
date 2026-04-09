@@ -74,7 +74,7 @@ function Header() {
               href="/auth/login"
               className="rounded-full px-4 py-2 text-sm font-semibold text-public-navy transition-colors hover:bg-white/70"
             >
-              Sign in
+              Already a member?
             </Link>
             <Link href="/auth/register" className="public-button-primary">
               Talk to AI advisor
@@ -125,7 +125,7 @@ function Header() {
                 onClick={() => setMobileOpen(false)}
                 className="public-button-secondary text-center"
               >
-                Sign in
+                Already a member?
               </Link>
               <Link
                 href="/auth/register"
@@ -157,7 +157,7 @@ function Footer() {
       title: 'Get started',
       links: [
         { href: '/auth/register', label: 'Talk to AI advisor' },
-        { href: '/auth/login', label: 'Sign in' },
+        { href: '/auth/login', label: 'Already a member?' },
       ],
     },
   ]
