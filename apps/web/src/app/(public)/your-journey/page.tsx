@@ -58,7 +58,7 @@ const phases = [
   {
     icon: 'location_on',
     title: 'Our team in France is waiting for you',
-    body: 'Support doesn\'t end at the visa. Our team on the ground helps with housing, administrative registration, orientation, and getting settled in your new city. This is where most agencies disappear. We don\'t.',
+    body: 'Support doesn\'t end at the visa. Our team on the ground helps with housing, administrative registration, orientation, and getting settled in your new city. This is where many services stop. We stay involved.',
     steps: [
       'Housing setup and move-in support',
       'Administrative registration (bank, insurance, CAF)',
@@ -98,7 +98,7 @@ export default function YourJourneyPage() {
         footer={
           <EditorialCard title="What makes this different" tone="dark">
             <p className="text-base leading-8">
-              Most agencies help you apply and disappear. We stay with you through Campus France,
+              Many services help you apply and disappear. We stay with you through Campus France,
               visa, and arrival. Our team in France is there when you land.
             </p>
           </EditorialCard>

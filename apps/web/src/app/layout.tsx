@@ -39,14 +39,14 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://learninfrance.com'
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: 'Learn in France — Overseas Education & Admissions Guidance',
-  description: 'Specialist education agency with a team on the ground in France. We help international students with applications, Campus France, visas, housing, and settling in — from first question to first week in France.',
+  description: 'France-focused education advisors with a team on the ground in France. We help international students navigate applications, Campus France, visas, housing, and settling in — from first question to first week in France.',
   icons: {
     icon: '/favicon.png',
     apple: '/logo-128.png',
   },
   openGraph: {
     title: 'Learn in France — Overseas Education & Admissions Guidance',
-    description: 'Specialist education agency with a team on the ground in France. We help international students with applications, visas, housing, and settling in.',
+    description: 'France-focused education advisors with a team on the ground in France. We help international students with applications, visas, housing, and settling in.',
     images: [{ url: '/images/og-brand.webp', width: 1200, height: 630 }],
     type: 'website',
     siteName: 'Learn in France',
@@ -84,7 +84,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: '{"@context":"https://schema.org","@type":"EducationalOrganization","name":"Learn in France","url":"https://learninfrance.com","logo":"https://learninfrance.com/images/brand-crest-tight.webp","description":"Specialist education agency helping international students study in France. Based in France with on-ground support from application through arrival.","areaServed":"France","serviceType":"Education Consulting","email":"info@learninfrance.com","address":{"@type":"PostalAddress","addressCountry":"FR","addressLocality":"France"}}',
+            __html: '{"@context":"https://schema.org","@type":"EducationalOrganization","name":"Learn in France","url":"https://learninfrance.com","logo":"https://learninfrance.com/images/brand-wordmark-square.svg","description":"France-focused education advisors helping international students study in France. Based in France with on-ground support from application through arrival.","areaServed":"France","serviceType":"Education Consulting","email":"info@learninfrance.com","address":{"@type":"PostalAddress","addressCountry":"FR","addressLocality":"France"}}',
           }}
         />
       </head>

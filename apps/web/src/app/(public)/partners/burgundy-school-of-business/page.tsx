@@ -7,11 +7,11 @@ import { BrandName } from '@/components/branding/brand-logo'
 export const metadata: Metadata = {
   title: 'Burgundy School of Business — Partner | Learn in France',
   description:
-    'Study at Burgundy School of Business in Dijon, France. AACSB & EQUIS accredited Grande Ecole with English-taught programs. Apply with full support from Learn in France.',
+    'Study at Burgundy School of Business in Dijon, France. Triple-accredited Grande Ecole with English-taught programs, merit-based scholarship possibilities, and local support from Learn in France.',
   alternates: { canonical: 'https://learninfrance.com/partners/burgundy-school-of-business' },
   openGraph: {
     title: 'Burgundy School of Business — Official Partner',
-    description: 'AACSB & EQUIS accredited Grande Ecole in Dijon. English-taught programs with full application support from Learn in France.',
+    description: 'Triple-accredited Grande Ecole in Dijon with English-taught programs and local support from Learn in France.',
     url: 'https://learninfrance.com/partners/burgundy-school-of-business',
   },
 }
@@ -19,15 +19,16 @@ export const metadata: Metadata = {
 const accreditations = [
   { value: 'AACSB', label: 'International accreditation' },
   { value: 'EQUIS', label: 'European accreditation' },
+  { value: 'AMBA', label: 'MBA accreditation' },
   { value: 'Top 1%', label: 'Business schools worldwide' },
 ]
 
 const reasons = [
   {
     icon: 'verified',
-    title: 'Double international accreditation',
+    title: 'Triple international accreditation',
     description:
-      'BSB holds both AACSB and EQUIS accreditations — placing it in the top 1% of business schools globally. Your degree carries weight anywhere in the world.',
+      'BSB holds AACSB, EQUIS, and AMBA accreditations — the triple crown held by a small fraction of business schools worldwide. Your degree carries weight internationally.',
   },
   {
     icon: 'translate',
@@ -108,7 +109,7 @@ export default function BurgundySchoolOfBusinessPage() {
             <span className="public-accent">In the heart of Burgundy.</span>
           </>
         }
-        description="Burgundy School of Business (BSB) in Dijon combines Grande Ecole prestige with double international accreditation. Study in English, build a career in Europe, and enjoy one of France's most affordable and beautiful student cities."
+        description="Burgundy School of Business (BSB) in Dijon combines Grande Ecole prestige with triple international accreditation. Study in English, explore merit-based scholarship possibilities, and build a strong path into Europe from one of France's most attractive student cities."
         actions={[
           { href: '/auth/register', label: 'Talk to AI advisor' },
           { href: '#why-bsb', label: 'Why BSB?', variant: 'secondary' },
@@ -129,13 +130,13 @@ export default function BurgundySchoolOfBusinessPage() {
             <EditorialCard title="Official partner" tone="tinted">
               <p className="text-base leading-8">
                 <BrandName /> is an official recruitment partner of Burgundy School of Business.
-                We work directly with BSB&rsquo;s admissions team to support international students
+                We work directly with BSB&rsquo;s admissions team to advise and support international students
                 from first enquiry through to arrival in Dijon.
               </p>
             </EditorialCard>
             <EditorialCard title="Our team is in Dijon" tone="dark">
               <p className="text-base leading-8">
-                Unlike remote agencies, our team lives and works in the same city as BSB.
+                Unlike remote advisory teams, our team lives and works in the same city as BSB.
                 We meet you when you arrive, help you settle in, and stay with you throughout your studies.
               </p>
             </EditorialCard>
@@ -173,6 +174,48 @@ export default function BurgundySchoolOfBusinessPage() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 sm:py-24 bg-[var(--color-surface-raised)]">
+        <div className="public-shell">
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-start">
+            <EditorialCard title="Merit-based scholarship possibilities" tone="tinted">
+              <div className="space-y-4 text-base leading-8">
+                <p>
+                  BSB may offer merit-based scholarship opportunities for eligible international students.
+                  These are generally considered on the strength of the student&rsquo;s academic and
+                  application profile.
+                </p>
+                <p>
+                  In practice, this means a strong overall application can improve the student&rsquo;s
+                  chances of reducing tuition costs, depending on the intake and the scholarship
+                  decision for that cycle.
+                </p>
+              </div>
+            </EditorialCard>
+            <EditorialCard title="Discover student life in Dijon" tone="dark">
+              <div className="space-y-4">
+                <p className="text-base leading-8">
+                  A city matters as much as a campus. This short official city tour gives students a
+                  better feel for what everyday life in Dijon can actually look like.
+                </p>
+                <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+                  <div className="relative aspect-video">
+                    <iframe
+                      src="https://www.youtube.com/embed/TbR-p2bfY5Q"
+                      title="City Tour - Dijon"
+                      className="absolute inset-0 h-full w-full"
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              </div>
+            </EditorialCard>
           </div>
         </div>
       </section>
