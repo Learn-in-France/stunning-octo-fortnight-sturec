@@ -198,13 +198,13 @@ export default function BurgundySchoolOfBusinessPage() {
             <EditorialCard title="Discover student life in Dijon" tone="dark">
               <div className="space-y-4">
                 <p className="text-base leading-8">
-                  A city matters as much as a campus. This short official city tour gives students a
-                  better feel for what everyday life in Dijon can actually look like.
+                  A city matters as much as a campus. This short official city tour will help you see
+                  what everyday student life in Dijon can actually feel like.
                 </p>
                 <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
                   <div className="relative aspect-video">
                     <iframe
-                      src="https://www.youtube.com/embed/TbR-p2bfY5Q"
+                      src="https://www.youtube.com/embed/j0zjCJVkO7g?si=-6qQpGC8aTdoF2LW"
                       title="City Tour - Dijon"
                       className="absolute inset-0 h-full w-full"
                       loading="lazy"
