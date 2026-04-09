@@ -12,14 +12,17 @@ import type { ChatMessageItem } from '@sturec/shared'
 import {
   useChatSessions,
   useChatMessages,
+  useChatIntakeCheck,
   useStartSession,
   useSendMessage,
   useEndSession,
 } from '@/features/chat/hooks/use-chat'
 import { useCreateBooking } from '@/features/bookings/hooks/use-bookings'
 import { useStudentProfile, useStudentProgress } from '@/features/student-portal/hooks/use-student-portal'
+import { useAuth } from '@/providers/auth-provider'
 
 export default function ChatPage() {
+  const { user } = useAuth()
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [input, setInput] = useState('')
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessageItem[]>([])
@@ -36,6 +39,7 @@ export default function ChatPage() {
 
   const { data: sessions, isLoading: loadingSessions } = useChatSessions()
   const { data: serverMessages } = useChatMessages(activeSessionId)
+  const { data: intakeCheck } = useChatIntakeCheck(activeSessionId)
   const { data: profile } = useStudentProfile()
   const { data: progress } = useStudentProgress()
   const startSession = useStartSession()
@@ -77,6 +81,7 @@ export default function ChatPage() {
   const activeSession = sessions?.find((s) => s.id === activeSessionId)
   const isSessionActive = activeSession?.status === 'active'
   const isSending = sendMessage.isPending
+  const bookingLockedByVerification = user?.emailVerified === false
 
   const handleStartSession = useCallback(async () => {
     const session = await startSession.mutateAsync()
@@ -154,6 +159,11 @@ export default function ChatPage() {
       return
     }
 
+    if (bookingLockedByVerification) {
+      setBookingError('Verify your email before requesting a counsellor session.')
+      return
+    }
+
     try {
       await createBooking.mutateAsync({
         scheduledAt: new Date(bookingScheduledAt).toISOString(),
@@ -167,7 +177,7 @@ export default function ChatPage() {
       const apiError = err as { error?: string }
       setBookingError(apiError.error ?? 'We could not submit your booking request. Please try again.')
     }
-  }, [bookingNotes, bookingScheduledAt, createBooking, profile?.id])
+  }, [bookingLockedByVerification, bookingNotes, bookingScheduledAt, createBooking, profile?.id])
 
   if (loadingSessions) {
     return (
@@ -317,6 +327,16 @@ export default function ChatPage() {
                     <p className="mt-1 text-xs leading-6 text-text-secondary">
                       You have shared enough context for a useful human handoff. Book right here or open the full booking page if you want more control.
                     </p>
+                    {bookingLockedByVerification && (
+                      <p className="mt-2 text-[11px] font-medium text-amber-700">
+                        Booking is locked until you verify your email.
+                      </p>
+                    )}
+                    {intakeCheck && (
+                      <p className="mt-2 text-[11px] text-text-muted">
+                        Intake captured so far: {intakeCheck.captured}/{intakeCheck.total}.
+                      </p>
+                    )}
                     {progress?.assignedCounsellorId && (
                       <p className="mt-1 text-[11px] text-text-muted">
                         Your current counsellor context will stay attached to this booking.
@@ -339,10 +359,14 @@ export default function ChatPage() {
                       value={bookingScheduledAt}
                       onChange={(e) => setBookingScheduledAt(e.target.value)}
                       min={new Date().toISOString().slice(0, 16)}
+                      disabled={bookingLockedByVerification}
                       className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </label>
-                  <Button onClick={handleInlineBooking} disabled={!bookingScheduledAt || createBooking.isPending}>
+                  <Button
+                    onClick={handleInlineBooking}
+                    disabled={!bookingScheduledAt || createBooking.isPending || bookingLockedByVerification}
+                  >
                     {createBooking.isPending ? 'Submitting…' : 'Request session'}
                   </Button>
                 </div>
@@ -352,6 +376,7 @@ export default function ChatPage() {
                   <textarea
                     value={bookingNotes}
                     onChange={(e) => setBookingNotes(e.target.value)}
+                    disabled={bookingLockedByVerification}
                     rows={3}
                     placeholder="Goals, blockers, or what you want covered in the first conversation."
                     className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500"

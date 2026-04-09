@@ -166,9 +166,21 @@ export function Sidebar() {
 
   return (
     <aside className="fixed top-0 left-0 bottom-0 z-30 flex w-[260px] flex-col bg-sidebar shadow-[16px_0_48px_rgba(10,22,41,0.22)]">
-      {/* Logo */}
-      <div className="flex h-16 items-center border-b border-sidebar-border px-6">
+      {/* Logo — internal sidebar uses the full reference lockup: the
+          compact LIF wordmark on the left, a vertical divider, and
+          the "France-based Education Advisory" tagline on the right
+          so the header isn't half-empty next to the compact mark. */}
+      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
         <BrandLogo href="/dashboard" variant="compact" inverse />
+        <div className="h-9 w-px shrink-0 bg-white/15" aria-hidden />
+        <p
+          className="text-[9px] italic leading-[1.35] text-white/60"
+          style={{ fontFamily: 'var(--font-logo)' }}
+        >
+          France-based
+          <br />Education
+          <br />Advisory
+        </p>
       </div>
 
       {/* Navigation */}

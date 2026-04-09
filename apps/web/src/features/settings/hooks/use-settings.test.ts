@@ -14,6 +14,7 @@ describe('useUserProfile', () => {
     vi.mocked(api.get).mockResolvedValueOnce({
       id: 'u-1',
       email: 'admin@sturec.com',
+      emailVerified: true,
       role: 'admin',
       firstName: 'Jane',
       lastName: 'Admin',
@@ -37,6 +38,7 @@ describe('useUpdateUserProfile', () => {
     vi.mocked(api.patch).mockResolvedValueOnce({
       id: 'u-1',
       email: 'admin@sturec.com',
+      emailVerified: true,
       role: 'admin',
       firstName: 'Janet',
       lastName: 'Admin',

@@ -5,6 +5,7 @@ import api from '@/lib/api/client'
 import {
   useChatSessions,
   useChatMessages,
+  useChatIntakeCheck,
   useStartSession,
   useSendMessage,
   useEndSession,
@@ -48,6 +49,19 @@ describe('useChatMessages', () => {
   it('does not fetch when sessionId is null', () => {
     renderHook(() => useChatMessages(null), { wrapper })
     expect(api.get).not.toHaveBeenCalled()
+  })
+})
+
+describe('useChatIntakeCheck', () => {
+  it('fetches booking readiness from /chat/intake-check', async () => {
+    const payload = { bookingReady: true, captured: 5, total: 7, missing: ['source'] }
+    vi.mocked(api.post).mockResolvedValueOnce(payload)
+
+    const { result } = renderHook(() => useChatIntakeCheck('sess-1'), { wrapper })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data).toEqual(payload)
+    expect(api.post).toHaveBeenCalledWith('/chat/intake-check', { sessionId: 'sess-1' })
   })
 })
 

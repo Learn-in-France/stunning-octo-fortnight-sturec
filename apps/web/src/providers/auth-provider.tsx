@@ -22,6 +22,7 @@ import api from '@/lib/api/client'
 export interface AppUser {
   id: string
   email: string
+  emailVerified: boolean
   role: UserRole
   firstName: string
   lastName: string

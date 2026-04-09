@@ -110,6 +110,49 @@ describe('structured assessment normalization', () => {
       should_suggest_booking: true,
     })
   })
+
+  it('strips advisor-voice chat options that would send a question back to the advisor if clicked', () => {
+    const normalized = normalizeAiStructuredOutput({
+      profile_completeness: 0.3,
+      fields_collected: ['nationality'],
+      fields_missing: ['education_level', 'field_of_interest'],
+      summary_for_team: 'Early stage',
+      lead_heat: 'cold',
+      should_suggest_booking: false,
+      // Mix of good student-voice options and bad advisor-voice questions
+      options: [
+        'Tell me about studying in France',           // ✓ student asking a topic
+        'Tell me about your qualification',           // ✗ advisor asking student
+        "What's your budget?",                        // ✗ advisor asking student
+        "I'd like to speak with a counsellor",        // ✓ student reply
+        'Do you have a timeline in mind?',            // ✗ advisor asking student
+        'How does the Campus France process work?',   // ✓ student asking a topic
+      ],
+    })
+
+    expect(normalized?.options).toEqual([
+      'Tell me about studying in France',
+      "I'd like to speak with a counsellor",
+      'How does the Campus France process work?',
+    ])
+  })
+
+  it('returns null when every option is an advisor-voice question', () => {
+    const normalized = normalizeAiStructuredOutput({
+      profile_completeness: 0,
+      fields_collected: [],
+      fields_missing: [],
+      summary_for_team: '',
+      should_suggest_booking: false,
+      options: [
+        'Tell me about your education',
+        "What's your preferred intake?",
+        'Are you looking at public or private universities?',
+      ],
+    })
+
+    expect(normalized?.options).toBeNull()
+  })
 })
 
 describe('booking suggestion derivation', () => {

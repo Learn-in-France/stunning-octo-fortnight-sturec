@@ -14,8 +14,8 @@ function mockBookingPageCalls({
   profile,
 }: {
   bookings?: unknown[]
-  progress?: Record<string, unknown>
-  profile?: Record<string, unknown>
+  progress?: any
+  profile?: any
 } = {}) {
   vi.mocked(api.get).mockImplementation((url: string) => {
     if (url === '/students/me/bookings') return Promise.resolve(bookings as never)
@@ -37,6 +37,10 @@ function mockBookingPageCalls({
       return Promise.resolve((profile ?? {
         id: 'student-1',
         referenceCode: 'STU-001',
+        firstName: 'Priya',
+        lastName: 'Sharma',
+        email: 'priya@example.com',
+        phone: '+919876543210',
         stage: 'lead_created',
         stageUpdatedAt: '2026-04-01T09:00:00.000Z',
         degreeLevel: null,
@@ -54,11 +58,23 @@ function mockBookingPageCalls({
         whatsappConsent: true,
         emailConsent: true,
         parentInvolvement: false,
+        onboardingCompletedAt: '2026-04-01T09:00:00.000Z',
         createdAt: '2026-04-01T09:00:00.000Z',
         updatedAt: '2026-04-01T09:00:00.000Z',
       }) as never)
     }
     return Promise.resolve([] as never)
+  })
+  vi.mocked(api.post).mockImplementation((url: string) => {
+    if (url === '/chat/intake-check') {
+      return Promise.resolve({
+        bookingReady: (progress?.bookingReady ?? false),
+        captured: progress?.intakeCapture?.captured ?? 0,
+        total: progress?.intakeCapture?.total ?? 7,
+        missing: progress?.intakeCapture?.missing ?? ['budget awareness', 'source tracking'],
+      } as never)
+    }
+    return Promise.resolve({} as never)
   })
 }
 
@@ -140,5 +156,18 @@ describe('BookingsPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /request counsellor session/i })).toBeInTheDocument()
     })
+  })
+
+  it('shows verification warning and disables booking for unverified students', async () => {
+    setMockAuth({ user: makeUser({ role: 'student', emailVerified: false }) })
+    mockBookingPageCalls()
+
+    renderWithProviders(<BookingsPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Email verification required')).toBeInTheDocument()
+    })
+
+    expect(screen.getByRole('button', { name: /request counsellor session/i })).toBeDisabled()
   })
 })

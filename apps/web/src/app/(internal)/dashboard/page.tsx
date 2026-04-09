@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -14,7 +14,7 @@ import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useAnalyticsOverview, useCounsellorAnalytics } from '@/features/analytics/hooks/use-analytics'
-import { useBookings, useUpdateBooking, type BookingListItemView } from '@/features/bookings/hooks/use-bookings'
+import { usePendingAssignments, useUpdateBooking, type BookingListItemView } from '@/features/bookings/hooks/use-bookings'
 import { useCounsellorAgenda, useCompleteReminder, useDismissReminder } from '@/features/counsellor/hooks/use-counsellor'
 import { useStudents } from '@/features/students/hooks/use-students'
 import { STAGE_DISPLAY_NAMES } from '@sturec/shared'
@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
   const { data: overview, isLoading } = useAnalyticsOverview({}, { enabled: isAdmin })
-  const { data: bookings } = useBookings({}, { enabled: isAdmin })
+  const { data: pendingAssignments } = usePendingAssignments({ enabled: isAdmin })
   const { data: counsellors } = useCounsellorAnalytics({ enabled: isAdmin })
   const updateBooking = useUpdateBooking()
   const queryClient = useQueryClient()
@@ -37,11 +37,6 @@ export default function DashboardPage() {
 
   const [selectedCounsellorByBooking, setSelectedCounsellorByBooking] = useState<Record<string, string>>({})
   const [assignmentReasonByBooking, setAssignmentReasonByBooking] = useState<Record<string, string>>({})
-
-  const pendingAssignments = useMemo(
-    () => (bookings ?? []).filter((booking) => booking.status === 'awaiting_assignment'),
-    [bookings],
-  )
 
   const assignMutation = useMutation({
     mutationFn: async ({ booking, counsellorId }: { booking: BookingListItemView; counsellorId: string }) => {
@@ -88,13 +83,13 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle>Pending Assignment Queue</CardTitle>
                 </CardHeader>
-                {pendingAssignments.length === 0 ? (
+                {(pendingAssignments?.length ?? 0) === 0 ? (
                   <div className="rounded-2xl bg-surface-sunken/45 p-4 text-sm text-text-secondary">
                     No bookings are waiting for manual counsellor assignment right now.
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pendingAssignments.slice(0, 5).map((booking) => {
+                    {(pendingAssignments ?? []).slice(0, 5).map((booking) => {
                       const selected = selectedCounsellorByBooking[booking.id] ?? ''
                       const entityLabel = booking.studentId
                         ? `Student booking • ${booking.studentId.slice(0, 8)}`

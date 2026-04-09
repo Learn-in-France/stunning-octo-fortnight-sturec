@@ -64,6 +64,23 @@ export function useBookingStats(options: Pick<BookingHookOptions, 'enabled'> = {
   })
 }
 
+export function usePendingAssignments(options: Pick<BookingHookOptions, 'enabled'> = {}) {
+  return useQuery({
+    queryKey: ['admin', 'pending-assignments'],
+    queryFn: async (): Promise<BookingListItemView[]> => {
+      const bookings = await api.get('/admin/pending-assignments') as unknown as BookingListItem[]
+      const team = await fetchTeamMembers()
+      const nameMap = buildNameMap(team)
+
+      return bookings.map((b) => ({
+        ...b,
+        counsellorName: resolveCounsellorName(nameMap, b.counsellorId),
+      }))
+    },
+    enabled: options.enabled ?? true,
+  })
+}
+
 // ─── Create mutation ────────────────────────────────────────────
 
 interface CreateBookingInput {
@@ -84,6 +101,7 @@ export function useCreateBooking() {
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
       queryClient.invalidateQueries({ queryKey: ['student-portal', 'bookings'] })
       queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'pending-assignments'] })
     },
   })
 }
@@ -106,6 +124,7 @@ export function useUpdateBooking() {
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
       queryClient.invalidateQueries({ queryKey: ['student-portal', 'bookings'] })
       queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'pending-assignments'] })
     },
   })
 }

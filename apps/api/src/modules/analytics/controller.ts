@@ -10,6 +10,11 @@ export async function getOverview(request: FastifyRequest, reply: FastifyReply) 
   return reply.send(result)
 }
 
+export async function listPendingAssignments(_request: FastifyRequest, reply: FastifyReply) {
+  const result = await analyticsService.getPendingAssignments()
+  return reply.send(result)
+}
+
 export async function getPipeline(request: FastifyRequest, reply: FastifyReply) {
   const query = (request as ReqWithQuery).parsedQuery as { from?: string; to?: string }
   const result = await analyticsService.getPipeline(query.from, query.to)

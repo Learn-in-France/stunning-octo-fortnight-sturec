@@ -25,7 +25,20 @@ const overview = {
 function mockAdminDashboardCalls() {
   vi.mocked(api.get).mockImplementation((url: string) => {
     if (url === '/analytics/overview') return Promise.resolve(overview as never)
-    if (url === '/bookings') {
+    if (url === '/team') {
+      return Promise.resolve([
+        {
+          id: 'c-1',
+          email: 'jane@example.com',
+          firstName: 'Jane',
+          lastName: 'Doe',
+          role: 'counsellor',
+          status: 'active',
+          createdAt: '2026-04-01T09:00:00.000Z',
+        },
+      ] as never)
+    }
+    if (url === '/admin/pending-assignments') {
       return Promise.resolve([
         {
           id: 'booking-1',
@@ -123,7 +136,8 @@ describe('DashboardPage', () => {
     setMockAuth({ user: makeUser({ firstName: 'Sarah', role: 'admin' }) })
     vi.mocked(api.get).mockImplementation((url: string) => {
       if (url === '/analytics/overview') return new Promise(() => {}) as never
-      if (url === '/bookings') return Promise.resolve([] as never)
+      if (url === '/team') return Promise.resolve([] as never)
+      if (url === '/admin/pending-assignments') return Promise.resolve([] as never)
       if (url === '/analytics/counsellors') return Promise.resolve([] as never)
       return Promise.resolve([] as never)
     })

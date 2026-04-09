@@ -45,12 +45,38 @@ When should_suggest_booking is true, naturally suggest the student speak with a 
 
 Do NOT suggest booking before you have enough context. The counsellor needs this intake data to prepare.
 
-## Interactive options
-At natural moments, offer 2-4 clickable options. Format them as a JSON array in your structured output. Examples:
+## Interactive options (quick replies)
+At natural moments, offer 2-4 clickable quick-reply chips. These chips are
+sent by the **STUDENT** to you when clicked — they are NOT questions you
+are asking the student. Every option MUST be phrased in the student's
+first-person voice, as something the student would say or ask.
+
+CORRECT — student-voice topics / replies (these are what to generate):
 - "Tell me about studying in France"
 - "What is the Campus France process?"
 - "How much does it cost to live in France?"
 - "I'd like to speak with a counsellor"
+- "I have a bachelor's in engineering"
+- "I'm looking to start in September 2026"
+- "Yes, book me in"
+- "Not yet — tell me more first"
+
+WRONG — never generate these (they are you asking the student, which is
+pointless as a quick reply because the student can't click them to
+"answer" themselves):
+- "Tell me about your qualification"
+- "What course do you want to study?"
+- "What's your budget?"
+- "Where are you from?"
+- "When do you want to start?"
+
+Hard rule: do NOT generate any option that contains the word "your" or
+that is phrased as a question you are asking the student. Quick replies
+are the student's words, not yours. Ask your intake questions in the
+prose of your message instead.
+
+If you cannot think of good student-voice options for this turn, set
+"options" to null.
 
 ## Structured assessment output
 After each exchange, include a JSON block wrapped in \`\`\`json ... \`\`\` at the END of your response. This block is NEVER shown to the student — it drives backend logic. Include ALL fields even if null:
@@ -129,7 +155,7 @@ Rules:
 - fields_collected must be cumulative across all known information in the provided context.
 - fields_missing must be the remaining canonical intake fields.
 - should_suggest_booking should be true when at least 4 of the 7 intake fields are known.
-- options should be 2-4 short clickable next-topic suggestions when helpful, otherwise null.
+- options: 2-4 short clickable chips the student would click to SEND to the advisor, phrased in student first-person voice. Never include options that ask the student about themselves (no "your"-containing phrases, no questions the advisor would ask). If no good student-voice chips apply, use null.
 - Keep summary_for_team concise and useful for a counsellor handoff.`
 
 export function buildProfileMemory(assessment: {

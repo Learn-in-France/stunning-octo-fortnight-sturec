@@ -13,6 +13,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useCreateBooking } from '@/features/bookings/hooks/use-bookings'
 import { useStudentPortalBookings, useStudentProfile, useStudentProgress } from '@/features/student-portal/hooks/use-student-portal'
+import { useChatIntakeCheck } from '@/features/chat/hooks/use-chat'
+import { useAuth } from '@/providers/auth-provider'
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; variant: 'info' | 'success' | 'danger' | 'warning' }> = {
   awaiting_assignment: { label: 'Awaiting Assignment', variant: 'warning' },
@@ -46,10 +48,12 @@ const EMPTY_INTAKE: IntakeState = {
 export default function BookingsPage() {
   const searchParams = useSearchParams()
   const source = searchParams.get('source') === 'chat' ? 'chat' : 'portal'
+  const { user } = useAuth()
 
   const { data: bookings, isLoading: loadingBookings } = useStudentPortalBookings()
   const { data: progress, isLoading: loadingProgress } = useStudentProgress()
   const { data: profile, isLoading: loadingProfile } = useStudentProfile()
+  const { data: intakeCheck, isLoading: loadingIntakeCheck } = useChatIntakeCheck()
   const createBooking = useCreateBooking()
 
   const [scheduledAt, setScheduledAt] = useState('')
@@ -58,9 +62,12 @@ export default function BookingsPage() {
   const [submittedId, setSubmittedId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
-  const isLoading = loadingBookings || loadingProgress || loadingProfile
-  const needsFallbackIntake = !(progress?.bookingReady ?? false)
+  const isLoading = loadingBookings || loadingProgress || loadingProfile || loadingIntakeCheck
+  const bookingReady = intakeCheck?.bookingReady ?? progress?.bookingReady ?? false
+  const intakeCapture = intakeCheck ?? progress?.intakeCapture
+  const needsFallbackIntake = !bookingReady
   const incomingFromChat = source === 'chat'
+  const bookingLockedByVerification = user?.emailVerified === false
 
   const hasCompleteFallbackIntake = useMemo(() => (
     Object.values(intake).every((value) => value.trim().length > 0)
@@ -84,6 +91,11 @@ export default function BookingsPage() {
 
     if (!scheduledAt) {
       setError('Choose a preferred meeting time first.')
+      return
+    }
+
+    if (bookingLockedByVerification) {
+      setError('Verify your email before requesting a counsellor session.')
       return
     }
 
@@ -149,6 +161,15 @@ export default function BookingsPage() {
         </Badge>
       </div>
 
+      {bookingLockedByVerification && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-text-secondary">
+          <p className="font-semibold text-text-primary">Email verification required</p>
+          <p className="mt-1 leading-6">
+            Booking a counsellor session is locked until you verify your email. Once Firebase shows your email as verified, refresh this page and the booking actions will unlock.
+          </p>
+        </div>
+      )}
+
       {incomingFromChat && (
         <Card>
           <CardHeader>
@@ -173,11 +194,11 @@ export default function BookingsPage() {
                   We still need a few essentials before the handoff.
                 </p>
                 <p className="mt-1 text-xs leading-6 text-text-secondary">
-                  The AI has captured {progress?.intakeCapture.captured ?? 0} of 7 intake signals so far. Fill this once and your counsellor will receive a structured summary instead of a blank booking.
+                  The AI has captured {intakeCapture?.captured ?? 0} of 7 intake signals so far. Fill this once and your counsellor will receive a structured summary instead of a blank booking.
                 </p>
-                {!!progress?.intakeCapture.missing.length && (
+                {!!intakeCapture?.missing.length && (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {progress.intakeCapture.missing.map((field) => (
+                    {intakeCapture.missing.map((field: string) => (
                       <span key={field} className="rounded-full bg-white px-3 py-1 text-[11px] font-medium text-text-secondary shadow-sm">
                         {field}
                       </span>
@@ -243,7 +264,7 @@ export default function BookingsPage() {
             )}
 
             <div className="flex flex-wrap items-center gap-3">
-              <Button type="submit" disabled={createBooking.isPending}>
+              <Button type="submit" disabled={createBooking.isPending || bookingLockedByVerification}>
                 {createBooking.isPending ? 'Submitting…' : 'Request counsellor session'}
               </Button>
               <p className="text-xs leading-6 text-text-muted">
@@ -261,8 +282,8 @@ export default function BookingsPage() {
             <div className="rounded-2xl bg-surface-sunken/45 p-4">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Captured so far</p>
               <p className="mt-2 text-3xl font-display font-semibold text-text-primary">
-                {progress?.intakeCapture.captured ?? 0}
-                <span className="text-base text-text-muted"> / {progress?.intakeCapture.total ?? 7}</span>
+                {intakeCapture?.captured ?? 0}
+                <span className="text-base text-text-muted"> / {intakeCapture?.total ?? 7}</span>
               </p>
             </div>
             <div>
@@ -271,11 +292,11 @@ export default function BookingsPage() {
                 Once you request the session, the system generates a counsellor-ready summary, classifies urgency, and keeps the handoff inside the app instead of relying on raw chat transcripts.
               </p>
             </div>
-            {!!progress?.intakeCapture.missing.length && (
+            {!!intakeCapture?.missing.length && (
               <div>
                 <p className="text-sm font-semibold text-text-primary">Still missing</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {progress.intakeCapture.missing.map((field) => (
+                  {intakeCapture.missing.map((field: string) => (
                     <span key={field} className="rounded-full border border-border bg-surface-raised px-3 py-1 text-[11px] font-medium text-text-secondary">
                       {field}
                     </span>

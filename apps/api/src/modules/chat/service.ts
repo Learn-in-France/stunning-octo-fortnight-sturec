@@ -3,6 +3,7 @@ import type {
   ChatSessionItem,
   ChatMessageItem,
   ChatMessageResponse,
+  ChatIntakeCheckResponse,
 } from '@sturec/shared'
 
 import * as repo from './repository.js'
@@ -71,6 +72,53 @@ function normalizeStringArray(value: unknown): string[] | null {
   if (!Array.isArray(value)) return null
   const items = value.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)
   return items.length ? items : []
+}
+
+/**
+ * Filter chat "quick reply" options so they're safe to send as the
+ * STUDENT's next message when clicked. The model occasionally drifts
+ * and produces AI-voice questions like "Tell me about your
+ * qualification" or "What's your budget?" — those are pointless as
+ * quick replies because clicking them sends that exact text as a user
+ * message, which then has the AI replying to what reads as a student
+ * asking for information about their own qualification. Strip any
+ * option that looks like the advisor asking the student a question.
+ */
+function normalizeChatOptions(value: unknown): string[] | null {
+  const arr = normalizeStringArray(value)
+  if (!arr) return null
+  const safe = arr.filter(isStudentVoiceOption)
+  return safe.length ? safe : null
+}
+
+function isStudentVoiceOption(raw: string): boolean {
+  const trimmed = raw.trim()
+  if (!trimmed) return false
+  const lower = trimmed.toLowerCase()
+
+  // Reject any option that uses "your" as a possessive pronoun
+  // referring to the student — catches "tell me about your
+  // qualification", "what is your budget", "where is your home", etc.
+  if (/\byour\b/.test(lower)) return false
+
+  // Reject classic advisor-asking-student openers even without "your"
+  // (e.g. "Do you have a budget in mind?").
+  const advisorPatterns = [
+    /^do you\b/,
+    /^have you\b/,
+    /^are you\b/,
+    /^can you\b/,
+    /^could you\b/,
+    /^would you\b/,
+    /^when do you\b/,
+    /^where do you\b/,
+    /^how do you\b/,
+    /^what do you\b/,
+    /^tell me about yourself\b/,
+  ]
+  if (advisorPatterns.some((re) => re.test(lower))) return false
+
+  return true
 }
 
 function normalizeVisaRisk(value: unknown): 'low' | 'medium' | 'high' | null {
@@ -162,7 +210,7 @@ export function normalizeAiStructuredOutput(raw: unknown): AiStructuredOutput | 
         : typeof data.should_suggest_booking === 'number'
           ? data.should_suggest_booking >= 0.5
           : false,
-    options: normalizeStringArray(data.options),
+    options: normalizeChatOptions(data.options),
   }
 }
 
@@ -272,6 +320,58 @@ export async function getMessages(
 
   const messages = await repo.findMessages(sessionId)
   return messages.map(mapMessage)
+}
+
+export async function getIntakeCheck(
+  userId: string,
+  sessionId?: string,
+): Promise<ChatIntakeCheckResponse> {
+  let leadId: string | undefined
+  let studentId: string | undefined
+
+  if (sessionId) {
+    const session = await repo.findSessionById(sessionId)
+    if (session && session.userId === userId) {
+      leadId = session.leadId
+      studentId = session.studentId ?? undefined
+    }
+  }
+
+  if (!leadId) {
+    const [lead, student] = await Promise.all([
+      repo.findLeadByUserId(userId),
+      repo.findStudentByUserId(userId),
+    ])
+    leadId = lead?.id
+    studentId = student?.id
+  }
+
+  if (!leadId && !studentId) {
+    return {
+      bookingReady: false,
+      captured: 0,
+      total: 7,
+      missing: [
+        'nationality',
+        'education level',
+        'field of interest',
+        'timeline',
+        'budget awareness',
+        'language level',
+        'source',
+      ],
+    }
+  }
+
+  const assessments = await repo.findAssessments({ studentId, leadId })
+  const intakeCapture = deriveCumulativeIntakeCapture(assessments)
+
+  return {
+    bookingReady: intakeCapture.bookingReady,
+    captured: intakeCapture.capturedFields.length,
+    total: 7,
+    missing: intakeCapture.missingFields.map((field) => field.replace(/_/g, ' ')),
+  }
 }
 
 export async function sendMessage(

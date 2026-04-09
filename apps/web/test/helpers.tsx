@@ -52,6 +52,7 @@ export function makeUser(overrides: Partial<AppUser> = {}): AppUser {
   return {
     id: 'user-1',
     email: 'test@sturec.com',
+    emailVerified: true,
     role: 'admin',
     firstName: 'Test',
     lastName: 'User',

@@ -180,7 +180,7 @@ const STUDENT_USER: Record<string, any> = {
 // ─── Helpers ─────────────────────────────────────────────────
 
 function authAs(user: typeof ADMIN_USER) {
-  mockVerify.mockResolvedValue({ uid: user.firebaseUid, email: user.email })
+  mockVerify.mockResolvedValue({ uid: user.firebaseUid, email: user.email, email_verified: true })
   db.user.findFirst.mockResolvedValue(user)
 }
 
@@ -941,6 +941,28 @@ describe('Route-level smoke tests', () => {
       }))
     })
 
+    it('POST /bookings blocks unverified student users', async () => {
+      mockVerify.mockResolvedValue({
+        uid: STUDENT_USER.firebaseUid,
+        email: STUDENT_USER.email,
+        email_verified: false,
+      })
+      db.user.findFirst.mockResolvedValue(STUDENT_USER)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/bookings',
+        headers: authHeaders(),
+        payload: {
+          scheduledAt: '2026-04-01T10:00:00Z',
+          source: 'portal',
+        },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(JSON.parse(response.body).code).toBe('EMAIL_NOT_VERIFIED')
+    })
+
     it('PATCH /bookings/:id returns 404 for missing booking', async () => {
       authAs(ADMIN_USER)
       db.booking.findUnique.mockResolvedValue(null)
@@ -1372,6 +1394,31 @@ describe('Route-level smoke tests', () => {
   // ─── Analytics ─────────────────────────────────────────────
 
   describe('Analytics module', () => {
+    it('GET /admin/pending-assignments returns pending queue for admin', async () => {
+      authAs(ADMIN_USER)
+      db.booking.findMany.mockResolvedValue([
+        {
+          id: '00000000-0000-0000-0000-000000000199',
+          studentId: '00000000-0000-0000-0000-000000000010',
+          leadId: null,
+          counsellorId: null,
+          scheduledAt: new Date('2026-04-01T10:00:00Z'),
+          status: 'awaiting_assignment',
+          notes: 'Needs assignment',
+          createdAt: new Date('2026-03-20T10:00:00Z'),
+        },
+      ])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/pending-assignments',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(JSON.parse(response.body)).toHaveLength(1)
+    })
+
     it('GET /analytics/overview returns data for admin', async () => {
       authAs(ADMIN_USER)
       db.lead.groupBy.mockResolvedValue([])
@@ -1420,6 +1467,18 @@ describe('Route-level smoke tests', () => {
       const response = await app.inject({
         method: 'GET',
         url: '/api/v1/analytics/overview',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
+
+    it('student cannot access pending assignments queue', async () => {
+      authAs(STUDENT_USER)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/pending-assignments',
         headers: authHeaders(),
       })
 
@@ -1835,6 +1894,24 @@ describe('Route-level smoke tests', () => {
       expect(body.sharedWithCounsellorId).toBe('00000000-0000-0000-0000-000000000002')
     })
 
+    it('POST /students/me/documents/:id/share blocks unverified student users', async () => {
+      mockVerify.mockResolvedValue({
+        uid: STUDENT_USER.firebaseUid,
+        email: STUDENT_USER.email,
+        email_verified: false,
+      })
+      db.user.findFirst.mockResolvedValue(STUDENT_USER)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/me/documents/00000000-0000-0000-0000-000000000070/share',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(JSON.parse(response.body).code).toBe('EMAIL_NOT_VERIFIED')
+    })
+
     it('POST /students/me/documents/:id/share fails without assigned counsellor', async () => {
       authAs(STUDENT_USER)
       db.student.findFirst.mockResolvedValue({ ...STUDENT_RECORD, assignedCounsellorId: null })
@@ -2179,6 +2256,36 @@ describe('Route-level smoke tests', () => {
       })
 
       expect(response.statusCode).toBe(404)
+    })
+
+    it('POST /chat/intake-check returns booking readiness summary', async () => {
+      authAs(STUDENT_USER)
+      db.lead.findFirst.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000111',
+        userId: STUDENT_USER.id,
+        deletedAt: null,
+      })
+      db.student.findFirst.mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000010',
+        userId: STUDENT_USER.id,
+        deletedAt: null,
+      })
+      db.aiAssessment.findMany.mockResolvedValue([
+        { fieldsCollected: ['nationality', 'education_level', 'field_of_interest', 'timeline'] },
+      ])
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/chat/intake-check',
+        headers: authHeaders(),
+        payload: {},
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+      expect(body.bookingReady).toBe(true)
+      expect(body.captured).toBe(4)
+      expect(body.total).toBe(7)
     })
   })
 

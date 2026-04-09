@@ -11,6 +11,7 @@ import type { ChatSessionStatus, MessageRole } from './chat'
 export interface AuthUserResponse {
   id: string
   email: string
+  emailVerified: boolean
   role: UserRole
   firstName: string
   lastName: string
@@ -419,6 +420,13 @@ export interface ChatMessageResponse {
   message: ChatMessageItem
   options: string[] | null
   shouldSuggestBooking: boolean
+}
+
+export interface ChatIntakeCheckResponse {
+  bookingReady: boolean
+  captured: number
+  total: number
+  missing: string[]
 }
 
 // ─── Upload URL Response ──────────────────────────────────────

@@ -39,6 +39,7 @@ import type {
 export const FIXTURE_ADMIN_USER: AuthUserResponse = {
   id: '550e8400-e29b-41d4-a716-446655440000',
   email: 'admin@sturec.com',
+  emailVerified: true,
   role: 'admin',
   firstName: 'Admin',
   lastName: 'User',
@@ -52,6 +53,7 @@ export const FIXTURE_ADMIN_USER: AuthUserResponse = {
 export const FIXTURE_COUNSELLOR_USER: AuthUserResponse = {
   id: '550e8400-e29b-41d4-a716-446655440001',
   email: 'sarah@sturec.com',
+  emailVerified: true,
   role: 'counsellor',
   firstName: 'Sarah',
   lastName: 'Counsellor',
@@ -65,6 +67,7 @@ export const FIXTURE_COUNSELLOR_USER: AuthUserResponse = {
 export const FIXTURE_STUDENT_USER: AuthUserResponse = {
   id: '550e8400-e29b-41d4-a716-446655440002',
   email: 'priya.sharma@gmail.com',
+  emailVerified: true,
   role: 'student',
   firstName: 'Priya',
   lastName: 'Sharma',

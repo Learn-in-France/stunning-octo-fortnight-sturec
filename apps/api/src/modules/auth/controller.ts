@@ -68,13 +68,17 @@ export async function acceptInvite(
 }
 
 export async function getUserProfile(request: FastifyRequest, reply: FastifyReply) {
-  const result = await authService.getUserProfile(request.user.id)
+  const result = await authService.getUserProfile(request.user.id, request.user.emailVerified)
   if (!result) return reply.status(404).send({ error: 'User not found', code: 'USER_NOT_FOUND' })
   return reply.send(result)
 }
 
 export async function updateUserProfile(request: FastifyRequest, reply: FastifyReply) {
-  const result = await authService.updateUserProfile(request.user.id, request.body as any)
+  const result = await authService.updateUserProfile(
+    request.user.id,
+    request.user.emailVerified,
+    request.body as any,
+  )
   if (!result) return reply.status(404).send({ error: 'User not found', code: 'USER_NOT_FOUND' })
   return reply.send(result)
 }

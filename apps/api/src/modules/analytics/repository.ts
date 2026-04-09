@@ -67,6 +67,13 @@ export function countBookingsByStatus(dateFilter?: Prisma.BookingWhereInput) {
   })
 }
 
+export function findPendingAssignments() {
+  return prisma.booking.findMany({
+    where: { status: 'awaiting_assignment' },
+    orderBy: { scheduledAt: 'desc' },
+  })
+}
+
 // ─── Counsellor Analytics ───────────────────────────────────
 
 export function findCounsellors() {
