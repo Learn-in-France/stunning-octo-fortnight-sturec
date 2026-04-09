@@ -41,8 +41,7 @@ function Header() {
           <BrandLogo
             href="/"
             variant="inline"
-            markClassName="h-14 w-auto shrink-0"
-            textClassName="tracking-tight"
+            showTagline
           />
 
           <nav className="hidden items-center gap-1 lg:flex">
@@ -172,7 +171,6 @@ function Footer() {
               href="/"
               variant="inline"
               inverse
-              markClassName="h-16 w-auto shrink-0"
               subtitleClassName="text-white/55"
               showTagline
             />
