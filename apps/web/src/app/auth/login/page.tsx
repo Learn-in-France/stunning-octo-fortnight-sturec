@@ -123,13 +123,12 @@ export default function LoginPage() {
     <AuthShell
       eyebrow="Already a member"
       title={<>Return to your <BrandName inverse /> workspace.</>}
-      description="Students come back here to continue their plan. Team members use the same page after accepting an invitation."
+      description="Come back here to continue your plan with your advisor."
       sideTitle="Before you continue"
-      sideCopy="This page is for students and team members who already have an account."
+      sideCopy="This page is for students who already have an account."
       sidePoints={[
-        'Students who do not have an account yet should register first.',
-        'Internal team members do not self-register; they use an invite link from an admin.',
-        'Google sign-in works for existing accounts and invited team members once setup is complete.',
+        'Don\u2019t have an account yet? Register first to start with the AI advisor.',
+        'Google sign-in works for existing accounts.',
       ]}
     >
       <h2 className="font-display text-3xl font-semibold tracking-[-0.03em] text-text-primary">
