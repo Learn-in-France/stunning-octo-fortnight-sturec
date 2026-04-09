@@ -135,12 +135,11 @@ export function Topbar() {
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/45 bg-[rgba(255,250,243,0.78)] px-6 backdrop-blur-xl">
-      <div className="flex items-center gap-3">
-        {/* Breadcrumb slot — pages inject via PageHeader */}
-        <span className="hidden rounded-full bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-700 lg:inline-flex">
-          Learn in <span className="text-public-red">France</span> workspace
-        </span>
-      </div>
+      {/* Breadcrumb slot — pages inject via PageHeader. Intentionally
+          empty by default so the sidebar logo is the only branding
+          source and we don't duplicate "Learn in France" wordmarks on
+          the same screen. */}
+      <div className="flex items-center gap-3" />
 
       <div className="flex items-center gap-3">
         <NotificationBell />
