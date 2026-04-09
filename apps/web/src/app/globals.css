@@ -4,6 +4,7 @@
   --font-sans: var(--font-dm-sans), system-ui, sans-serif;
   --font-display: var(--font-bricolage), serif;
   --font-mono: var(--font-jetbrains), monospace;
+  --font-logo: var(--font-playfair), 'Playfair Display', 'Libre Caslon Text', Georgia, serif;
 
   --color-primary-50: #f0f4fb;
   --color-primary-100: #dce5f4;

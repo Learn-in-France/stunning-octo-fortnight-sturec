@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Bricolage_Grotesque, DM_Sans, JetBrains_Mono } from 'next/font/google'
+import { Bricolage_Grotesque, DM_Sans, JetBrains_Mono, Playfair_Display } from 'next/font/google'
 
 import { Providers } from '@/providers'
 
@@ -20,6 +20,17 @@ const dmSans = DM_Sans({
 const jetbrains = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-jetbrains',
+  display: 'swap',
+})
+
+// Classical serif used for the LIF wordmark and its associated
+// "LEARN IN FRANCE" lockup so the logo matches the reference. Weight
+// range kept wide so the mark can render in both heavy (for "LIF")
+// and medium (for the subtitle text) without loading two faces.
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['500', '700', '900'],
+  variable: '--font-playfair',
   display: 'swap',
 })
 
@@ -63,7 +74,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bricolage.variable} ${dmSans.variable} ${jetbrains.variable}`}
+      className={`${bricolage.variable} ${dmSans.variable} ${jetbrains.variable} ${playfair.variable}`}
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
