@@ -157,11 +157,10 @@ function OnboardingForm() {
             Welcome
           </p>
           <h1 className="mt-2 font-display text-2xl font-semibold tracking-[-0.02em] text-text-primary">
-            Let's get your contact details right
+            Please complete your profile
           </h1>
           <p className="mt-2 text-sm leading-6 text-text-secondary">
-            We need a phone number we can reach you on and the name you actually go by.
-            This takes about 30 seconds and only happens once.
+            Just a few quick details to get you set up.
           </p>
         </div>
 
@@ -209,11 +208,10 @@ function OnboardingForm() {
 
           <fieldset className="rounded-2xl border border-border bg-surface-sunken/35 p-4">
             <legend className="px-2 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-              WhatsApp updates
+              WhatsApp
             </legend>
             <p className="mt-1 text-sm leading-6 text-text-secondary">
-              Most of our follow-up happens on WhatsApp. Can we message you there about
-              your application, documents, and visa updates?
+              Can we reach you on WhatsApp?
             </p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:gap-4">
               <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -223,7 +221,7 @@ function OnboardingForm() {
                   checked={whatsappConsent === true}
                   onChange={() => setWhatsappConsent(true)}
                 />
-                <span>Yes, message me on WhatsApp</span>
+                <span>Yes</span>
               </label>
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input
@@ -232,7 +230,7 @@ function OnboardingForm() {
                   checked={whatsappConsent === false}
                   onChange={() => setWhatsappConsent(false)}
                 />
-                <span>No, email only</span>
+                <span>No</span>
               </label>
             </div>
           </fieldset>

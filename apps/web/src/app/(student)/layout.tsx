@@ -198,15 +198,10 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
             {onboardingIncomplete ? (
               <div className="mx-3 mt-4 flex-1 rounded-2xl border border-sidebar-border bg-sidebar-hover/40 p-4">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-text/60">
-                  Step 1 of 1
+                  Getting started
                 </p>
                 <p className="mt-2 text-sm font-medium text-sidebar-text-active">
-                  Finish onboarding to unlock your portal
-                </p>
-                <p className="mt-2 text-[11px] leading-5 text-sidebar-text">
-                  Tell us your name and a phone number we can reach you on. The rest of
-                  your dashboard, AI advisor, documents, and bookings unlock as soon as
-                  you submit this form.
+                  Please complete your profile
                 </p>
               </div>
             ) : (
