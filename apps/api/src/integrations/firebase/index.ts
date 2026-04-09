@@ -63,3 +63,37 @@ export class AuthError extends Error {
     this.statusCode = statusCode
   }
 }
+
+/**
+ * Liveness ping for the ops /integrations endpoint. Attempts to list
+ * one user from Firebase Auth — a lightweight authenticated call that
+ * proves the service account credentials work and the project is
+ * reachable. Returns a graceful error object rather than throwing.
+ */
+export async function pingFirebase(): Promise<{
+  ok: boolean
+  latencyMs: number
+  error?: string
+}> {
+  if (
+    !process.env.FIREBASE_PROJECT_ID ||
+    !process.env.FIREBASE_CLIENT_EMAIL ||
+    !process.env.FIREBASE_PRIVATE_KEY
+  ) {
+    return { ok: false, latencyMs: 0, error: 'Firebase credentials not set' }
+  }
+  const start = Date.now()
+  try {
+    initFirebase()
+    // listUsers(1) is the cheapest authenticated call that proves the
+    // service account creds + project ID are valid.
+    await getAuth().listUsers(1)
+    return { ok: true, latencyMs: Date.now() - start }
+  } catch (err) {
+    return {
+      ok: false,
+      latencyMs: Date.now() - start,
+      error: err instanceof Error ? err.message : 'unknown error',
+    }
+  }
+}

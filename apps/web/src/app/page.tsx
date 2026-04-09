@@ -42,7 +42,7 @@ export default function HomePage() {
             <span className="public-accent">Let&rsquo;s get you here too.</span>
           </>
         }
-        description="The only specialist agency with a team on the ground in France. We handle applications, visas, housing, and settling in — so you can focus on your future."
+        description="A France-focused advisory team with people on the ground in France. We help students navigate applications, visas, housing, and settling in with specialist guidance from first question to arrival."
         actions={[
           { href: '/auth/register', label: 'Talk to AI advisor' },
           { href: '/why-france', label: 'Why study in France?', variant: 'secondary' },

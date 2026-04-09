@@ -16,7 +16,43 @@ export interface GroqCompletionResult {
 }
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+const GROQ_MODELS_URL = 'https://api.groq.com/openai/v1/models'
 const GROQ_MODEL = 'llama-3.3-70b-versatile'
+
+/**
+ * Liveness ping for the ops /integrations endpoint. Hits Groq's
+ * /models endpoint — a cheap authenticated GET that proves the API
+ * key works. Returns a graceful error object rather than throwing.
+ */
+export async function pingGroq(): Promise<{
+  ok: boolean
+  latencyMs: number
+  error?: string
+}> {
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey) {
+    return { ok: false, latencyMs: 0, error: 'GROQ_API_KEY not set' }
+  }
+  const start = Date.now()
+  try {
+    const response = await fetch(GROQ_MODELS_URL, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(5000),
+    })
+    return {
+      ok: response.ok,
+      latencyMs: Date.now() - start,
+      ...(response.ok ? {} : { error: `HTTP ${response.status}` }),
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      latencyMs: Date.now() - start,
+      error: err instanceof Error ? err.message : 'unknown error',
+    }
+  }
+}
 
 export async function chatCompletion(
   messages: GroqMessage[],

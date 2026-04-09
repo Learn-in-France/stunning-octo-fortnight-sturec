@@ -175,8 +175,8 @@ function Footer() {
               showTagline
             />
             <p className="mt-6 max-w-md text-sm leading-7 text-white/72">
-              A specialist agency with a team on the ground in France. We help international
-              students find the right program, manage applications and visa, and settle in
+              A France-focused advisory team with people on the ground in France. We help international
+              students find the right program, manage applications and visas, and settle in
               after arrival.
             </p>
             <div className="mt-8 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/55">

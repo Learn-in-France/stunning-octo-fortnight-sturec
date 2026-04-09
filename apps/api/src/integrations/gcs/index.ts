@@ -188,6 +188,44 @@ export async function getObjectMetadata(
 }
 
 /**
+ * Liveness ping for the ops /integrations endpoint. Fetches the
+ * bucket metadata — the lightest authenticated GCS JSON API call —
+ * and reports success + latency. Returns a graceful error object
+ * if the service account isn't configured or the call fails.
+ */
+export async function pingGcs(): Promise<{
+  ok: boolean
+  latencyMs: number
+  error?: string
+}> {
+  if (!process.env.GCS_SERVICE_ACCOUNT_PATH && !process.env.GCS_SERVICE_ACCOUNT_JSON) {
+    return { ok: false, latencyMs: 0, error: 'GCS service account not configured' }
+  }
+  const start = Date.now()
+  try {
+    const token = await getAccessToken()
+    const response = await fetch(
+      `https://storage.googleapis.com/storage/v1/b/${GCS_BUCKET}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(5000),
+      },
+    )
+    return {
+      ok: response.ok,
+      latencyMs: Date.now() - start,
+      ...(response.ok ? {} : { error: `HTTP ${response.status}` }),
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      latencyMs: Date.now() - start,
+      error: err instanceof Error ? err.message : 'unknown error',
+    }
+  }
+}
+
+/**
  * Get an OAuth2 access token using the service account for API calls.
  */
 async function getAccessToken(): Promise<string> {

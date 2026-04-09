@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import type { Metadata } from 'next'
 
 import { EditorialCard, MarketingCTA, MarketingHero } from '@/components/marketing/sections'
@@ -6,11 +7,11 @@ import { BrandName } from '@/components/branding/brand-logo'
 export const metadata: Metadata = {
   title: 'About Us — The Team Behind Learn in France',
   description:
-    'Learn in France is a specialist education agency based in France. Our team on the ground helps international students with applications, Campus France, visas, housing, and settling in.',
+    'Learn in France is a France-focused education advisory team based in France. We help international students navigate applications, Campus France, visas, housing, and settling in.',
   alternates: { canonical: 'https://learninfrance.com/about' },
   openGraph: {
     title: 'About Learn in France — Our Team in France',
-    description: 'A specialist agency with a team on the ground in France.',
+    description: 'A France-focused advisory team with people on the ground in France.',
     url: 'https://learninfrance.com/about',
   },
 }
@@ -45,15 +46,26 @@ export default function AboutPage() {
         label={<BrandName />}
         title={
           <>
-            A specialist agency.{' '}
-            <span className="public-accent">Based in France.</span>
+            France specialists.{' '}
+            <span className="public-accent">Advising from France.</span>
           </>
         }
-        description="We're not a general-purpose study abroad agency. We're a France specialist with a team on the ground in France. We help international students navigate the French education system from first question to first week in the country."
+        description="We are a France-focused advisory team based in France. We help students understand the market, navigate the process clearly, and move from first conversation to confident arrival with grounded, practical support."
         actions={[
           { href: '/auth/register', label: 'Talk to AI advisor' },
           { href: '/why-france', label: 'Why France?', variant: 'secondary' },
         ]}
+        aside={
+          <div className="public-hero-image rotate-1 transition-transform duration-500 hover:rotate-0">
+            <Image
+              src="/images/about-advisor-cafe.webp"
+              alt="Advisor and student reviewing study plans together at a cafe in France"
+              width={1600}
+              height={893}
+              priority
+            />
+          </div>
+        }
       />
 
       <section className="py-16 sm:py-24">
@@ -93,12 +105,12 @@ export default function AboutPage() {
                   deserve better support than a stack of application forms and a good luck email.
                 </p>
                 <p>
-                  Most agencies help students apply and then disappear. The hardest part — navigating
+                  Many services help students apply and then disappear. The hardest part — navigating
                   Campus France, securing a visa, finding housing, opening a bank account, and settling
                   into a new country — is left entirely to the student.
                 </p>
                 <p>
-                  So we built an agency that stays. Our team is based in France.
+                  So we built an advisory team that stays. Our team is based in France.
                   We work with curated university partners, and our support continues long after students
                   land in France.
                 </p>
@@ -133,7 +145,7 @@ export default function AboutPage() {
             <EditorialCard title="Our partner" tone="tinted">
               <div className="space-y-2 text-base">
                 <p className="font-semibold">Burgundy School of Business</p>
-                <p>AACSB &amp; EQUIS accredited Grande Ecole</p>
+                <p>Official university partner in Dijon</p>
                 <p>France</p>
                 <p className="mt-4">
                   <a href="/partners/burgundy-school-of-business" className="font-semibold text-public-blue hover:underline">
