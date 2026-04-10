@@ -180,6 +180,11 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                   label: 'Profile',
                   content: <ProfileWorkspaceTab student={student} studentId={id} />,
                 },
+                {
+                  id: 'assessments',
+                  label: 'Assessments',
+                  content: <AssessmentsTab studentId={id} />,
+                },
               ]}
             />
           </div>
@@ -1274,6 +1279,13 @@ function WorkTab({ studentId }: { studentId: string }) {
       >
         <CampaignsTab studentId={studentId} />
       </WorkflowSection>
+
+      <WorkflowSection
+        title="Applications"
+        description="Current application pipeline and offer progress."
+      >
+        <ApplicationsTab studentId={studentId} />
+      </WorkflowSection>
     </div>
   )
 }
@@ -1301,6 +1313,13 @@ function HistoryTab({ studentId }: { studentId: string }) {
       >
         <ActivityTab studentId={studentId} />
       </WorkflowSection>
+
+      <WorkflowSection
+        title="Stage History"
+        description="Formal stage movements and the reasons recorded for them."
+      >
+        <TimelineTab studentId={studentId} />
+      </WorkflowSection>
     </div>
   )
 }
@@ -1322,31 +1341,23 @@ function ProfileWorkspaceTab({
       </WorkflowSection>
 
       <WorkflowSection
-        title="AI Assessments"
-        description="Assessment snapshots and internal scoring details."
-      >
-        <AiAssessmentsTab studentId={studentId} />
-      </WorkflowSection>
-
-      <WorkflowSection
-        title="Applications"
-        description="Current application pipeline and offer progress."
-      >
-        <ApplicationsTab studentId={studentId} />
-      </WorkflowSection>
-
-      <WorkflowSection
         title="Contacts"
         description="Emergency and family contacts linked to this student."
       >
         <ContactsTab studentId={studentId} />
       </WorkflowSection>
+    </div>
+  )
+}
 
+function AssessmentsTab({ studentId }: { studentId: string }) {
+  return (
+    <div className="space-y-8">
       <WorkflowSection
-        title="Stage History"
-        description="Formal stage movements and the reasons recorded for them."
+        title="AI Assessments"
+        description="Assessment snapshots and internal scoring details."
       >
-        <TimelineTab studentId={studentId} />
+        <AiAssessmentsTab studentId={studentId} />
       </WorkflowSection>
     </div>
   )
