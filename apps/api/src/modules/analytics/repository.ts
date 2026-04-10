@@ -156,6 +156,46 @@ export function countCounsellorStudentsByStage(counsellorId: string) {
   })
 }
 
+// ─── Counsellor-Scoped Queries ─────────────────────────────
+
+export function countLeadsByStatusForCounsellor(counsellorId: string) {
+  return prisma.lead.groupBy({
+    by: ['status'],
+    where: { assignedCounsellorId: counsellorId, deletedAt: null },
+    _count: true,
+  })
+}
+
+export function countLeadsForCounsellor(counsellorId: string) {
+  return prisma.lead.count({
+    where: { assignedCounsellorId: counsellorId, deletedAt: null },
+  })
+}
+
+export function countApplicationsByStatusForCounsellor(counsellorId: string) {
+  return prisma.application.groupBy({
+    by: ['status'],
+    where: { student: { assignedCounsellorId: counsellorId, deletedAt: null } },
+    _count: true,
+  })
+}
+
+export function countDocumentsByStatusForCounsellor(counsellorId: string) {
+  return prisma.document.groupBy({
+    by: ['status'],
+    where: { student: { assignedCounsellorId: counsellorId, deletedAt: null }, deletedAt: null },
+    _count: true,
+  })
+}
+
+export function countBookingsByStatusForCounsellor(counsellorId: string) {
+  return prisma.booking.groupBy({
+    by: ['status'],
+    where: { counsellorId },
+    _count: true,
+  })
+}
+
 // ─── Student Analytics ──────────────────────────────────────
 
 export function findStudentsForAnalytics() {

@@ -20,6 +20,11 @@ export async function analyticsRoutes(server: FastifyInstance) {
     handler: ctrl.getOverview,
   })
 
+  server.get('/analytics/my-overview', {
+    preHandler: [authMiddleware, requireRole('counsellor'), validateQuery(analyticsDateRangeSchema)],
+    handler: ctrl.getMyOverview,
+  })
+
   server.get('/analytics/pipeline', {
     preHandler: [authMiddleware, requireRole('admin', 'counsellor'), validateQuery(analyticsDateRangeSchema)],
     handler: ctrl.getPipeline,

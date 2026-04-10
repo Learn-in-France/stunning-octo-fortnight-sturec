@@ -34,6 +34,15 @@ export function useAnalyticsOverview(params: DateRangeParams = {}, opts: { enabl
   })
 }
 
+export function useMyAnalyticsOverview(params: DateRangeParams = {}, opts: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ['analytics', 'my-overview', params],
+    enabled: opts.enabled ?? true,
+    queryFn: () =>
+      api.get('/analytics/my-overview', { params: dateParams(params) }) as unknown as AnalyticsOverview,
+  })
+}
+
 // ─── Pipeline hook ──────────────────────────────────────────────
 
 export function usePipelineMetrics(params: DateRangeParams = {}) {

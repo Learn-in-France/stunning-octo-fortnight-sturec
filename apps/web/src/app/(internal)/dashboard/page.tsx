@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { useAnalyticsOverview, useCounsellorAnalytics } from '@/features/analytics/hooks/use-analytics'
+import { useAnalyticsOverview, useMyAnalyticsOverview, useCounsellorAnalytics } from '@/features/analytics/hooks/use-analytics'
 import { usePendingAssignments, useUpdateBooking, type BookingListItemView } from '@/features/bookings/hooks/use-bookings'
 import { useCounsellorAgenda, useCompleteReminder, useDismissReminder } from '@/features/counsellor/hooks/use-counsellor'
 import { useStudents } from '@/features/students/hooks/use-students'
@@ -22,7 +22,10 @@ import { STAGE_DISPLAY_NAMES } from '@sturec/shared'
 export default function DashboardPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
-  const { data: overview, isLoading } = useAnalyticsOverview({}, { enabled: isAdmin })
+  const { data: adminOverview, isLoading: adminLoading } = useAnalyticsOverview({}, { enabled: isAdmin })
+  const { data: myOverview, isLoading: myLoading } = useMyAnalyticsOverview({}, { enabled: !isAdmin })
+  const overview = isAdmin ? adminOverview : myOverview
+  const isLoading = isAdmin ? adminLoading : myLoading
   const { data: pendingAssignments } = usePendingAssignments({ enabled: isAdmin })
   const { data: counsellors } = useCounsellorAnalytics({ enabled: isAdmin })
   const updateBooking = useUpdateBooking()

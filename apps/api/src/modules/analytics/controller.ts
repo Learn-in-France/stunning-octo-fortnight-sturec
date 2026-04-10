@@ -10,6 +10,12 @@ export async function getOverview(request: FastifyRequest, reply: FastifyReply) 
   return reply.send(result)
 }
 
+export async function getMyOverview(request: FastifyRequest, reply: FastifyReply) {
+  const query = (request as ReqWithQuery).parsedQuery as { from?: string; to?: string }
+  const result = await analyticsService.getCounsellorOverview(request.user.id, query.from, query.to)
+  return reply.send(result)
+}
+
 export async function listPendingAssignments(_request: FastifyRequest, reply: FastifyReply) {
   const result = await analyticsService.getPendingAssignments()
   return reply.send(result)
