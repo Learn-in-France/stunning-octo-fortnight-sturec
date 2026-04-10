@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 
 import { BrandLogo } from '@/components/branding/brand-logo'
 import { useAuth } from '@/providers/auth-provider'
@@ -154,40 +154,74 @@ const NAV_SECTIONS: { label?: string; items: NavItem[] }[] = [
   },
 ]
 
+const SIDEBAR_KEY = 'sturec-sidebar-collapsed'
+const W_EXPANDED = 260
+const W_COLLAPSED = 64
+
+export function useSidebarWidth() {
+  const [collapsed, setCollapsed] = useState(false)
+  useEffect(() => {
+    setCollapsed(localStorage.getItem(SIDEBAR_KEY) === '1')
+  }, [])
+  return collapsed ? W_COLLAPSED : W_EXPANDED
+}
+
 export function Sidebar() {
   const pathname = usePathname()
   const { user } = useAuth()
   const userRole = user?.role as 'admin' | 'counsellor' | undefined
+
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    setCollapsed(localStorage.getItem(SIDEBAR_KEY) === '1')
+  }, [])
+
+  const toggle = () => {
+    const next = !collapsed
+    setCollapsed(next)
+    localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0')
+  }
 
   function isActive(href: string) {
     if (href === '/dashboard') return pathname === '/dashboard'
     return pathname.startsWith(href)
   }
 
+  const w = collapsed ? W_COLLAPSED : W_EXPANDED
+
   return (
-    <aside className="fixed top-0 left-0 bottom-0 z-30 flex w-[260px] flex-col bg-sidebar shadow-[16px_0_48px_rgba(10,22,41,0.22)]">
-      {/* Logo — internal sidebar uses the full reference lockup: the
-          compact LIF wordmark on the left, a vertical divider, and
-          the "France-based Education Advisory" tagline on the right
-          so the header isn't half-empty next to the compact mark. */}
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-        <BrandLogo href="/dashboard" variant="compact" inverse />
-        <div className="h-9 w-px shrink-0 bg-white/15" aria-hidden />
-        <p
-          className="text-[9px] italic leading-[1.35] text-white/60"
-          style={{ fontFamily: 'var(--font-logo)' }}
-        >
-          France-based
-          <br />Education
-          <br />Advisory
-        </p>
+    <aside
+      className="fixed top-0 left-0 bottom-0 z-30 flex flex-col bg-sidebar shadow-[16px_0_48px_rgba(10,22,41,0.22)] transition-[width] duration-200"
+      style={{ width: w }}
+    >
+      {/* Header */}
+      <div className="flex h-16 items-center border-b border-sidebar-border px-3 gap-3">
+        {collapsed ? (
+          <BrandLogo href="/dashboard" variant="compact" inverse />
+        ) : (
+          <>
+            <div className="pl-3">
+              <BrandLogo href="/dashboard" variant="compact" inverse />
+            </div>
+            <div className="h-9 w-px shrink-0 bg-white/15" aria-hidden />
+            <p
+              className="text-[9px] italic leading-[1.35] text-white/60"
+              style={{ fontFamily: 'var(--font-logo)' }}
+            >
+              France-based
+              <br />Education
+              <br />Advisory
+            </p>
+          </>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+      <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-6">
         {NAV_SECTIONS.map((section, sIdx) => (
           <div key={sIdx}>
-            {section.label && (
+            {section.label && !collapsed && (
               <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-text/50">
                 {section.label}
               </p>
@@ -201,9 +235,11 @@ export function Sidebar() {
                     <Link
                       key={item.href}
                       href={item.href}
-                    className={`
-                        group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium
+                      title={collapsed ? item.label : undefined}
+                      className={`
+                        group flex items-center rounded-2xl text-sm font-medium
                         transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-accent
+                        ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'}
                         ${
                           active
                             ? 'bg-[linear-gradient(135deg,rgba(23,48,80,1),rgba(26,58,122,0.4))] text-sidebar-text-active shadow-[0_16px_30px_rgba(0,0,0,0.18)]'
@@ -218,13 +254,13 @@ export function Sidebar() {
                       >
                         {item.icon}
                       </span>
-                      <span className="truncate">{item.label}</span>
-                      {item.badge && (
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                      {!collapsed && item.badge && (
                         <span className="ml-auto text-[10px] font-mono font-semibold bg-sidebar-accent/20 text-sidebar-accent px-1.5 py-0.5 rounded-full">
                           {item.badge}
                         </span>
                       )}
-                      {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-sidebar-accent" />}
+                      {!collapsed && active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-sidebar-accent" />}
                     </Link>
                   )
                 })}
@@ -233,21 +269,43 @@ export function Sidebar() {
         ))}
       </nav>
 
+      {/* Collapse toggle */}
+      <div className="px-2 pb-2">
+        <button
+          type="button"
+          onClick={toggle}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl px-3 py-2 text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active transition-colors cursor-pointer"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            className={`transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`}
+          >
+            <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {!collapsed && <span className="text-xs">Collapse</span>}
+        </button>
+      </div>
+
       {/* User card */}
       {user && (
-        <div className="border-t border-sidebar-border p-4">
-          <div className="flex items-center gap-3 rounded-2xl bg-white/4 p-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-hover text-xs font-semibold text-sidebar-text-active">
+        <div className="border-t border-sidebar-border p-2">
+          <div className={`flex items-center rounded-2xl bg-white/4 ${collapsed ? 'justify-center p-2' : 'gap-3 p-3'}`}>
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-hover text-xs font-semibold text-sidebar-text-active">
               {user.firstName?.[0]}{user.lastName?.[0]}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-text-active truncate">
-                {user.firstName} {user.lastName}
-              </p>
-              <p className="text-[11px] text-sidebar-text truncate capitalize">
-                {user.role}
-              </p>
-            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-text-active truncate">
+                  {user.firstName} {user.lastName}
+                </p>
+                <p className="text-[11px] text-sidebar-text truncate capitalize">
+                  {user.role}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
