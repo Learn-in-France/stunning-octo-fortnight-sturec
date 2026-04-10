@@ -2,17 +2,18 @@
 
 import { AuthGuard } from '@/lib/guards/auth-guard'
 import { RoleGuard } from '@/lib/guards/role-guard'
-import { Sidebar, useSidebarWidth } from '@/components/layout/sidebar'
+import { Sidebar } from '@/components/layout/sidebar'
+import { SidebarProvider, useSidebar } from '@/components/layout/sidebar-context'
 import { Topbar } from '@/components/layout/topbar'
 
 function InternalShell({ children }: { children: React.ReactNode }) {
-  const sidebarWidth = useSidebarWidth()
+  const { width } = useSidebar()
   return (
     <div className="flex min-h-screen">
       <Sidebar />
       <div
         className="internal-app-shell flex-1 min-w-0 transition-[margin] duration-200"
-        style={{ marginLeft: sidebarWidth }}
+        style={{ marginLeft: width }}
       >
         <Topbar />
         <main className="p-6 min-w-0 overflow-x-hidden">
@@ -31,7 +32,9 @@ export default function InternalLayout({
   return (
     <AuthGuard>
       <RoleGuard allowed={['admin', 'counsellor']}>
-        <InternalShell>{children}</InternalShell>
+        <SidebarProvider>
+          <InternalShell>{children}</InternalShell>
+        </SidebarProvider>
       </RoleGuard>
     </AuthGuard>
   )
