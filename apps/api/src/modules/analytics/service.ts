@@ -103,6 +103,88 @@ export async function getOverview(from?: string, to?: string): Promise<Analytics
   }
 }
 
+export async function getCounsellorOverview(counsellorId: string, from?: string, to?: string): Promise<AnalyticsOverview> {
+  const period = defaultPeriod(from, to)
+
+  const [
+    leadsByStatus,
+    totalLeads,
+    studentsByStage,
+    totalStudents,
+    appsByStatus,
+    docsByStatus,
+    bookingsByStatus,
+  ] = await Promise.all([
+    repo.countLeadsByStatusForCounsellor(counsellorId),
+    repo.countLeadsForCounsellor(counsellorId),
+    repo.countCounsellorStudentsByStage(counsellorId),
+    repo.countAssignedStudents(counsellorId),
+    repo.countApplicationsByStatusForCounsellor(counsellorId),
+    repo.countDocumentsByStatusForCounsellor(counsellorId),
+    repo.countBookingsByStatusForCounsellor(counsellorId),
+  ])
+
+  const leadCounts = Object.fromEntries(
+    leadsByStatus.map((g) => [g.status, g._count]),
+  ) as Record<string, number>
+
+  const appCounts = Object.fromEntries(
+    appsByStatus.map((g) => [g.status, g._count]),
+  ) as Record<string, number>
+
+  const docCounts = Object.fromEntries(
+    docsByStatus.map((g) => [g.status, g._count]),
+  ) as Record<string, number>
+
+  const bookingCounts = Object.fromEntries(
+    bookingsByStatus.map((g) => [g.status, g._count]),
+  ) as Record<string, number>
+
+  const byStage = Object.fromEntries(
+    studentsByStage.map((g) => [g.stage, g._count]),
+  )
+
+  const inactiveStages = new Set(['lead_created', 'alumni'])
+  const activeStudents = studentsByStage
+    .filter((g) => !inactiveStages.has(g.stage))
+    .reduce((sum, g) => sum + g._count, 0)
+
+  return {
+    period,
+    data: {
+      leads: {
+        total: totalLeads,
+        new: leadCounts['new_lead'] || 0,
+        qualified: leadCounts['qualified'] || 0,
+        converted: leadCounts['converted'] || 0,
+        disqualified: leadCounts['disqualified'] || 0,
+      },
+      students: {
+        total: totalStudents,
+        active: activeStudents,
+        byStage,
+      },
+      applications: {
+        total: Object.values(appCounts).reduce((s, c) => s + c, 0),
+        submitted: appCounts['submitted'] || 0,
+        offers: appCounts['offer'] || 0,
+        enrolled: appCounts['enrolled'] || 0,
+      },
+      documents: {
+        pending: (docCounts['pending'] || 0) + (docCounts['pending_upload'] || 0),
+        verified: docCounts['verified'] || 0,
+        rejected: docCounts['rejected'] || 0,
+      },
+      bookings: {
+        scheduled: bookingCounts['scheduled'] || 0,
+        completed: bookingCounts['completed'] || 0,
+        awaitingAssignment: bookingCounts['awaiting_assignment'] || 0,
+        assigned: bookingCounts['assigned'] || 0,
+      },
+    },
+  }
+}
+
 export async function getPendingAssignments(): Promise<BookingListItem[]> {
   const bookings = await repo.findPendingAssignments()
   return bookings.map(mapBooking)
