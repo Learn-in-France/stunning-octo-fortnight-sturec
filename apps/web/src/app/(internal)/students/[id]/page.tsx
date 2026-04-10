@@ -828,11 +828,6 @@ function NotesTab({ studentId }: { studentId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-text-primary">Notes</h3>
-        <p className="text-xs text-text-muted">Use the Add Note action above to record an internal note.</p>
-      </div>
-
       {isLoading ? (
         <div className="flex justify-center py-12"><LoadingSpinner /></div>
       ) : !notes.length ? (
@@ -1260,16 +1255,9 @@ function formatDate(iso: string): string {
 function WorkflowSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-1.5">
+      <div>
         <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
-        {description && (
-          <span
-            title={description}
-            className="inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full bg-surface-sunken text-[9px] font-bold text-text-muted"
-          >
-            i
-          </span>
-        )}
+        {description && <p className="text-[11px] text-text-muted mt-0.5">{description}</p>}
       </div>
       {children}
     </div>
@@ -1472,12 +1460,7 @@ function MeetingOutcomesTab({ studentId }: { studentId: string }) {
   if (isLoading) return <LoadingSpinner size="md" />
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-text-primary">Meeting Outcomes</h3>
-        <p className="text-xs text-text-muted">Use the Record Outcome action above to log a new meeting.</p>
-      </div>
-
+    <div className="space-y-4">
       {(outcomes ?? []).length === 0 ? (
         <EmptyState title="No meeting outcomes recorded yet." />
       ) : (
@@ -1601,17 +1584,9 @@ function CampaignsTab({ studentId }: { studentId: string }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-text-primary">Campaigns</h3>
-        <p className="text-xs text-text-muted">Use the Manage Campaigns action above to start a pack or pause / resume an active one.</p>
-      </div>
-
-      {/* Active campaigns — read view + per-row send actions */}
+    <div className="space-y-4">
       {studentCampaigns.length === 0 ? (
-        <EmptyState
-          title="No campaigns started yet."
-          description="Use the Manage Campaigns action above to start a pack."
+        <EmptyState title="No campaigns started yet."
         />
       ) : (
         studentCampaigns.map((campaign) => (
