@@ -2,10 +2,11 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { type ReactNode, useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 
 import { BrandLogo } from '@/components/branding/brand-logo'
 import { useAuth } from '@/providers/auth-provider'
+import { useSidebar } from './sidebar-context'
 
 interface NavItem {
   label: string
@@ -154,41 +155,16 @@ const NAV_SECTIONS: { label?: string; items: NavItem[] }[] = [
   },
 ]
 
-const SIDEBAR_KEY = 'sturec-sidebar-collapsed'
-const W_EXPANDED = 260
-const W_COLLAPSED = 64
-
-export function useSidebarWidth() {
-  const [collapsed, setCollapsed] = useState(false)
-  useEffect(() => {
-    setCollapsed(localStorage.getItem(SIDEBAR_KEY) === '1')
-  }, [])
-  return collapsed ? W_COLLAPSED : W_EXPANDED
-}
-
 export function Sidebar() {
   const pathname = usePathname()
   const { user } = useAuth()
   const userRole = user?.role as 'admin' | 'counsellor' | undefined
-
-  const [collapsed, setCollapsed] = useState(false)
-
-  useEffect(() => {
-    setCollapsed(localStorage.getItem(SIDEBAR_KEY) === '1')
-  }, [])
-
-  const toggle = () => {
-    const next = !collapsed
-    setCollapsed(next)
-    localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0')
-  }
+  const { collapsed, toggle, width: w } = useSidebar()
 
   function isActive(href: string) {
     if (href === '/dashboard') return pathname === '/dashboard'
     return pathname.startsWith(href)
   }
-
-  const w = collapsed ? W_COLLAPSED : W_EXPANDED
 
   return (
     <aside
