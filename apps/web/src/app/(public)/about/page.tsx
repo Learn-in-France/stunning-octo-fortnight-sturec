@@ -134,7 +134,7 @@ export default function AboutPage() {
             <EditorialCard title="Contact" tone="tinted">
               <div className="space-y-2 text-base">
                 <p>Learn in France</p>
-                <p>France</p>
+                <p>Dijon, France</p>
                 <p className="mt-4">
                   <a href="https://wa.me/33695396607" className="font-semibold text-public-blue hover:underline">
                     +33 6 95 39 66 07 (WhatsApp)
