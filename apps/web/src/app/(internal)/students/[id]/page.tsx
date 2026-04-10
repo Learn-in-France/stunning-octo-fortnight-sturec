@@ -1253,11 +1253,27 @@ function formatDate(iso: string): string {
 }
 
 function WorkflowSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  const [showTip, setShowTip] = useState(false)
   return (
     <div className="space-y-2">
-      <div>
+      <div className="flex items-center gap-1.5">
         <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
-        {description && <p className="text-[11px] text-text-muted mt-0.5">{description}</p>}
+        {description && (
+          <span className="relative">
+            <button
+              type="button"
+              onClick={() => setShowTip((v) => !v)}
+              className="inline-flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-full bg-surface-sunken text-[9px] font-bold text-text-muted hover:bg-primary-100 hover:text-primary-700 transition-colors"
+            >
+              i
+            </button>
+            {showTip && (
+              <span className="absolute left-6 top-1/2 -translate-y-1/2 z-20 w-56 rounded-lg border border-border bg-white px-3 py-2 text-[11px] leading-relaxed text-text-secondary shadow-lg">
+                {description}
+              </span>
+            )}
+          </span>
+        )}
       </div>
       {children}
     </div>
