@@ -14,9 +14,11 @@ interface TabsProps {
   defaultTab?: string
   activeTab?: string
   onChange?: (tabId: string) => void
+  /** Rendered between tab buttons and tab content, inside the container */
+  subheader?: ReactNode
 }
 
-export function Tabs({ items, defaultTab, activeTab, onChange }: TabsProps) {
+export function Tabs({ items, defaultTab, activeTab, onChange, subheader }: TabsProps) {
   const [internalActive, setInternalActive] = useState(defaultTab ?? items[0]?.id)
   const active = activeTab ?? internalActive
   const activeItem = items.find((t) => t.id === active)
@@ -68,7 +70,10 @@ export function Tabs({ items, defaultTab, activeTab, onChange }: TabsProps) {
           </button>
         ))}
       </div>
-      <div className="mt-4">{activeItem?.content}</div>
+      <div className="rounded-2xl border border-border bg-white/60 min-h-[340px]">
+        {subheader && <div className="border-b border-border px-5 py-3">{subheader}</div>}
+        <div className="p-5">{activeItem?.content}</div>
+      </div>
     </div>
   )
 }
