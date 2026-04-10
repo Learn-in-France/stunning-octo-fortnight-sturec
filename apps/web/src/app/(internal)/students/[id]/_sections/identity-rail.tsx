@@ -122,12 +122,40 @@ export function IdentityRail({ student, studentId }: IdentityRailProps) {
 
       <div className="border-t border-border" />
 
-      {/* Compact vertical stage path */}
+      {/* Stage path — vertical on xl, compact horizontal dots below xl */}
       <div>
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
           Stage path
         </p>
-        <ol className="space-y-1.5">
+
+        {/* Horizontal compact bar (below xl) */}
+        <div className="xl:hidden">
+          <div className="flex items-center gap-0.5">
+            {STAGE_ORDER.map((stage, idx) => {
+              const isCurrent = idx === stageIndex
+              const isPast = idx < stageIndex
+              return (
+                <div
+                  key={stage}
+                  title={STAGE_DISPLAY_NAMES[stage]}
+                  className={`h-1.5 flex-1 rounded-full ${
+                    isCurrent
+                      ? 'bg-primary-600'
+                      : isPast
+                        ? 'bg-primary-300'
+                        : 'bg-border'
+                  }`}
+                />
+              )
+            })}
+          </div>
+          <p className="mt-1.5 text-[10px] text-text-secondary">
+            {STAGE_DISPLAY_NAMES[STAGE_ORDER[stageIndex]]} ({stageIndex + 1}/{STAGE_ORDER.length})
+          </p>
+        </div>
+
+        {/* Full vertical list (xl only) */}
+        <ol className="hidden xl:block space-y-1.5">
           {STAGE_ORDER.map((stage, idx) => {
             const isCurrent = idx === stageIndex
             const isPast = idx < stageIndex

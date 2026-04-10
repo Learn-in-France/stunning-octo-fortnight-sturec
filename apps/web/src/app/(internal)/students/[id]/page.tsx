@@ -61,6 +61,17 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
     resolveCounsellorNames: isAdmin,
     currentUserId: user?.id,
   })
+  // Counts for tab badges
+  const { data: outcomes } = useMeetingOutcomes(id)
+  const { data: docs } = useStudentDocuments(id)
+  const { data: notes } = useStudentNotes(id)
+  const { data: activities } = useStudentActivities(id)
+  const { data: assessmentsForCount } = useStudentAssessments(id)
+  const { data: apps } = useStudentApplications(id)
+  const workCount = (outcomes?.length ?? 0) + (docs?.items?.length ?? 0) + (apps?.items?.length ?? 0)
+  const historyCount = (notes?.items?.length ?? 0) + (activities?.items?.length ?? 0)
+  const assessmentCount = assessmentsForCount?.length ?? 0
+
   const [showOutcomeDrawer, setShowOutcomeDrawer] = useState(false)
   const [showReminderDrawer, setShowReminderDrawer] = useState(false)
   const [showStageDrawer, setShowStageDrawer] = useState(false)
@@ -157,22 +168,23 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             onChangeStage={openChangeStage}
             onReassign={openReassign}
           />
-          <MeetingPrepBlock studentId={id} student={student} />
-
           <div className="min-w-0">
             <Tabs
               activeTab={activeTab}
               onChange={(tabId) => setActiveTab(tabId)}
               defaultTab="work"
+              subheader={<CaseKpiStrip studentId={id} student={student} />}
               items={[
                 {
                   id: 'work',
                   label: 'Work',
+                  count: workCount || undefined,
                   content: <WorkTab studentId={id} />,
                 },
                 {
                   id: 'history',
                   label: 'History',
+                  count: historyCount || undefined,
                   content: <HistoryTab studentId={id} />,
                 },
                 {
@@ -183,6 +195,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 {
                   id: 'assessments',
                   label: 'Assessments',
+                  count: assessmentCount || undefined,
                   content: <AssessmentsTab studentId={id} />,
                 },
               ]}
@@ -1246,10 +1259,17 @@ function formatDate(iso: string): string {
 
 function WorkflowSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <div className="space-y-3">
-      <div>
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5">
         <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
-        {description ? <p className="mt-1 text-xs text-text-muted">{description}</p> : null}
+        {description && (
+          <span
+            title={description}
+            className="inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full bg-surface-sunken text-[9px] font-bold text-text-muted"
+          >
+            i
+          </span>
+        )}
       </div>
       {children}
     </div>
@@ -1258,7 +1278,9 @@ function WorkflowSection({ title, description, children }: { title: string; desc
 
 function WorkTab({ studentId }: { studentId: string }) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
+      <AiSummaryBlock studentId={studentId} />
+
       <WorkflowSection
         title="Meetings"
         description="Read the recent meeting outcomes here. Use the Record Outcome action above to log a new one."
@@ -1292,7 +1314,7 @@ function WorkTab({ studentId }: { studentId: string }) {
 
 function HistoryTab({ studentId }: { studentId: string }) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <WorkflowSection
         title="Case Log"
         description="This is the internal running trail for decisions, meetings, reminders, assignments, and major activities."
@@ -1332,7 +1354,7 @@ function ProfileWorkspaceTab({
   studentId: string
 }) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <WorkflowSection
         title="Profile"
         description="Raw student profile, readiness signals, and ownership details."
@@ -1352,7 +1374,7 @@ function ProfileWorkspaceTab({
 
 function AssessmentsTab({ studentId }: { studentId: string }) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <WorkflowSection
         title="AI Assessments"
         description="Assessment snapshots and internal scoring details."
@@ -1363,25 +1385,20 @@ function AssessmentsTab({ studentId }: { studentId: string }) {
   )
 }
 
-// ─── Meeting Prep Block ─────────────────────────────────────
+// ─── Case KPI Strip (rendered inside Tabs subheader) ────────
 
-function MeetingPrepBlock({ studentId, student }: { studentId: string; student: ReturnType<typeof useStudent>['data'] }) {
+function CaseKpiStrip({ studentId, student }: { studentId: string; student: ReturnType<typeof useStudent>['data'] }) {
   const { data: assessments } = useStudentAssessments(studentId)
   const latestAssessment = assessments?.[0]
-  const summaryForTeam = latestAssessment?.summaryForTeam?.trim()
-  const summaryFallback = 'No AI intake summary available yet. Use the student profile, booking notes, and the first consultation to complete intake.'
 
   if (!student) return null
 
   return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>Meeting Prep</CardTitle>
-        <StageBadge stage={student.stage} />
-      </CardHeader>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Lead Heat</p>
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+      <KpiChip label="Stage" value={<StageBadge stage={student.stage} />} />
+      <KpiChip
+        label="Heat"
+        value={
           <Badge variant={
             latestAssessment?.leadHeat === 'hot' ? 'danger' :
             latestAssessment?.leadHeat === 'warm' ? 'warning' :
@@ -1390,35 +1407,60 @@ function MeetingPrepBlock({ studentId, student }: { studentId: string; student: 
           } dot>
             {latestAssessment?.leadHeat ?? 'Not assessed'}
           </Badge>
-        </div>
-        <div>
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Counsellor</p>
-          <p className="text-sm text-text-primary">{student.assignedCounsellorId ? 'Assigned' : 'Unassigned'}</p>
-        </div>
-        <div>
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Profile</p>
-          <p className="text-sm text-text-primary">
+        }
+      />
+      <KpiChip
+        label="Profile"
+        value={
+          <span className="text-xs font-semibold text-text-primary">
             {latestAssessment?.profileCompleteness
-              ? `${Math.round(Number(latestAssessment.profileCompleteness) * 100)}% complete`
-              : 'No data'}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Visa Risk</p>
+              ? `${Math.round(Number(latestAssessment.profileCompleteness) * 100)}%`
+              : '—'}
+          </span>
+        }
+      />
+      <KpiChip
+        label="Visa"
+        value={
           <Badge variant={
             student.visaRisk === 'low' ? 'success' :
             student.visaRisk === 'medium' ? 'warning' :
             student.visaRisk === 'high' ? 'danger' : 'muted'
           } dot>
-            {student.visaRisk ?? 'Unknown'}
+            {student.visaRisk ?? '—'}
           </Badge>
-        </div>
-      </div>
-      <div className="mt-4 border-t border-border pt-3">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-text-muted">AI Summary</p>
-        <p className="text-sm leading-7 text-text-secondary">{summaryForTeam || summaryFallback}</p>
-      </div>
-    </Card>
+        }
+      />
+      <KpiChip
+        label="Owner"
+        value={<span className="text-xs font-semibold text-text-primary">{student.assignedCounsellorId ? 'Assigned' : 'None'}</span>}
+      />
+    </div>
+  )
+}
+
+function KpiChip({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+      {value}
+    </div>
+  )
+}
+
+// ─── AI Summary (compact, inside Work tab) ──────────────────
+
+function AiSummaryBlock({ studentId }: { studentId: string }) {
+  const { data: assessments } = useStudentAssessments(studentId)
+  const summary = assessments?.[0]?.summaryForTeam?.trim()
+
+  return (
+    <div className="rounded-xl bg-surface-sunken/40 px-4 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-1">AI Summary</p>
+      <p className="text-xs leading-relaxed text-text-secondary">
+        {summary || 'No AI intake summary yet. Complete the first consultation to generate one.'}
+      </p>
+    </div>
   )
 }
 
