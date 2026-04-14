@@ -19,6 +19,20 @@ export function findStudentByUserId(userId: string) {
   })
 }
 
+export function findStudentAccess(studentId: string) {
+  return prisma.student.findFirst({
+    where: { id: studentId, deletedAt: null },
+    select: { id: true, userId: true, assignedCounsellorId: true },
+  })
+}
+
+export function findLeadAccess(leadId: string) {
+  return prisma.lead.findFirst({
+    where: { id: leadId, deletedAt: null },
+    select: { id: true, userId: true, assignedCounsellorId: true },
+  })
+}
+
 export function createBooking(data: {
   studentId?: string
   leadId?: string

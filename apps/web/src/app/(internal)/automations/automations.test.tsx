@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders, setMockAuth, makeUser } from '../../../../test/helpers'
 import { replaceMock } from '../../../../test/setup'
 import api from '@/lib/api/client'
@@ -184,6 +185,7 @@ describe('AutomationsPage', () => {
     })
 
     it('renders integration health checks with correct labels', async () => {
+      const user = userEvent.setup()
       mockApiRoutes()
 
       renderWithProviders(<AutomationsPage />)
@@ -191,7 +193,7 @@ describe('AutomationsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Integrations')).toBeInTheDocument()
       })
-      screen.getByText('Integrations').click()
+      await user.click(screen.getByText('Integrations'))
 
       await waitFor(() => {
         expect(screen.getByText('Redis')).toBeInTheDocument()
@@ -202,6 +204,7 @@ describe('AutomationsPage', () => {
     })
 
     it('shows "Connected" for live-checked services and "Configured" for env-only', async () => {
+      const user = userEvent.setup()
       mockApiRoutes()
 
       renderWithProviders(<AutomationsPage />)
@@ -209,7 +212,7 @@ describe('AutomationsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Integrations')).toBeInTheDocument()
       })
-      screen.getByText('Integrations').click()
+      await user.click(screen.getByText('Integrations'))
 
       await waitFor(() => {
         expect(screen.getByText('Redis')).toBeInTheDocument()
@@ -225,6 +228,7 @@ describe('AutomationsPage', () => {
     })
 
     it('shows last-success/failure timestamps for integrations with log data', async () => {
+      const user = userEvent.setup()
       mockApiRoutes()
 
       renderWithProviders(<AutomationsPage />)
@@ -232,7 +236,7 @@ describe('AutomationsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Integrations')).toBeInTheDocument()
       })
-      screen.getByText('Integrations').click()
+      await user.click(screen.getByText('Integrations'))
 
       await waitFor(() => {
         expect(screen.getByText('Mautic')).toBeInTheDocument()
@@ -250,6 +254,7 @@ describe('AutomationsPage', () => {
     })
 
     it('renders history tab with sub-tabs', async () => {
+      const user = userEvent.setup()
       mockApiRoutes()
 
       renderWithProviders(<AutomationsPage />)
@@ -257,7 +262,7 @@ describe('AutomationsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('History')).toBeInTheDocument()
       })
-      screen.getByText('History').click()
+      await user.click(screen.getByText('History'))
 
       await waitFor(() => {
         expect(screen.getByText('Notifications')).toBeInTheDocument()
@@ -268,6 +273,7 @@ describe('AutomationsPage', () => {
     })
 
     it('renders notification history table', async () => {
+      const user = userEvent.setup()
       mockApiRoutes()
 
       renderWithProviders(<AutomationsPage />)
@@ -275,7 +281,7 @@ describe('AutomationsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('History')).toBeInTheDocument()
       })
-      screen.getByText('History').click()
+      await user.click(screen.getByText('History'))
 
       // Notifications tab is default
       await waitFor(() => {
@@ -285,6 +291,7 @@ describe('AutomationsPage', () => {
     })
 
     it('renders audit history with operator actions', async () => {
+      const user = userEvent.setup()
       mockApiRoutes()
 
       renderWithProviders(<AutomationsPage />)
@@ -292,12 +299,12 @@ describe('AutomationsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('History')).toBeInTheDocument()
       })
-      screen.getByText('History').click()
+      await user.click(screen.getByText('History'))
 
       await waitFor(() => {
         expect(screen.getByText('Operator Actions')).toBeInTheDocument()
       })
-      screen.getByText('Operator Actions').click()
+      await user.click(screen.getByText('Operator Actions'))
 
       await waitFor(() => {
         expect(screen.getAllByText('admin@test.com').length).toBe(2)

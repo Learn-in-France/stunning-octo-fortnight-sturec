@@ -18,7 +18,8 @@ export async function getStudent(request: FastifyRequest<{ Params: { id: string 
 }
 
 export async function updateStudent(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const student = await studentService.updateStudent(request.params.id, request.body as any)
+  const student = await studentService.updateStudent(request.params.id, request.body as any, request.user)
+  if (!student) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(student)
 }
 
@@ -32,7 +33,7 @@ export async function getProgress(request: FastifyRequest<{ Params: { id: string
 
 export async function changeStage(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
   const { toStage, reasonCode, reasonNote } = request.body as any
-  const result = await studentService.changeStage(request.params.id, toStage, request.user.id, reasonCode, reasonNote)
+  const result = await studentService.changeStage(request.params.id, toStage, request.user, reasonCode, reasonNote)
   if (!result) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(result)
 }
@@ -44,17 +45,20 @@ export async function assignCounsellor(request: FastifyRequest<{ Params: { id: s
 }
 
 export async function listAssignments(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const assignments = await studentService.listAssignments(request.params.id)
+  const assignments = await studentService.listAssignments(request.params.id, request.user)
+  if (!assignments) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(assignments)
 }
 
 export async function listTimeline(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const timeline = await studentService.listTimeline(request.params.id)
+  const timeline = await studentService.listTimeline(request.params.id, request.user)
+  if (!timeline) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(timeline)
 }
 
 export async function listCaseLog(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const caseLog = await studentService.listCaseLog(request.params.id)
+  const caseLog = await studentService.listCaseLog(request.params.id, request.user)
+  if (!caseLog) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(caseLog)
 }
 
@@ -62,12 +66,15 @@ export async function listNotes(request: FastifyRequest<{ Params: { id: string }
   const result = await studentService.listNotes(
     request.params.id,
     (request as ReqWithQuery).parsedQuery as any,
+    request.user,
   )
+  if (!result) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(result)
 }
 
 export async function createNote(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const note = await studentService.createNote(request.params.id, request.body as any, request.user.id)
+  const note = await studentService.createNote(request.params.id, request.body as any, request.user)
+  if (!note) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.status(201).send(note)
 }
 
@@ -75,38 +82,45 @@ export async function listActivities(request: FastifyRequest<{ Params: { id: str
   const result = await studentService.listActivities(
     request.params.id,
     (request as ReqWithQuery).parsedQuery as any,
+    request.user,
   )
+  if (!result) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(result)
 }
 
 export async function createActivity(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const activity = await studentService.createActivity(request.params.id, request.body as any, request.user.id)
+  const activity = await studentService.createActivity(request.params.id, request.body as any, request.user)
   if (!activity) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.status(201).send(activity)
 }
 
 export async function listContacts(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const contacts = await studentService.listContacts(request.params.id)
+  const contacts = await studentService.listContacts(request.params.id, request.user)
+  if (!contacts) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(contacts)
 }
 
 export async function createContact(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const contact = await studentService.createContact(request.params.id, request.body as any)
+  const contact = await studentService.createContact(request.params.id, request.body as any, request.user)
+  if (!contact) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.status(201).send(contact)
 }
 
 export async function listConsents(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const consents = await studentService.listConsents(request.params.id)
+  const consents = await studentService.listConsents(request.params.id, request.user)
+  if (!consents) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(consents)
 }
 
 export async function createConsent(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const consent = await studentService.createConsent(request.params.id, request.body as any, request.user.id)
+  const consent = await studentService.createConsent(request.params.id, request.body as any, request.user)
+  if (!consent) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.status(201).send(consent)
 }
 
 export async function listAssessments(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const assessments = await studentService.listAssessments(request.params.id)
+  const assessments = await studentService.listAssessments(request.params.id, request.user)
+  if (!assessments) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(assessments)
 }
 
@@ -114,7 +128,7 @@ export async function getAssessment(
   request: FastifyRequest<{ Params: { id: string; assessmentId: string } }>,
   reply: FastifyReply,
 ) {
-  const assessment = await studentService.getAssessment(request.params.id, request.params.assessmentId)
+  const assessment = await studentService.getAssessment(request.params.id, request.params.assessmentId, request.user)
   if (!assessment) return reply.status(404).send({ error: 'Assessment not found', code: 'NOT_FOUND' })
   return reply.send(assessment)
 }
@@ -123,7 +137,7 @@ export async function updateContact(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
-  const result = await studentService.updateContact(request.params.id, request.body as any)
+  const result = await studentService.updateContact(request.params.id, request.body as any, request.user)
   if (!result) return reply.status(404).send({ error: 'Contact not found', code: 'NOT_FOUND' })
   return reply.send(result)
 }

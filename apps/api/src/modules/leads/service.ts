@@ -31,9 +31,14 @@ export async function listLeads(
   return paginate(items.map(mapLeadToListItem), total, filters)
 }
 
-export async function getLead(id: string): Promise<LeadDetail | null> {
+function canAccessLead(lead: { assignedCounsellorId: string | null }, user: RequestUser) {
+  return user.role === 'admin' || lead.assignedCounsellorId === user.id
+}
+
+export async function getLead(id: string, user: RequestUser): Promise<LeadDetail | null> {
   const lead = await repo.findLeadWithAssessment(id)
   if (!lead) return null
+  if (!canAccessLead(lead, user)) return null
   return mapLeadToDetail(lead, lead.latestAiAssessment)
 }
 
@@ -75,7 +80,9 @@ export async function createLead(
   return mapLeadToListItem(lead)
 }
 
-export async function updateLead(id: string, data: Record<string, unknown>) {
+export async function updateLead(id: string, data: Record<string, unknown>, user: RequestUser) {
+  const existing = await repo.findLeadById(id)
+  if (!existing || !canAccessLead(existing, user)) return null
   const lead = await repo.updateLead(id, data)
   return mapLeadToListItem(lead)
 }
@@ -99,7 +106,9 @@ export async function assignLead(id: string, counsellorId: string) {
   return mapLeadToListItem(lead)
 }
 
-export async function disqualifyLead(id: string, reason: string) {
+export async function disqualifyLead(id: string, reason: string, user: RequestUser) {
+  const existing = await repo.findLeadById(id)
+  if (!existing || !canAccessLead(existing, user)) return null
   const lead = await repo.updateLead(id, {
     status: 'disqualified',
     notes: reason,
@@ -107,9 +116,10 @@ export async function disqualifyLead(id: string, reason: string) {
   return mapLeadToListItem(lead)
 }
 
-export async function convertLead(id: string) {
+export async function convertLead(id: string, user: RequestUser) {
   const lead = await repo.findLeadById(id)
   if (!lead) return { error: 'Lead not found', code: 'LEAD_NOT_FOUND' }
+  if (!canAccessLead(lead, user)) return { error: 'Lead not found', code: 'LEAD_NOT_FOUND' }
 
   if (lead.convertedStudentId) {
     return { action: 'already_converted' as const, student: undefined }
@@ -134,21 +144,53 @@ export async function convertLead(id: string) {
     return { action: 'linked' as const }
   }
 
-  // Create new student
-  const student = await prisma.student.create({
-    data: {
-      userId: lead.userId,
-      referenceCode: `STU-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`,
-      source: lead.source as string,
-      sourcePartner: lead.sourcePartner,
-      stage: 'lead_created',
-      stageUpdatedAt: new Date(),
-    },
-  })
+  const now = new Date()
+  const student = await prisma.$transaction(async (tx) => {
+    const created = await tx.student.create({
+      data: {
+        userId: lead.userId!,
+        referenceCode: `STU-${now.getFullYear()}-${String(Date.now()).slice(-5)}`,
+        source: lead.source as string,
+        sourcePartner: lead.sourcePartner,
+        stage: 'lead_created',
+        stageUpdatedAt: now,
+        assignedCounsellorId: lead.assignedCounsellorId,
+        assignedAt: lead.assignedCounsellorId ? now : null,
+      },
+    })
 
-  await repo.updateLead(id, {
-    status: 'converted',
-    convertedStudentId: student.id,
+    await tx.stageTransition.create({
+      data: {
+        studentId: created.id,
+        fromStage: null,
+        toStage: 'lead_created',
+        changedByUserId: user.id,
+        changedByType: 'user',
+        reasonCode: 'lead_converted',
+        reasonNote: `Converted from lead ${lead.id}`,
+      },
+    })
+
+    if (lead.assignedCounsellorId) {
+      await tx.studentAssignment.create({
+        data: {
+          studentId: created.id,
+          counsellorId: lead.assignedCounsellorId,
+          assignedBy: user.id,
+          reason: 'Carried over from converted lead',
+        },
+      })
+    }
+
+    await tx.lead.update({
+      where: { id },
+      data: {
+        status: 'converted',
+        convertedStudentId: created.id,
+      },
+    })
+
+    return created
   })
 
   // Sync conversion to Mautic
@@ -175,7 +217,12 @@ export async function convertLead(id: string) {
 export async function listLeadActivities(
   leadId: string,
   pagination: { page: number; limit: number },
+  user: RequestUser,
 ): Promise<PaginatedResponse<ActivityLogItem>> {
+  const lead = await repo.findLeadById(leadId)
+  if (!lead || !canAccessLead(lead, user)) {
+    return paginate([], 0, { ...pagination, sortBy: 'created_at', sortOrder: 'desc' })
+  }
   const skip = (pagination.page - 1) * pagination.limit
   const [items, total] = await Promise.all([
     repo.findLeadActivities(leadId, { skip, take: pagination.limit }),
@@ -200,10 +247,12 @@ export async function createLeadActivity(
     durationMinutes?: number
   },
   userId: string,
+  user: RequestUser,
 ) {
   // Look up lead to find assigned counsellor
   const lead = await repo.findLeadById(leadId)
   if (!lead) return null
+  if (!canAccessLead(lead, user)) return null
 
   const activity = await repo.createLeadActivity({
     leadId,
@@ -223,7 +272,9 @@ export async function createLeadActivity(
 
 // ─── AI Assessments ───────────────────────────────────────────
 
-export async function listLeadAssessments(leadId: string): Promise<AiAssessmentSummary[]> {
+export async function listLeadAssessments(leadId: string, user: RequestUser): Promise<AiAssessmentSummary[] | null> {
+  const lead = await repo.findLeadById(leadId)
+  if (!lead || !canAccessLead(lead, user)) return null
   const assessments = await repo.findLeadAssessments(leadId)
   return assessments.map(mapAiAssessmentToSummary)
 }
@@ -231,7 +282,10 @@ export async function listLeadAssessments(leadId: string): Promise<AiAssessmentS
 export async function getLeadAssessment(
   leadId: string,
   assessmentId: string,
+  user: RequestUser,
 ): Promise<AiAssessmentSummary | null> {
+  const lead = await repo.findLeadById(leadId)
+  if (!lead || !canAccessLead(lead, user)) return null
   const assessment = await repo.findLeadAssessmentById(leadId, assessmentId)
   if (!assessment) return null
   return mapAiAssessmentToSummary(assessment)
