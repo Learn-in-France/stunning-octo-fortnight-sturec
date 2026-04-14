@@ -15,7 +15,7 @@ export async function updateBooking(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
-  const result = await bookingService.updateBooking(request.params.id, request.body as any)
+  const result = await bookingService.updateBooking(request.params.id, request.body as any, request.user)
   if (!result) return reply.status(404).send({ error: 'Booking not found', code: 'NOT_FOUND' })
   return reply.send(result)
 }

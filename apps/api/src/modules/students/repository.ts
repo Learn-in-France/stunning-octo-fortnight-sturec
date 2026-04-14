@@ -214,6 +214,10 @@ export function findContacts(studentId: string) {
   })
 }
 
+export function findContactById(id: string) {
+  return prisma.studentContact.findUnique({ where: { id } })
+}
+
 export function createContact(data: Prisma.StudentContactUncheckedCreateInput) {
   return prisma.studentContact.create({ data })
 }

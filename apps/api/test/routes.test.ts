@@ -191,6 +191,14 @@ const STUDENT_USER: Record<string, any> = {
 function authAs(user: typeof ADMIN_USER) {
   mockVerify.mockResolvedValue({ uid: user.firebaseUid, email: user.email, email_verified: true })
   db.user.findFirst.mockResolvedValue(user)
+  if (user.role === 'counsellor') {
+    db.student.findFirst.mockResolvedValue({
+      id: '00000000-0000-0000-0000-000000000010',
+      userId: STUDENT_USER.id,
+      assignedCounsellorId: user.id,
+      deletedAt: null,
+    })
+  }
 }
 
 function authHeaders() {

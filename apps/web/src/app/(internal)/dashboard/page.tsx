@@ -32,11 +32,12 @@ export default function DashboardPage() {
   const queryClient = useQueryClient()
 
   const greeting = getGreeting()
-  const leads = overview?.data.leads
-  const students = overview?.data.students
-  const apps = overview?.data.applications
-  const docs = overview?.data.documents
-  const bookingStats = overview?.data.bookings
+  const overviewData = overview?.data
+  const leads = overviewData?.leads
+  const students = overviewData?.students
+  const apps = overviewData?.applications
+  const docs = overviewData?.documents
+  const bookingStats = overviewData?.bookings
 
   const [selectedCounsellorByBooking, setSelectedCounsellorByBooking] = useState<Record<string, string>>({})
   const [assignmentReasonByBooking, setAssignmentReasonByBooking] = useState<Record<string, string>>({})

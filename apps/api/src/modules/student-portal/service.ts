@@ -316,7 +316,7 @@ export async function requestDocumentUploadUrl(
   if (!student) return null
 
   const { requestUploadUrl } = await import('../documents/service.js')
-  return requestUploadUrl(student.id, data, userId)
+  return requestUploadUrl(student.id, data, { id: userId, role: 'student' } as any)
 }
 
 export async function completeDocumentUpload(
@@ -327,7 +327,7 @@ export async function completeDocumentUpload(
   if (!student) return null
 
   const { completeUpload } = await import('../documents/service.js')
-  return completeUpload(student.id, documentId)
+  return completeUpload(student.id, documentId, { id: userId, role: 'student' } as any)
 }
 
 export async function shareDocument(userId: string, documentId: string): Promise<DocumentListItem | null> {

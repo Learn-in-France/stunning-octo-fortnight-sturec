@@ -42,10 +42,11 @@ const MOCK_USER_PROFILE = {
 }
 
 function mockProfileLoads() {
-  // Profile page fetches both student profile and user profile
-  vi.mocked(api.get)
-    .mockResolvedValueOnce(MOCK_STUDENT_PROFILE)
-    .mockResolvedValueOnce(MOCK_USER_PROFILE)
+  vi.mocked(api.get).mockImplementation((url: string) => {
+    if (url.includes('/students/me')) return Promise.resolve(MOCK_STUDENT_PROFILE)
+    if (url.includes('/users/me')) return Promise.resolve(MOCK_USER_PROFILE)
+    return Promise.resolve({})
+  })
 }
 
 describe('ProfilePage', () => {

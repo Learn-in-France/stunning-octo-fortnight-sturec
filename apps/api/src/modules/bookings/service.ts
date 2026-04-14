@@ -100,10 +100,29 @@ async function resolveBookingTarget(
   },
 ) {
   if (user.role !== 'student') {
+    if (user.role === 'counsellor') {
+      if (data.studentId) {
+        const student = await repo.findStudentAccess(data.studentId)
+        if (!student || student.assignedCounsellorId !== user.id) {
+          const error = new Error('Student not found')
+          Object.assign(error, { statusCode: 404, code: 'STUDENT_NOT_FOUND' })
+          throw error
+        }
+      }
+      if (data.leadId) {
+        const lead = await repo.findLeadAccess(data.leadId)
+        if (!lead || lead.assignedCounsellorId !== user.id) {
+          const error = new Error('Lead not found')
+          Object.assign(error, { statusCode: 404, code: 'LEAD_NOT_FOUND' })
+          throw error
+        }
+      }
+    }
+
     return {
       studentId: data.studentId,
       leadId: data.leadId,
-      counsellorId: data.counsellorId ?? null,
+      counsellorId: user.role === 'counsellor' ? user.id : data.counsellorId ?? null,
     }
   }
 
@@ -124,9 +143,12 @@ async function resolveBookingTarget(
 export async function updateBooking(
   id: string,
   data: { status?: string; counsellorId?: string | null; notes?: string; scheduledAt?: string },
+  user: RequestUser,
 ): Promise<BookingListItem | null> {
   const existing = await repo.findBookingById(id)
   if (!existing) return null
+  if (user.role === 'counsellor' && existing.counsellorId !== user.id) return null
+  if (user.role === 'student') return null
 
   const booking = await repo.updateBooking(id, {
     status: data.status ?? (data.counsellorId ? 'assigned' : undefined),

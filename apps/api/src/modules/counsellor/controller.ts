@@ -6,12 +6,13 @@ export async function recordMeetingOutcome(
   reply: FastifyReply,
 ) {
   const result = await counsellorService.recordMeetingOutcome(
-    request.user.id,
+    request.user,
     {
       ...(request.body as any),
       studentId: request.params.studentId,
     },
   )
+  if (!result) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.status(201).send(result)
 }
 
@@ -19,7 +20,8 @@ export async function getMeetingOutcomes(
   request: FastifyRequest<{ Params: { studentId: string } }>,
   reply: FastifyReply,
 ) {
-  const outcomes = await counsellorService.getMeetingOutcomes(request.params.studentId)
+  const outcomes = await counsellorService.getMeetingOutcomes(request.params.studentId, request.user)
+  if (!outcomes) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(outcomes)
 }
 

@@ -364,7 +364,7 @@ describe('StudentDetailPage', () => {
     expect(screen.getByText('Readiness')).toBeInTheDocument()
     expect(screen.getByText('Doc blockers')).toBeInTheDocument()
     expect(screen.getByText('Stage path')).toBeInTheDocument()
-    expect(screen.getByText('Owner')).toBeInTheDocument()
+    expect(screen.getAllByText('Owner').length).toBeGreaterThan(0)
 
     // Center: NextActionCard renders the deterministic recommendation. The
     // mocked overdue reminder ("Follow up on transcript upload" with a past
@@ -381,8 +381,8 @@ describe('StudentDetailPage', () => {
     expect(screen.getAllByRole('button', { name: 'Change Stage' }).length).toBeGreaterThan(0)
 
     // Tabs still wired
-    expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'History' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Work/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^History/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Profile' })).toBeInTheDocument()
 
     // Counsellor sees no admin reassign action (only admins do)
@@ -432,7 +432,7 @@ describe('StudentDetailPage', () => {
     // Closing the drawer leaves the read-only Work tab still visible underneath
     await user.click(screen.getByRole('button', { name: 'Close drawer' }))
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(screen.getByText('Meeting Outcomes')).toBeInTheDocument()
+    expect(screen.getByText('Meetings')).toBeInTheDocument()
 
     // Manage Campaigns opens the campaign drawer with start + active sections
     await user.click(screen.getAllByRole('button', { name: 'Manage Campaigns' })[0])
@@ -506,7 +506,7 @@ describe('StudentDetailPage', () => {
     // Legacy campaign with null pack still renders in the read-only Work tab
     // without crashing — the read view shows the fallback title
     expect(screen.getByText('Campaign pack unavailable')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'History' }))
+    await user.click(screen.getAllByRole('button', { name: /^History/ })[0])
     expect(screen.getByText('Tried to confirm next document step.')).toBeInTheDocument()
   })
 })

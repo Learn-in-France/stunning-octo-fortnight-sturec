@@ -3,6 +3,7 @@ import type {
   DocumentRequirementItem,
   UploadUrlResponse,
 } from '@sturec/shared'
+import type { RequestUser } from '../../middleware/auth.js'
 
 import * as repo from './repository.js'
 import { mapDocument, mapDocumentRequirement } from '../../lib/mappers/index.js'
@@ -16,16 +17,36 @@ export async function listDocuments(studentId: string): Promise<DocumentListItem
   return docs.map(mapDocument)
 }
 
+function canAccessStudent(
+  student: { userId: string; assignedCounsellorId: string | null },
+  user: RequestUser,
+) {
+  if (user.role === 'admin') return true
+  if (user.role === 'counsellor') return student.assignedCounsellorId === user.id
+  return student.userId === user.id
+}
+
+async function canAccessStudentId(studentId: string, user: RequestUser) {
+  if (user.role === 'admin') return true
+  const student = await repo.findStudentAccess(studentId)
+  return !!student && canAccessStudent(student, user)
+}
+
 export async function requestUploadUrl(
   studentId: string,
   data: { type: string; filename: string },
-  userId: string,
+  user: RequestUser,
 ): Promise<UploadUrlResponse> {
+  if (!(await canAccessStudentId(studentId, user))) {
+    const error = new Error('Student not found')
+    Object.assign(error, { statusCode: 404, code: 'STUDENT_NOT_FOUND' })
+    throw error
+  }
   const gcsPath = `students/${studentId}/documents/${Date.now()}-${data.filename}`
 
   const doc = await repo.createDocument({
     studentId,
-    uploadedBy: userId,
+    uploadedBy: user.id,
     type: data.type,
     filename: data.filename,
     gcsPath,
@@ -44,9 +65,11 @@ export async function requestUploadUrl(
 export async function completeUpload(
   studentId: string,
   documentId: string,
+  user: RequestUser,
 ): Promise<DocumentListItem | null> {
   const doc = await repo.findDocumentById(documentId)
   if (!doc || doc.studentId !== studentId) return null
+  if (!(await canAccessStudentId(studentId, user))) return null
   if (doc.status !== 'pending_upload') return null
 
   // Verify file exists in GCS and read metadata
@@ -69,13 +92,15 @@ export async function completeUpload(
 
 export async function verifyDocument(
   id: string,
-  userId: string,
+  user: RequestUser,
   notes?: string,
 ): Promise<DocumentListItem | null> {
   const doc = await repo.findDocumentById(id)
   if (!doc) return null
+  if (!(await canAccessStudentId(doc.studentId, user))) return null
+  if (user.role === 'counsellor' && (doc.sharedWithCounsellorId !== user.id || doc.revokedAt)) return null
 
-  const updated = await repo.verifyDocument(id, userId, notes)
+  const updated = await repo.verifyDocument(id, user.id, notes)
 
   // Emit document verified event
   getDocumentsQueue().add('doc-verified', {
@@ -88,13 +113,15 @@ export async function verifyDocument(
 
 export async function rejectDocument(
   id: string,
-  userId: string,
+  user: RequestUser,
   notes?: string,
 ): Promise<DocumentListItem | null> {
   const doc = await repo.findDocumentById(id)
   if (!doc) return null
+  if (!(await canAccessStudentId(doc.studentId, user))) return null
+  if (user.role === 'counsellor' && (doc.sharedWithCounsellorId !== user.id || doc.revokedAt)) return null
 
-  const updated = await repo.rejectDocument(id, userId, notes)
+  const updated = await repo.rejectDocument(id, user.id, notes)
 
   // Emit document rejected event
   getDocumentsQueue().add('doc-rejected', {
@@ -152,7 +179,8 @@ export async function deleteDocument(id: string): Promise<boolean> {
 
 // ─── Requirements ───────────────────────────────────────────
 
-export async function listRequirements(studentId: string): Promise<DocumentRequirementItem[]> {
+export async function listRequirements(studentId: string, user: RequestUser): Promise<DocumentRequirementItem[] | null> {
+  if (!(await canAccessStudentId(studentId, user))) return null
   const reqs = await repo.findStudentRequirements(studentId)
   return reqs.map(mapDocumentRequirement)
 }
@@ -166,7 +194,9 @@ export async function createRequirement(
     notes?: string
     dueDate?: string
   },
-): Promise<DocumentRequirementItem> {
+  user: RequestUser,
+): Promise<DocumentRequirementItem | null> {
+  if (!(await canAccessStudentId(studentId, user))) return null
   const req = await repo.createRequirement({ studentId, ...data })
   return mapDocumentRequirement(req)
 }
@@ -174,9 +204,11 @@ export async function createRequirement(
 export async function updateRequirement(
   id: string,
   data: { status?: string; notes?: string; required?: boolean },
+  user: RequestUser,
 ): Promise<DocumentRequirementItem | null> {
   const existing = await repo.findRequirementById(id)
   if (!existing) return null
+  if (!(await canAccessStudentId(existing.studentId, user))) return null
 
   const updated = await repo.updateRequirement(id, data)
   return mapDocumentRequirement(updated)

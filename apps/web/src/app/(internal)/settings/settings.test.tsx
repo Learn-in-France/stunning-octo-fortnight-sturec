@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders, setMockAuth, makeUser } from '../../../../test/helpers'
 import { replaceMock } from '../../../../test/setup'
 import api from '@/lib/api/client'
@@ -130,6 +131,7 @@ describe('SettingsPage', () => {
     })
 
     it('renders external service integration cards', async () => {
+      const user = userEvent.setup()
       renderWithProviders(<SettingsPage />)
 
       // Navigate to Integrations tab
@@ -138,7 +140,7 @@ describe('SettingsPage', () => {
         const tabs = screen.getAllByText('Integrations')
         expect(tabs.length).toBeGreaterThan(0)
       })
-      screen.getAllByText('Integrations')[0].click()
+      await user.click(screen.getAllByText('Integrations')[0])
 
       await waitFor(() => {
         expect(screen.getByText('Mautic')).toBeInTheDocument()
@@ -149,13 +151,14 @@ describe('SettingsPage', () => {
     })
 
     it('shows Configured badge for OK services', async () => {
+      const user = userEvent.setup()
       renderWithProviders(<SettingsPage />)
 
       await waitFor(() => {
         const tabs = screen.getAllByText('Integrations')
         expect(tabs.length).toBeGreaterThan(0)
       })
-      screen.getAllByText('Integrations')[0].click()
+      await user.click(screen.getAllByText('Integrations')[0])
 
       await waitFor(() => {
         expect(screen.getByText('Firebase Auth')).toBeInTheDocument()
@@ -166,13 +169,14 @@ describe('SettingsPage', () => {
     })
 
     it('shows Not configured badge for error services', async () => {
+      const user = userEvent.setup()
       renderWithProviders(<SettingsPage />)
 
       await waitFor(() => {
         const tabs = screen.getAllByText('Integrations')
         expect(tabs.length).toBeGreaterThan(0)
       })
-      screen.getAllByText('Integrations')[0].click()
+      await user.click(screen.getAllByText('Integrations')[0])
 
       await waitFor(() => {
         expect(screen.getByText('Mautic')).toBeInTheDocument()
@@ -189,12 +193,13 @@ describe('SettingsPage', () => {
     })
 
     it('renders infrastructure health and platform info', async () => {
+      const user = userEvent.setup()
       renderWithProviders(<SettingsPage />)
 
       await waitFor(() => {
         expect(screen.getByText('System')).toBeInTheDocument()
       })
-      screen.getByText('System').click()
+      await user.click(screen.getByText('System'))
 
       await waitFor(() => {
         expect(screen.getByText('Infrastructure')).toBeInTheDocument()

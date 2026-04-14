@@ -16,6 +16,13 @@ export function findStudentApplications(studentId: string) {
   })
 }
 
+export function findStudentAccess(studentId: string) {
+  return prisma.student.findFirst({
+    where: { id: studentId, deletedAt: null },
+    select: { id: true, userId: true, assignedCounsellorId: true },
+  })
+}
+
 export function findAllApplications(args: {
   skip: number
   take: number
@@ -38,7 +45,12 @@ export function countApplications(where?: Prisma.ApplicationWhereInput) {
 export function findApplicationById(id: string) {
   return prisma.application.findUnique({
     where: { id },
-    include: applicationInclude,
+    include: {
+      ...applicationInclude,
+      student: {
+        select: { userId: true, assignedCounsellorId: true },
+      },
+    },
   })
 }
 

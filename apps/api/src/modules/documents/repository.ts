@@ -10,6 +10,13 @@ export function findStudentDocuments(studentId: string) {
   })
 }
 
+export function findStudentAccess(studentId: string) {
+  return prisma.student.findFirst({
+    where: { id: studentId, deletedAt: null },
+    select: { id: true, userId: true, assignedCounsellorId: true },
+  })
+}
+
 export function findDocumentById(id: string) {
   return prisma.document.findFirst({
     where: { id, deletedAt: null },

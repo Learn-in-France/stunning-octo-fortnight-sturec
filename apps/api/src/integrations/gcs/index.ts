@@ -198,7 +198,7 @@ export async function pingGcs(): Promise<{
   latencyMs: number
   error?: string
 }> {
-  if (!process.env.GCS_SERVICE_ACCOUNT_PATH && !process.env.GCS_SERVICE_ACCOUNT_JSON) {
+  if (!process.env.GCS_SERVICE_ACCOUNT_KEY) {
     return { ok: false, latencyMs: 0, error: 'GCS service account not configured' }
   }
   const start = Date.now()

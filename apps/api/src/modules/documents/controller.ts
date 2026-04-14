@@ -25,7 +25,7 @@ export async function requestUploadUrl(
   const result = await documentService.requestUploadUrl(
     request.params.id,
     request.body as any,
-    request.user.id,
+    request.user,
   )
   return reply.status(201).send(result)
 }
@@ -35,7 +35,7 @@ export async function completeUpload(
   reply: FastifyReply,
 ) {
   const { documentId } = request.body as { documentId: string }
-  const result = await documentService.completeUpload(request.params.id, documentId)
+  const result = await documentService.completeUpload(request.params.id, documentId, request.user)
   if (!result) return reply.status(404).send({ error: 'Document not found or invalid state', code: 'NOT_FOUND' })
   return reply.send(result)
 }
@@ -45,7 +45,7 @@ export async function verifyDocument(
   reply: FastifyReply,
 ) {
   const { notes } = (request.body || {}) as { notes?: string }
-  const result = await documentService.verifyDocument(request.params.id, request.user.id, notes)
+  const result = await documentService.verifyDocument(request.params.id, request.user, notes)
   if (!result) return reply.status(404).send({ error: 'Document not found', code: 'NOT_FOUND' })
   return reply.send(result)
 }
@@ -55,7 +55,7 @@ export async function rejectDocument(
   reply: FastifyReply,
 ) {
   const { notes } = (request.body || {}) as { notes?: string }
-  const result = await documentService.rejectDocument(request.params.id, request.user.id, notes)
+  const result = await documentService.rejectDocument(request.params.id, request.user, notes)
   if (!result) return reply.status(404).send({ error: 'Document not found', code: 'NOT_FOUND' })
   return reply.send(result)
 }
@@ -82,7 +82,8 @@ export async function listRequirements(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
-  const reqs = await documentService.listRequirements(request.params.id)
+  const reqs = await documentService.listRequirements(request.params.id, request.user)
+  if (!reqs) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.send(reqs)
 }
 
@@ -90,7 +91,8 @@ export async function createRequirement(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
-  const req = await documentService.createRequirement(request.params.id, request.body as any)
+  const req = await documentService.createRequirement(request.params.id, request.body as any, request.user)
+  if (!req) return reply.status(404).send({ error: 'Student not found', code: 'STUDENT_NOT_FOUND' })
   return reply.status(201).send(req)
 }
 
@@ -98,7 +100,7 @@ export async function updateRequirement(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
-  const result = await documentService.updateRequirement(request.params.id, request.body as any)
+  const result = await documentService.updateRequirement(request.params.id, request.body as any, request.user)
   if (!result) return reply.status(404).send({ error: 'Requirement not found', code: 'NOT_FOUND' })
   return reply.send(result)
 }

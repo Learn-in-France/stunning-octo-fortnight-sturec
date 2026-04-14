@@ -57,8 +57,23 @@ export async function listStudents(
 export async function getStudent(id: string, user?: RequestUser): Promise<StudentDetail | null> {
   const student = await repo.findStudentById(id)
   if (!student) return null
-  if (user?.role === 'counsellor' && student.assignedCounsellorId !== user.id) return null
+  if (user && !canAccessStudentRecord(student, user)) return null
   return mapStudentToDetail(student)
+}
+
+function canAccessStudentRecord(
+  student: { userId: string; assignedCounsellorId: string | null },
+  user: RequestUser,
+) {
+  if (user.role === 'admin') return true
+  if (user.role === 'counsellor') return student.assignedCounsellorId === user.id
+  return student.userId === user.id
+}
+
+export async function canAccessStudent(studentId: string, user: RequestUser): Promise<boolean> {
+  if (user.role === 'admin') return true
+  const student = await repo.findStudentById(studentId)
+  return !!student && canAccessStudentRecord(student, user)
 }
 
 export async function getOwnProfile(userId: string): Promise<StudentOwnProfile | null> {
@@ -67,7 +82,8 @@ export async function getOwnProfile(userId: string): Promise<StudentOwnProfile |
   return mapStudentToOwnProfile(student)
 }
 
-export async function updateStudent(id: string, data: Record<string, unknown>) {
+export async function updateStudent(id: string, data: Record<string, unknown>, user: RequestUser) {
+  if (!(await canAccessStudent(id, user))) return null
   const student = await repo.updateStudent(id, data)
   return mapStudentToDetail(student)
 }
@@ -77,12 +93,13 @@ export async function updateStudent(id: string, data: Record<string, unknown>) {
 export async function changeStage(
   id: string,
   toStage: string,
-  userId: string,
+  user: RequestUser,
   reasonCode?: string,
   reasonNote?: string,
 ) {
   const student = await repo.findStudentById(id)
   if (!student) return null
+  if (!canAccessStudentRecord(student, user)) return null
 
   const fromStage = student.stage
 
@@ -91,7 +108,7 @@ export async function changeStage(
     studentId: id,
     fromStage,
     toStage: toStage as any,
-    changedByUserId: userId,
+    changedByUserId: user.id,
     changedByType: 'user',
     reasonCode,
     reasonNote,
@@ -159,12 +176,14 @@ export async function assignCounsellor(id: string, counsellorId: string, assigne
   return mapStudentToDetail(student)
 }
 
-export async function listAssignments(studentId: string): Promise<AssignmentHistoryItem[]> {
+export async function listAssignments(studentId: string, user: RequestUser): Promise<AssignmentHistoryItem[] | null> {
+  if (!(await canAccessStudent(studentId, user))) return null
   const assignments = await repo.findAssignments(studentId)
   return assignments.map((a) => mapAssignment(a, a.counsellor))
 }
 
-export async function listCaseLog(studentId: string): Promise<CaseLogItem[]> {
+export async function listCaseLog(studentId: string, user: RequestUser): Promise<CaseLogItem[] | null> {
+  if (!(await canAccessStudent(studentId, user))) return null
   const data = await repo.findCaseLogData(studentId)
 
   const items: CaseLogItem[] = [
@@ -247,7 +266,8 @@ export async function listCaseLog(studentId: string): Promise<CaseLogItem[]> {
 
 // ─── Timeline ────────────────────────────────────────────────
 
-export async function listTimeline(studentId: string): Promise<TimelineItem[]> {
+export async function listTimeline(studentId: string, user: RequestUser): Promise<TimelineItem[] | null> {
+  if (!(await canAccessStudent(studentId, user))) return null
   const transitions = await repo.findStageTransitions(studentId)
   return transitions.map(mapStageTransition)
 }
@@ -257,7 +277,9 @@ export async function listTimeline(studentId: string): Promise<TimelineItem[]> {
 export async function listNotes(
   studentId: string,
   pagination: { page: number; limit: number },
-): Promise<PaginatedResponse<NoteItem>> {
+  user: RequestUser,
+): Promise<PaginatedResponse<NoteItem> | null> {
+  if (!(await canAccessStudent(studentId, user))) return null
   const skip = (pagination.page - 1) * pagination.limit
   const [items, total] = await Promise.all([
     repo.findNotes(studentId, { skip, take: pagination.limit }),
@@ -273,11 +295,12 @@ export async function listNotes(
 export async function createNote(
   studentId: string,
   data: { content: string; noteType?: string },
-  userId: string,
+  user: RequestUser,
 ) {
+  if (!(await canAccessStudent(studentId, user))) return null
   const note = await repo.createNote({
     studentId,
-    authorId: userId,
+    authorId: user.id,
     content: data.content,
     noteType: data.noteType,
   })
@@ -289,7 +312,9 @@ export async function createNote(
 export async function listActivities(
   studentId: string,
   pagination: { page: number; limit: number },
-): Promise<PaginatedResponse<ActivityLogItem>> {
+  user: RequestUser,
+): Promise<PaginatedResponse<ActivityLogItem> | null> {
+  if (!(await canAccessStudent(studentId, user))) return null
   const skip = (pagination.page - 1) * pagination.limit
   const [items, total] = await Promise.all([
     repo.findStudentActivities(studentId, { skip, take: pagination.limit }),
@@ -313,15 +338,16 @@ export async function createActivity(
     nextActionDueAt?: string
     durationMinutes?: number
   },
-  userId: string,
+  user: RequestUser,
 ) {
   const student = await repo.findStudentById(studentId)
   if (!student) return null
+  if (!canAccessStudentRecord(student, user)) return null
 
   const activity = await repo.createStudentActivity({
     studentId,
-    counsellorId: student.assignedCounsellorId || userId,
-    createdByUserId: userId,
+    counsellorId: student.assignedCounsellorId || user.id,
+    createdByUserId: user.id,
     activityType: data.activityType as any,
     channel: data.channel as any,
     direction: data.direction as any,
@@ -336,7 +362,8 @@ export async function createActivity(
 
 // ─── Contacts ────────────────────────────────────────────────
 
-export async function listContacts(studentId: string): Promise<ContactItem[]> {
+export async function listContacts(studentId: string, user: RequestUser): Promise<ContactItem[] | null> {
+  if (!(await canAccessStudent(studentId, user))) return null
   const contacts = await repo.findContacts(studentId)
   return contacts.map(mapContact)
 }
@@ -351,7 +378,9 @@ export async function createContact(
     email?: string
     isPrimary?: boolean
   },
+  user: RequestUser,
 ) {
+  if (!(await canAccessStudent(studentId, user))) return null
   const contact = await repo.createContact({
     studentId,
     type: data.contactType as any,
@@ -373,8 +402,11 @@ export async function updateContact(
     email?: string
     isPrimary?: boolean
   },
+  user: RequestUser,
 ): Promise<ContactItem | null> {
   try {
+    const existing = await repo.findContactById(contactId)
+    if (!existing || !(await canAccessStudent(existing.studentId, user))) return null
     const contact = await repo.updateContact(contactId, data as any)
     return mapContact(contact)
   } catch {
@@ -384,7 +416,8 @@ export async function updateContact(
 
 // ─── Consents ────────────────────────────────────────────────
 
-export async function listConsents(studentId: string): Promise<ConsentEventItem[]> {
+export async function listConsents(studentId: string, user: RequestUser): Promise<ConsentEventItem[] | null> {
+  if (!(await canAccessStudent(studentId, user))) return null
   const consents = await repo.findConsents(studentId)
   return consents.map(mapConsentEvent)
 }
@@ -392,21 +425,23 @@ export async function listConsents(studentId: string): Promise<ConsentEventItem[
 export async function createConsent(
   studentId: string,
   data: { consentType: string; granted: boolean; source?: string },
-  userId: string | null,
+  user: RequestUser,
 ) {
+  if (!(await canAccessStudent(studentId, user))) return null
   const consent = await repo.createConsent({
     studentId,
     consentType: data.consentType as any,
     granted: data.granted,
     source: (data.source || 'form') as any,
-    capturedByUserId: userId,
+    capturedByUserId: user.id,
   })
   return mapConsentEvent(consent)
 }
 
 // ─── AI Assessments ──────────────────────────────────────────
 
-export async function listAssessments(studentId: string): Promise<AiAssessmentSummary[]> {
+export async function listAssessments(studentId: string, user: RequestUser): Promise<AiAssessmentSummary[] | null> {
+  if (!(await canAccessStudent(studentId, user))) return null
   const assessments = await repo.findStudentAssessments(studentId)
   return assessments.map(mapAiAssessmentToSummary)
 }
@@ -414,7 +449,9 @@ export async function listAssessments(studentId: string): Promise<AiAssessmentSu
 export async function getAssessment(
   studentId: string,
   assessmentId: string,
+  user: RequestUser,
 ): Promise<AiAssessmentSummary | null> {
+  if (!(await canAccessStudent(studentId, user))) return null
   const assessment = await repo.findStudentAssessmentById(studentId, assessmentId)
   if (!assessment) return null
   return mapAiAssessmentToSummary(assessment)
