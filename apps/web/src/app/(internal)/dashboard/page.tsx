@@ -58,8 +58,7 @@ export default function DashboardPage() {
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'counsellors'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics'] })
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
       queryClient.invalidateQueries({ queryKey: ['students'] })
       queryClient.invalidateQueries({ queryKey: ['leads'] })

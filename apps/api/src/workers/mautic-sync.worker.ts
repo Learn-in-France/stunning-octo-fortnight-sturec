@@ -11,12 +11,54 @@
  */
 
 import { Worker } from 'bullmq'
+import { Prisma, MauticEventType, SyncStatus } from '@prisma/client'
 import { getRedisConnection } from '../lib/queue/connection.js'
 import { buildIdempotencyKey, withIdempotency } from '../lib/queue/idempotency.js'
 import type { MauticSyncJobData } from '../lib/queue/queues.js'
 import * as mautic from '../integrations/mautic/index.js'
 import prisma from '../lib/prisma.js'
 import { completeCampaignIfAllStepsSettled } from '../modules/campaigns/completion.js'
+
+const VALID_EVENT_TYPES: ReadonlySet<string> = new Set<string>(
+  Object.values(MauticEventType),
+)
+
+function toMauticEventType(value: string): MauticEventType | null {
+  return VALID_EVENT_TYPES.has(value) ? (value as MauticEventType) : null
+}
+
+async function writeSyncLog(params: {
+  entityType: string
+  entityId: string
+  eventType: string
+  payloadHash: string
+  status: SyncStatus
+  lastError?: string
+}) {
+  const event = toMauticEventType(params.eventType)
+  if (!event) {
+    // Schema-enforced enum — nothing we can persist, but we still want trace.
+    console.warn(
+      `[mautic-sync] Skipping log write for invalid eventType=${params.eventType}`,
+    )
+    return
+  }
+  try {
+    await prisma.mauticSyncLog.create({
+      data: {
+        studentId: params.entityType === 'student' ? params.entityId : undefined,
+        leadId: params.entityType === 'lead' ? params.entityId : undefined,
+        eventType: event,
+        payloadHash: params.payloadHash,
+        status: params.status,
+        lastError: params.lastError,
+        completedAt: new Date(),
+      } satisfies Prisma.MauticSyncLogUncheckedCreateInput,
+    })
+  } catch (logErr) {
+    console.error('[mautic-sync] Failed to write sync log:', logErr)
+  }
+}
 
 export function startMauticSyncWorker() {
   const worker = new Worker<MauticSyncJobData>(
@@ -30,35 +72,51 @@ export function startMauticSyncWorker() {
         triggeringActionId,
       ])
 
-      const outcome = await withIdempotency(idempotencyKey, async () => {
-        switch (eventType) {
-          case 'contact_created':
-            return await syncNewContact(entityType, entityId)
-          case 'contact_updated':
-            return await syncContactUpdate(entityType, entityId)
-          case 'campaign_triggered':
-            return await handleCampaignTrigger(entityType, entityId, triggeringActionId, campaignStepId)
-          default:
-            return { status: 'skipped' as const, reason: `Unknown event: ${eventType}` }
+      try {
+        const outcome = await withIdempotency(idempotencyKey, async () => {
+          switch (eventType) {
+            case 'contact_created':
+              return await syncNewContact(entityType, entityId)
+            case 'contact_updated':
+              return await syncContactUpdate(entityType, entityId)
+            case 'campaign_triggered':
+              return await handleCampaignTrigger(entityType, entityId, triggeringActionId, campaignStepId)
+            default:
+              return { status: 'skipped' as const, reason: `Unknown event: ${eventType}` }
+          }
+        })
+
+        if (outcome.skipped) {
+          // Idempotent replay — do not write a fresh log row; the original
+          // job already recorded the outcome.
+          return { status: 'skipped', reason: 'Already processed' }
         }
-      })
 
-      // Log the sync attempt
-      await prisma.mauticSyncLog.create({
-        data: {
-          studentId: entityType === 'student' ? entityId : undefined,
-          leadId: entityType === 'lead' ? entityId : undefined,
-          eventType: eventType as any,
+        // Successful work: record as sent so failed syncs remain visible by
+        // absence of a matching sent row.
+        await writeSyncLog({
+          entityType,
+          entityId,
+          eventType,
           payloadHash: idempotencyKey,
-          status: outcome.skipped ? 'sent' : 'sent',
-          completedAt: new Date(),
-        },
-      })
+          status: SyncStatus.sent,
+        })
 
-      if (outcome.skipped) {
-        return { status: 'skipped', reason: 'Already processed' }
+        return outcome.result
+      } catch (err) {
+        // Real failure: persist a failed log with the error and rethrow so
+        // BullMQ retries.
+        const message = err instanceof Error ? err.message : String(err)
+        await writeSyncLog({
+          entityType,
+          entityId,
+          eventType,
+          payloadHash: idempotencyKey,
+          status: SyncStatus.failed,
+          lastError: message,
+        })
+        throw err
       }
-      return outcome.result
     },
     {
       connection: getRedisConnection(),

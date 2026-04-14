@@ -7,8 +7,17 @@
  * See: docs/architecture/06-queues-and-workers.md
  */
 
-import { Queue } from 'bullmq'
+import { Queue, type JobsOptions } from 'bullmq'
 import { getRedisConnection } from './connection.js'
+
+// Default job policy applied to every queue. Explicit values so production
+// behavior doesn't drift with BullMQ upstream defaults.
+const DEFAULT_JOB_OPTIONS: JobsOptions = {
+  attempts: 5,
+  backoff: { type: 'exponential', delay: 2_000 },
+  removeOnComplete: { age: 3_600, count: 1_000 }, // keep 1h of completed jobs
+  removeOnFail: { age: 86_400, count: 5_000 },    // keep 24h of failed jobs
+}
 
 export interface AiProcessingJobData {
   entityType: 'lead' | 'student'
@@ -63,7 +72,10 @@ let _imports: Queue<ImportJobData> | undefined
 let _webhooks: Queue<WebhookJobData> | undefined
 
 function createQueue<T>(name: string): Queue<T> {
-  return new Queue<T>(name, { connection: getRedisConnection() })
+  return new Queue<T>(name, {
+    connection: getRedisConnection(),
+    defaultJobOptions: DEFAULT_JOB_OPTIONS,
+  })
 }
 
 export function getAiProcessingQueue() {

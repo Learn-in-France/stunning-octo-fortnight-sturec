@@ -23,7 +23,7 @@ export async function handleCalcom(request: FastifyRequest, reply: FastifyReply)
   const secret = process.env.CALCOM_WEBHOOK_SECRET
   if (!secret) {
     request.log.error('CALCOM_WEBHOOK_SECRET not configured')
-    return reply.code(500).send({ error: 'Webhook not configured' })
+    return reply.code(503).send({ error: 'Webhook not configured', code: 'WEBHOOK_NOT_CONFIGURED' })
   }
 
   // Verify HMAC-SHA256 signature
@@ -53,7 +53,7 @@ export async function handleWhatsApp(request: FastifyRequest, reply: FastifyRepl
   const secret = process.env.WHATSAPP_WEBHOOK_SECRET
   if (!secret) {
     request.log.error('WHATSAPP_WEBHOOK_SECRET not configured')
-    return reply.code(500).send({ error: 'Webhook not configured' })
+    return reply.code(503).send({ error: 'Webhook not configured', code: 'WEBHOOK_NOT_CONFIGURED' })
   }
 
   // Verify shared secret token
@@ -74,7 +74,7 @@ export async function handleMautic(request: FastifyRequest, reply: FastifyReply)
   const secret = process.env.MAUTIC_WEBHOOK_SECRET
   if (!secret) {
     request.log.error('MAUTIC_WEBHOOK_SECRET not configured')
-    return reply.code(500).send({ error: 'Webhook not configured' })
+    return reply.code(503).send({ error: 'Webhook not configured', code: 'WEBHOOK_NOT_CONFIGURED' })
   }
 
   // Verify Mautic's Webhook-Signature (base64-encoded HMAC-SHA256)

@@ -59,8 +59,10 @@ type OverviewEndpoint = '/analytics/overview' | '/analytics/my-overview'
 
 export function useBookingStats(options: Pick<BookingHookOptions, 'enabled'> & { endpoint?: OverviewEndpoint } = {}) {
   const endpoint = options.endpoint ?? '/analytics/overview'
+  const scope: 'overview' | 'my-overview' =
+    endpoint === '/analytics/my-overview' ? 'my-overview' : 'overview'
   return useQuery({
-    queryKey: ['analytics', endpoint, {}],
+    queryKey: ['analytics', scope, {}],
     queryFn: () => api.get(endpoint) as unknown as AnalyticsOverview,
     select: (overview) => overview.data.bookings,
     enabled: options.enabled ?? true,
@@ -103,7 +105,7 @@ export function useCreateBooking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
       queryClient.invalidateQueries({ queryKey: ['student-portal', 'bookings'] })
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'pending-assignments'] })
     },
   })
@@ -126,7 +128,7 @@ export function useUpdateBooking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
       queryClient.invalidateQueries({ queryKey: ['student-portal', 'bookings'] })
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'pending-assignments'] })
     },
   })

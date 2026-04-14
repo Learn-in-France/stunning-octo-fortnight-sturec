@@ -118,8 +118,13 @@ type OverviewEndpoint = '/analytics/overview' | '/analytics/my-overview'
 
 export function useStudentStats(options: Pick<StudentHookOptions, 'enabled'> & { endpoint?: OverviewEndpoint } = {}) {
   const endpoint = options.endpoint ?? '/analytics/overview'
+  // Key must align with useAnalyticsOverview/useMyAnalyticsOverview so
+  // invalidations with prefix ['analytics', 'overview'] or ['analytics',
+  // 'my-overview'] actually match.
+  const scope: 'overview' | 'my-overview' =
+    endpoint === '/analytics/my-overview' ? 'my-overview' : 'overview'
   return useQuery({
-    queryKey: ['analytics', endpoint, {}],
+    queryKey: ['analytics', scope, {}],
     queryFn: () => api.get(endpoint) as unknown as AnalyticsOverview,
     select: (overview) => overview.data.students,
     enabled: options.enabled ?? true,
@@ -167,7 +172,7 @@ export function useChangeStudentStage(studentId: string) {
       queryClient.invalidateQueries({ queryKey: ['students', studentId, 'timeline'] })
       queryClient.invalidateQueries({ queryKey: ['students', studentId, 'case-log'] })
       queryClient.invalidateQueries({ queryKey: ['students'] })
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics'] })
     },
   })
 }
@@ -181,8 +186,7 @@ export function useAssignStudentCounsellor(studentId: string) {
       queryClient.invalidateQueries({ queryKey: ['students', studentId] })
       queryClient.invalidateQueries({ queryKey: ['students', studentId, 'case-log'] })
       queryClient.invalidateQueries({ queryKey: ['students'] })
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'counsellors'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics'] })
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
     },
   })
