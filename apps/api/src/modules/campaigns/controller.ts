@@ -49,7 +49,8 @@ export async function listStudentCampaigns(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
-  const campaigns = await campaignService.listStudentCampaigns(request.params.id)
+  const campaigns = await campaignService.listStudentCampaigns(request.params.id, request.user)
+  if (!campaigns) return reply.code(404).send({ error: 'Student not found', code: 'NOT_FOUND' })
   return reply.send(campaigns)
 }
 
@@ -62,7 +63,9 @@ export async function startCampaign(
     studentId: request.params.id,
     counsellorId: request.user.id,
     packId,
+    user: request.user,
   })
+  if (!campaign) return reply.code(404).send({ error: 'Student not found', code: 'NOT_FOUND' })
   return reply.status(201).send(campaign)
 }
 
@@ -71,7 +74,7 @@ export async function sendStep(
   reply: FastifyReply,
 ) {
   const { stepId } = request.body as { stepId: string }
-  const result = await campaignService.sendStep(stepId, request.params.id)
+  const result = await campaignService.sendStep(stepId, request.params.id, request.user)
   if (!result) return reply.code(404).send({ error: 'Step not found', code: 'NOT_FOUND' })
   return reply.send(result)
 }
@@ -80,7 +83,7 @@ export async function sendAll(
   request: FastifyRequest<{ Params: { id: string; campaignId: string } }>,
   reply: FastifyReply,
 ) {
-  const results = await campaignService.sendAllDue(request.params.campaignId, request.params.id)
+  const results = await campaignService.sendAllDue(request.params.campaignId, request.params.id, request.user)
   if (!results) return reply.code(404).send({ error: 'Campaign not found', code: 'NOT_FOUND' })
   return reply.send(results)
 }
@@ -89,7 +92,7 @@ export async function pauseCampaign(
   request: FastifyRequest<{ Params: { id: string; campaignId: string } }>,
   reply: FastifyReply,
 ) {
-  const result = await campaignService.pauseCampaign(request.params.campaignId, request.params.id)
+  const result = await campaignService.pauseCampaign(request.params.campaignId, request.params.id, request.user)
   if (!result) return reply.code(404).send({ error: 'Campaign not found', code: 'NOT_FOUND' })
   return reply.send(result)
 }
@@ -98,7 +101,7 @@ export async function resumeCampaign(
   request: FastifyRequest<{ Params: { id: string; campaignId: string } }>,
   reply: FastifyReply,
 ) {
-  const result = await campaignService.resumeCampaign(request.params.campaignId, request.params.id)
+  const result = await campaignService.resumeCampaign(request.params.campaignId, request.params.id, request.user)
   if (!result) return reply.code(404).send({ error: 'Campaign not found', code: 'NOT_FOUND' })
   return reply.send(result)
 }
@@ -108,7 +111,7 @@ export async function updateMode(
   reply: FastifyReply,
 ) {
   const { mode } = request.body as { mode: string }
-  const result = await campaignService.updateCampaignMode(request.params.campaignId, mode, request.params.id)
+  const result = await campaignService.updateCampaignMode(request.params.campaignId, mode, request.params.id, request.user)
   if (!result) return reply.code(404).send({ error: 'Campaign not found', code: 'NOT_FOUND' })
   return reply.send(result)
 }
@@ -117,6 +120,7 @@ export async function getCampaignHistory(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
-  const history = await campaignService.getCampaignHistory(request.params.id)
+  const history = await campaignService.getCampaignHistory(request.params.id, request.user)
+  if (!history) return reply.code(404).send({ error: 'Student not found', code: 'NOT_FOUND' })
   return reply.send(history)
 }

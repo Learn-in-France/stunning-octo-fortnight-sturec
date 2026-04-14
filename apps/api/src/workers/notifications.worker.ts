@@ -16,6 +16,7 @@ import { buildIdempotencyKey, withIdempotency } from '../lib/queue/idempotency.j
 import type { NotificationJobData } from '../lib/queue/queues.js'
 import prisma from '../lib/prisma.js'
 import { sendTransactionalEmail } from '../integrations/brevo/index.js'
+import { completeCampaignIfAllStepsSettled } from '../modules/campaigns/completion.js'
 import { renderEmailTemplate } from '../lib/email-templates.js'
 
 export function startNotificationsWorker() {
@@ -66,10 +67,11 @@ export function startNotificationsWorker() {
 
           // Link campaign step to notification log and mark step as sent
           if (data.campaignStepId) {
-            prisma.studentCampaignStep.update({
+            await prisma.studentCampaignStep.update({
               where: { id: data.campaignStepId as string },
               data: { notificationLogId: notification.id, status: 'sent', sentAt: new Date() },
-            }).catch(() => {}) // non-fatal if step doesn't exist
+            }).catch(() => null) // non-fatal if step doesn't exist
+            await completeCampaignIfAllStepsSettled(data.campaignStepId as string).catch(() => null)
           }
 
           return { status: 'sent' as const, notificationId: notification.id }

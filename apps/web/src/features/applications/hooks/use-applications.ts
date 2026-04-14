@@ -54,10 +54,13 @@ export function useApplications(
 
 export type ApplicationStats = AnalyticsOverview['data']['applications']
 
-export function useApplicationStats(options: ApplicationHookOptions = {}) {
+type OverviewEndpoint = '/analytics/overview' | '/analytics/my-overview'
+
+export function useApplicationStats(options: ApplicationHookOptions & { endpoint?: OverviewEndpoint } = {}) {
+  const endpoint = options.endpoint ?? '/analytics/overview'
   return useQuery({
-    queryKey: ['analytics', 'overview', {}],
-    queryFn: () => api.get('/analytics/overview') as unknown as AnalyticsOverview,
+    queryKey: ['analytics', endpoint, {}],
+    queryFn: () => api.get(endpoint) as unknown as AnalyticsOverview,
     select: (overview) => overview.data.applications,
     enabled: options.enabled ?? true,
   })

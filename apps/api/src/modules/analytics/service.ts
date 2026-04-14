@@ -9,6 +9,7 @@ import type {
 } from '@sturec/shared'
 
 import { mapActivityChannel, mapBooking } from '../../lib/mappers/index.js'
+import type { RequestUser } from '../../middleware/auth.js'
 import * as repo from './repository.js'
 
 function defaultPeriod(from?: string, to?: string) {
@@ -206,8 +207,16 @@ const STAGE_ORDER = [
   'alumni',
 ]
 
-async function computeAverageDaysInStage(): Promise<Record<string, number>> {
-  const transitions = await repo.findAllStageTransitions() ?? []
+function studentScopeForUser(user: RequestUser) {
+  return user.role === 'counsellor' ? { assignedCounsellorId: user.id } : undefined
+}
+
+function stageTransitionScopeForUser(user: RequestUser) {
+  return user.role === 'counsellor' ? { student: { assignedCounsellorId: user.id, deletedAt: null } } : undefined
+}
+
+async function computeAverageDaysInStage(user: RequestUser): Promise<Record<string, number>> {
+  const transitions = await repo.findAllStageTransitions(stageTransitionScopeForUser(user)) ?? []
 
   // Group transitions by studentId
   const byStudent = new Map<string, Array<{ toStage: string; timestamp: Date }>>()
@@ -251,10 +260,10 @@ async function computeAverageDaysInStage(): Promise<Record<string, number>> {
   return result
 }
 
-export async function getPipeline(from?: string, to?: string): Promise<PipelineMetrics> {
+export async function getPipeline(user: RequestUser, from?: string, to?: string): Promise<PipelineMetrics> {
   const period = defaultPeriod(from, to)
 
-  const studentsByStage = await repo.countStudentsByStage()
+  const studentsByStage = await repo.countStudentsByStage(studentScopeForUser(user))
 
   const stageMap = Object.fromEntries(
     studentsByStage.map((g) => [g.stage, g._count]),
@@ -274,7 +283,7 @@ export async function getPipeline(from?: string, to?: string): Promise<PipelineM
     data: {
       funnel,
       conversionRate,
-      averageDaysInStage: await computeAverageDaysInStage()
+      averageDaysInStage: await computeAverageDaysInStage(user),
     },
   }
 }
@@ -373,8 +382,8 @@ function daysInStage(stageUpdatedAt: Date | null): number {
   return Math.floor((Date.now() - stageUpdatedAt.getTime()) / (1000 * 60 * 60 * 24))
 }
 
-export async function listStudentAnalytics(): Promise<StudentAnalyticsItem[]> {
-  const students = await repo.findStudentsForAnalytics()
+export async function listStudentAnalytics(user: RequestUser): Promise<StudentAnalyticsItem[]> {
+  const students = await repo.findStudentsForAnalytics(studentScopeForUser(user))
 
   const items = await Promise.all(
     students.map(async (s) => {
@@ -404,11 +413,12 @@ export async function listStudentAnalytics(): Promise<StudentAnalyticsItem[]> {
 
 export async function getStudentAnalyticsDetail(
   id: string,
+  user: RequestUser,
   from?: string,
   to?: string,
 ): Promise<StudentAnalyticsDetail | null> {
   const period = defaultPeriod(from, to)
-  const student = await repo.findStudentForAnalytics(id)
+  const student = await repo.findStudentForAnalytics(id, studentScopeForUser(user))
   if (!student) return null
 
   const [completedDocs, totalReqs, appsByStatus, lastActivity, transitions] = await Promise.all([

@@ -21,7 +21,7 @@ export const verifyRejectSchema = z.object({
 })
 
 export const createRequirementSchema = z.object({
-  documentType: z.string().min(1),
+  documentType: documentTypeSchema,
   requirementSource: requirementSourceSchema,
   required: z.boolean().default(true),
   notes: z.string().optional(),

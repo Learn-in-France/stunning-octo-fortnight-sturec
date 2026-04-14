@@ -16,6 +16,7 @@ import { buildIdempotencyKey, withIdempotency } from '../lib/queue/idempotency.j
 import type { MauticSyncJobData } from '../lib/queue/queues.js'
 import * as mautic from '../integrations/mautic/index.js'
 import prisma from '../lib/prisma.js'
+import { completeCampaignIfAllStepsSettled } from '../modules/campaigns/completion.js'
 
 export function startMauticSyncWorker() {
   const worker = new Worker<MauticSyncJobData>(
@@ -270,6 +271,7 @@ async function handleCampaignTrigger(
         where: { id: campaignStepId },
         data: { status: 'sent', sentAt: new Date() },
       }).catch(() => {})
+      await completeCampaignIfAllStepsSettled(campaignStepId).catch(() => {})
     }
 
     return { status: 'triggered' as const, campaignId }

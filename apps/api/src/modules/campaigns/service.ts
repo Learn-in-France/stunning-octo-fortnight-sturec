@@ -1,5 +1,7 @@
 import * as repo from './repository.js'
 import { getNotificationsQueue, getMauticSyncQueue } from '../../lib/queue/index.js'
+import type { RequestUser } from '../../middleware/auth.js'
+import { canAccessStudent } from '../students/service.js'
 
 // ─── Admin: Templates ───────────────────────────────────────
 
@@ -17,13 +19,19 @@ export const updatePack = repo.updatePack
 
 // ─── Counsellor: Student Campaigns ──────────────────────────
 
-export const listStudentCampaigns = repo.findStudentCampaigns
+export async function listStudentCampaigns(studentId: string, user: RequestUser) {
+  if (!(await canAccessStudent(studentId, user))) return null
+  return repo.findStudentCampaigns(studentId)
+}
 
 export async function startCampaign(data: {
   studentId: string
   counsellorId: string
   packId: string
+  user: RequestUser
 }) {
+  if (!(await canAccessStudent(data.studentId, data.user))) return null
+
   const pack = await repo.findPackById(data.packId)
   if (!pack) throw new Error('Pack not found')
 
@@ -36,7 +44,7 @@ export async function startCampaign(data: {
   })
 
   // Create steps from pack template
-  const steps = pack.steps.map((ps, idx) => ({
+  const steps = pack.steps.map((ps) => ({
     templateId: ps.templateId,
     orderIndex: ps.orderIndex,
     scheduledFor: undefined as Date | undefined,
@@ -48,7 +56,9 @@ export async function startCampaign(data: {
   return repo.findStudentCampaignById(campaign.id)
 }
 
-export async function sendStep(stepId: string, studentId: string) {
+export async function sendStep(stepId: string, studentId: string, user: RequestUser) {
+  if (!(await canAccessStudent(studentId, user))) return null
+
   const step = await findStepWithContext(stepId)
   if (!step) return null
   if (step.studentCampaign.studentId !== studentId) return null
@@ -57,7 +67,9 @@ export async function sendStep(stepId: string, studentId: string) {
   return executeStep(step)
 }
 
-export async function sendAllDue(campaignId: string, studentId: string) {
+export async function sendAllDue(campaignId: string, studentId: string, user: RequestUser) {
+  if (!(await canAccessStudent(studentId, user))) return null
+
   const campaign = await repo.findStudentCampaignById(campaignId)
   if (!campaign || campaign.studentId !== studentId) return null
 
@@ -74,9 +86,9 @@ export async function sendAllDue(campaignId: string, studentId: string) {
     }
   }
 
-  // Check if all steps are now sent — mark campaign completed
+  // Check if all steps are done; queued steps remain active until workers confirm delivery.
   const updated = await repo.findStudentCampaignById(campaignId)
-  if (updated && updated.steps.every((s) => s.status === 'sent' || s.status === 'scheduled' || s.status === 'skipped')) {
+  if (updated && updated.steps.every((s) => s.status === 'sent' || s.status === 'skipped')) {
     await repo.updateStudentCampaign(campaignId, {
       status: 'completed',
       completedAt: new Date(),
@@ -86,7 +98,9 @@ export async function sendAllDue(campaignId: string, studentId: string) {
   return results
 }
 
-export async function pauseCampaign(campaignId: string, studentId: string) {
+export async function pauseCampaign(campaignId: string, studentId: string, user: RequestUser) {
+  if (!(await canAccessStudent(studentId, user))) return null
+
   const campaign = await repo.findStudentCampaignById(campaignId)
   if (!campaign || campaign.studentId !== studentId) return null
 
@@ -96,7 +110,9 @@ export async function pauseCampaign(campaignId: string, studentId: string) {
   })
 }
 
-export async function resumeCampaign(campaignId: string, studentId: string) {
+export async function resumeCampaign(campaignId: string, studentId: string, user: RequestUser) {
+  if (!(await canAccessStudent(studentId, user))) return null
+
   const campaign = await repo.findStudentCampaignById(campaignId)
   if (!campaign || campaign.studentId !== studentId) return null
 
@@ -105,7 +121,9 @@ export async function resumeCampaign(campaignId: string, studentId: string) {
   })
 }
 
-export async function updateCampaignMode(campaignId: string, mode: string, studentId: string) {
+export async function updateCampaignMode(campaignId: string, mode: string, studentId: string, user: RequestUser) {
+  if (!(await canAccessStudent(studentId, user))) return null
+
   const campaign = await repo.findStudentCampaignById(campaignId)
   if (!campaign || campaign.studentId !== studentId) return null
 
@@ -116,8 +134,8 @@ export async function updateCampaignMode(campaignId: string, mode: string, stude
     const now = new Date()
     for (const step of campaign.steps) {
       if (step.status === 'pending') {
-        const packStep = campaign.pack
-        const delayDays = step.template?.defaultDelayDays ?? 0
+        const packStep = campaign.pack.steps.find((ps) => ps.templateId === step.templateId)
+        const delayDays = packStep?.delayDays ?? step.template?.defaultDelayDays ?? 0
         const scheduledFor = new Date(now.getTime() + delayDays * 24 * 60 * 60 * 1000)
         await repo.updateStepStatus(step.id, {
           status: 'scheduled',
@@ -132,7 +150,10 @@ export async function updateCampaignMode(campaignId: string, mode: string, stude
 
 // ─── History ────────────────────────────────────────────────
 
-export const getCampaignHistory = repo.findStudentCampaignHistory
+export async function getCampaignHistory(studentId: string, user: RequestUser) {
+  if (!(await canAccessStudent(studentId, user))) return null
+  return repo.findStudentCampaignHistory(studentId)
+}
 
 // ─── Scheduler (for automated steps) ────────────────────────
 
