@@ -55,10 +55,13 @@ export function useBookings(params: UseBookingsParams = {}, options: BookingHook
 
 export type BookingStats = AnalyticsOverview['data']['bookings']
 
-export function useBookingStats(options: Pick<BookingHookOptions, 'enabled'> = {}) {
+type OverviewEndpoint = '/analytics/overview' | '/analytics/my-overview'
+
+export function useBookingStats(options: Pick<BookingHookOptions, 'enabled'> & { endpoint?: OverviewEndpoint } = {}) {
+  const endpoint = options.endpoint ?? '/analytics/overview'
   return useQuery({
-    queryKey: ['analytics', 'overview', {}],
-    queryFn: () => api.get('/analytics/overview') as unknown as AnalyticsOverview,
+    queryKey: ['analytics', endpoint, {}],
+    queryFn: () => api.get(endpoint) as unknown as AnalyticsOverview,
     select: (overview) => overview.data.bookings,
     enabled: options.enabled ?? true,
   })

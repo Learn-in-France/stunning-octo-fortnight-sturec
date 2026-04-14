@@ -154,10 +154,13 @@ function capitalize(s: string): string {
 
 export type LeadStats = AnalyticsOverview['data']['leads']
 
-export function useLeadStats(options: { enabled?: boolean } = {}) {
+type OverviewEndpoint = '/analytics/overview' | '/analytics/my-overview'
+
+export function useLeadStats(options: { enabled?: boolean; endpoint?: OverviewEndpoint } = {}) {
+  const endpoint = options.endpoint ?? '/analytics/overview'
   return useQuery({
-    queryKey: ['analytics', 'overview', {}],
-    queryFn: () => api.get('/analytics/overview') as unknown as AnalyticsOverview,
+    queryKey: ['analytics', endpoint, {}],
+    queryFn: () => api.get(endpoint) as unknown as AnalyticsOverview,
     select: (overview) => overview.data.leads,
     enabled: options.enabled ?? true,
   })

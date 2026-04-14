@@ -23,7 +23,7 @@ export async function listPendingAssignments(_request: FastifyRequest, reply: Fa
 
 export async function getPipeline(request: FastifyRequest, reply: FastifyReply) {
   const query = (request as ReqWithQuery).parsedQuery as { from?: string; to?: string }
-  const result = await analyticsService.getPipeline(query.from, query.to)
+  const result = await analyticsService.getPipeline(request.user, query.from, query.to)
   return reply.send(result)
 }
 
@@ -40,15 +40,15 @@ export async function getCounsellorDetail(request: FastifyRequest, reply: Fastif
   return reply.send(result)
 }
 
-export async function listStudentAnalytics(_request: FastifyRequest, reply: FastifyReply) {
-  const result = await analyticsService.listStudentAnalytics()
+export async function listStudentAnalytics(request: FastifyRequest, reply: FastifyReply) {
+  const result = await analyticsService.listStudentAnalytics(request.user)
   return reply.send(result)
 }
 
 export async function getStudentAnalyticsDetail(request: FastifyRequest, reply: FastifyReply) {
   const { id } = (request as ReqWithParams<{ id: string }>).params
   const query = (request as ReqWithQuery).parsedQuery as { from?: string; to?: string }
-  const result = await analyticsService.getStudentAnalyticsDetail(id, query.from, query.to)
+  const result = await analyticsService.getStudentAnalyticsDetail(id, request.user, query.from, query.to)
   if (!result) return reply.code(404).send({ error: 'Student not found' })
   return reply.send(result)
 }

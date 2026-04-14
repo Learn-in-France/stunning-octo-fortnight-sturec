@@ -10,6 +10,13 @@ import type { FastifyRequest, FastifyReply } from 'fastify'
 import crypto from 'node:crypto'
 import * as webhookService from './service.js'
 
+function signaturesMatch(signature: string, expected: string) {
+  const signatureBuffer = Buffer.from(signature)
+  const expectedBuffer = Buffer.from(expected)
+  return signatureBuffer.length === expectedBuffer.length
+    && crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
+}
+
 // ─── Cal.com ────────────────────────────────────────────────
 
 export async function handleCalcom(request: FastifyRequest, reply: FastifyReply) {
@@ -31,7 +38,7 @@ export async function handleCalcom(request: FastifyRequest, reply: FastifyReply)
     .update(body)
     .digest('hex')
 
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+  if (!signaturesMatch(signature, expected)) {
     return reply.code(401).send({ error: 'Invalid signature' })
   }
 
@@ -82,7 +89,7 @@ export async function handleMautic(request: FastifyRequest, reply: FastifyReply)
     .update(body)
     .digest('base64')
 
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+  if (!signaturesMatch(signature, expected)) {
     return reply.code(401).send({ error: 'Invalid signature' })
   }
 

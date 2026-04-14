@@ -114,10 +114,13 @@ export function useStudent(id: string, options: StudentHookOptions = {}) {
 
 export type StudentStats = AnalyticsOverview['data']['students']
 
-export function useStudentStats(options: Pick<StudentHookOptions, 'enabled'> = {}) {
+type OverviewEndpoint = '/analytics/overview' | '/analytics/my-overview'
+
+export function useStudentStats(options: Pick<StudentHookOptions, 'enabled'> & { endpoint?: OverviewEndpoint } = {}) {
+  const endpoint = options.endpoint ?? '/analytics/overview'
   return useQuery({
-    queryKey: ['analytics', 'overview', {}],
-    queryFn: () => api.get('/analytics/overview') as unknown as AnalyticsOverview,
+    queryKey: ['analytics', endpoint, {}],
+    queryFn: () => api.get(endpoint) as unknown as AnalyticsOverview,
     select: (overview) => overview.data.students,
     enabled: options.enabled ?? true,
   })

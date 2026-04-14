@@ -673,6 +673,23 @@ describe('Route-level smoke tests', () => {
       expect(JSON.parse(response.body)).toEqual([])
     })
 
+    it('POST /students/:id/document-requirements rejects invalid document type', async () => {
+      authAs(ADMIN_USER)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/document-requirements',
+        headers: authHeaders(),
+        payload: {
+          documentType: 'not_a_document_type',
+          requirementSource: 'custom',
+        },
+      })
+
+      expect(response.statusCode).toBe(400)
+      expect(db.studentDocumentRequirement.create).not.toHaveBeenCalled()
+    })
+
 
     it('GET /students/:id/ai-assessments includes converted lead assessments', async () => {
       authAs(COUNSELLOR_USER)
@@ -1105,6 +1122,25 @@ describe('Route-level smoke tests', () => {
       expect(response.statusCode).toBe(200)
     })
 
+    it('GET /students/:id/campaigns blocks counsellors outside their caseload', async () => {
+      authAs(COUNSELLOR_USER)
+      db.student.findFirst.mockResolvedValueOnce({
+        id: '00000000-0000-0000-0000-000000000010',
+        userId: STUDENT_USER.id,
+        assignedCounsellorId: '00000000-0000-0000-0000-000000000099',
+        deletedAt: null,
+      })
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/students/00000000-0000-0000-0000-000000000010/campaigns',
+        headers: authHeaders(),
+      })
+
+      expect(response.statusCode).toBe(404)
+      expect(db.studentCampaign.findMany).not.toHaveBeenCalled()
+    })
+
     it('POST /students/:id/campaigns/start starts campaign', async () => {
       authAs(COUNSELLOR_USER)
       db.campaignPack.findUnique.mockResolvedValue({
@@ -1476,6 +1512,12 @@ describe('Route-level smoke tests', () => {
       expect(body).toHaveProperty('data')
       expect(body.data).toHaveProperty('funnel')
       expect(body.data.funnel).toHaveLength(13) // 13 stages
+      expect(db.student.groupBy).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ assignedCounsellorId: COUNSELLOR_USER.id }),
+      }))
+      expect(db.stageTransition.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { student: { assignedCounsellorId: COUNSELLOR_USER.id, deletedAt: null } },
+      }))
     })
 
     it('student cannot access analytics', async () => {
@@ -1566,6 +1608,9 @@ describe('Route-level smoke tests', () => {
 
       expect(response.statusCode).toBe(200)
       expect(JSON.parse(response.body)).toEqual([])
+      expect(db.student.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ assignedCounsellorId: COUNSELLOR_USER.id }),
+      }))
     })
 
     it('student cannot access student analytics', async () => {
@@ -2318,6 +2363,23 @@ describe('Route-level smoke tests', () => {
 
       // No CALCOM_WEBHOOK_SECRET set → 500
       expect(response.statusCode).toBe(500)
+    })
+
+    it('POST /webhooks/calcom rejects malformed signatures without throwing', async () => {
+      const previousSecret = process.env.CALCOM_WEBHOOK_SECRET
+      process.env.CALCOM_WEBHOOK_SECRET = 'test-secret'
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/calcom',
+        headers: { 'x-cal-signature-256': 'short' },
+        payload: { triggerEvent: 'BOOKING_CREATED', payload: {} },
+      })
+
+      if (previousSecret === undefined) delete process.env.CALCOM_WEBHOOK_SECRET
+      else process.env.CALCOM_WEBHOOK_SECRET = previousSecret
+
+      expect(response.statusCode).toBe(401)
     })
 
     it('POST /webhooks/whatsapp rejects invalid token', async () => {

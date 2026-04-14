@@ -106,7 +106,7 @@ export function findStudentCampaigns(studentId: string) {
   return prisma.studentCampaign.findMany({
     where: { studentId },
     include: {
-      pack: true,
+      pack: { include: { steps: { orderBy: { orderIndex: 'asc' } } } },
       steps: {
         include: { template: true },
         orderBy: { orderIndex: 'asc' },
@@ -120,7 +120,7 @@ export function findStudentCampaignById(id: string) {
   return prisma.studentCampaign.findUnique({
     where: { id },
     include: {
-      pack: true,
+      pack: { include: { steps: { orderBy: { orderIndex: 'asc' } } } },
       steps: {
         include: { template: true },
         orderBy: { orderIndex: 'asc' },
@@ -183,12 +183,13 @@ export function createStudentCampaignSteps(
 
 export function updateStepStatus(
   id: string,
-  data: { status: string; sentAt?: Date; notificationLogId?: string; errorMessage?: string },
+  data: { status: string; scheduledFor?: Date; sentAt?: Date; notificationLogId?: string; errorMessage?: string },
 ) {
   return prisma.studentCampaignStep.update({
     where: { id },
     data: {
       status: data.status as CampaignStepStatus,
+      scheduledFor: data.scheduledFor,
       sentAt: data.sentAt,
       notificationLogId: data.notificationLogId,
       errorMessage: data.errorMessage,

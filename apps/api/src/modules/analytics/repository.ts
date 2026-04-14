@@ -198,9 +198,9 @@ export function countBookingsByStatusForCounsellor(counsellorId: string) {
 
 // ─── Student Analytics ──────────────────────────────────────
 
-export function findStudentsForAnalytics() {
+export function findStudentsForAnalytics(where?: Prisma.StudentWhereInput) {
   return prisma.student.findMany({
-    where: { deletedAt: null },
+    where: { ...where, deletedAt: null },
     select: {
       id: true,
       referenceCode: true,
@@ -213,9 +213,9 @@ export function findStudentsForAnalytics() {
   })
 }
 
-export function findStudentForAnalytics(id: string) {
+export function findStudentForAnalytics(id: string, where?: Prisma.StudentWhereInput) {
   return prisma.student.findFirst({
-    where: { id, deletedAt: null },
+    where: { ...where, id, deletedAt: null },
     select: {
       id: true,
       referenceCode: true,
@@ -267,8 +267,9 @@ export function findStudentStageTransitions(studentId: string) {
   })
 }
 
-export function findAllStageTransitions() {
+export function findAllStageTransitions(where?: Prisma.StageTransitionWhereInput) {
   return prisma.stageTransition.findMany({
+    where,
     orderBy: [{ studentId: 'asc' }, { timestamp: 'asc' }],
     select: { studentId: true, toStage: true, timestamp: true },
   })
