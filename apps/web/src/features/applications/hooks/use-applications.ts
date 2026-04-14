@@ -58,8 +58,10 @@ type OverviewEndpoint = '/analytics/overview' | '/analytics/my-overview'
 
 export function useApplicationStats(options: ApplicationHookOptions & { endpoint?: OverviewEndpoint } = {}) {
   const endpoint = options.endpoint ?? '/analytics/overview'
+  const scope: 'overview' | 'my-overview' =
+    endpoint === '/analytics/my-overview' ? 'my-overview' : 'overview'
   return useQuery({
-    queryKey: ['analytics', endpoint, {}],
+    queryKey: ['analytics', scope, {}],
     queryFn: () => api.get(endpoint) as unknown as AnalyticsOverview,
     select: (overview) => overview.data.applications,
     enabled: options.enabled ?? true,

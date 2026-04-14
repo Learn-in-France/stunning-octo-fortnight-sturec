@@ -84,12 +84,17 @@ export function startNotificationsWorker() {
             },
           })
 
-          // Mark campaign step as failed too
+          // Mark campaign step as failed too. Must await before rethrow
+          // so BullMQ retries see the persisted failed state.
           if (data.campaignStepId) {
-            prisma.studentCampaignStep.update({
-              where: { id: data.campaignStepId as string },
-              data: { status: 'failed', errorMessage: err instanceof Error ? err.message : String(err) },
-            }).catch(() => {})
+            try {
+              await prisma.studentCampaignStep.update({
+                where: { id: data.campaignStepId as string },
+                data: { status: 'failed', errorMessage: err instanceof Error ? err.message : String(err) },
+              })
+            } catch (stepErr) {
+              console.error('[notifications] Failed to mark campaign step failed:', stepErr)
+            }
           }
 
           throw err // Let BullMQ retry

@@ -96,7 +96,12 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
   const { user, signOut } = useAuth()
   const { data: progress } = useStudentProgress()
-  const { data: profile } = useStudentProfile()
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileError,
+    refetch: refetchProfile,
+  } = useStudentProfile()
 
   // Onboarding gate: if the student hasn't completed the contact-info
   // capture step, push them to /portal/onboarding before they can use
@@ -109,12 +114,12 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
     router.replace('/portal/onboarding')
   }, [profile, pathname, router])
 
-  // While onboarding is incomplete the sidebar nav and progress card
-  // are hidden so the student can't accidentally navigate away mid-form
-  // and lose what they typed (the layout would just bounce them back
-  // and remount the form clean). Sign-out stays available.
+  // While onboarding is incomplete — or while the profile fetch is still
+  // loading/errored — hide the full sidebar nav so the student can't
+  // navigate to portal features that assume a complete profile. The only
+  // escapes are the onboarding form and sign-out.
   const onboardingIncomplete =
-    profile !== undefined && profile?.onboardingCompletedAt === null
+    !profile || profile.onboardingCompletedAt === null
   const showEmailVerificationBanner =
     !onboardingIncomplete &&
     user?.role === 'student' &&
@@ -292,6 +297,27 @@ export default function StudentLayout({ children }: { children: ReactNode }) {
             </header>
 
             <main className="p-4 sm:p-6">
+              {profileError && pathname !== '/portal/onboarding' && (
+                <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-text-primary">
+                    We couldn't load your profile
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-text-secondary">
+                    Portal features are paused until we can fetch your profile. Check your connection and retry.
+                  </p>
+                  <button
+                    onClick={() => { void refetchProfile() }}
+                    className="mt-2 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+              {profileLoading && !profile && !profileError && (
+                <div className="mb-6 rounded-2xl border border-border bg-surface-sunken/40 px-4 py-3">
+                  <p className="text-sm text-text-secondary">Loading your profile…</p>
+                </div>
+              )}
               {showEmailVerificationBanner && (
                 <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
                   <p className="text-sm font-semibold text-text-primary">

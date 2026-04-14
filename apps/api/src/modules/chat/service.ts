@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { Prisma } from '@prisma/client'
 import type {
   ChatSessionItem,
   ChatMessageItem,
@@ -615,10 +616,14 @@ async function saveAssessmentFromStructured(
     timelineUrgencyScore: output.timeline_urgency_score,
     documentReadinessScore: output.document_readiness_score,
     visaComplexityScore: output.visa_complexity_score,
-    visaRisk: output.visa_risk as any,
+    // normalizeVisaRisk returns 'low' | 'medium' | 'high' | null — matches
+    // the nullable VisaRisk? column on AiAssessment.
+    visaRisk: normalizeVisaRisk(output.visa_risk),
     overallReadinessScore: qualification.overallReadinessScore,
     qualificationScore: qualification.qualificationScore,
-    priorityLevel: qualification.priorityLevel as any,
+    // qualification.priorityLevel is already typed 'p1' | 'p2' | 'p3' by
+    // computeQualification — safe to persist directly without casting.
+    priorityLevel: qualification.priorityLevel,
     recommendedDisposition: output.recommended_disposition,
     recommendedNextStep: output.recommended_next_step,
     summaryForTeam: output.summary_for_team || 'Assessment completed',
@@ -627,7 +632,7 @@ async function saveAssessmentFromStructured(
     fieldsCollected: output.fields_collected ?? undefined,
     fieldsMissing: output.fields_missing ?? undefined,
     leadHeat: output.lead_heat,
-    rawJson: output as any,
+    rawJson: output as unknown as Prisma.InputJsonValue,
   })
 
   // Update lead with latest scores
@@ -709,16 +714,20 @@ export async function assessImportedLead(
     timelineUrgencyScore: output.timeline_urgency_score,
     documentReadinessScore: output.document_readiness_score,
     visaComplexityScore: output.visa_complexity_score,
-    visaRisk: output.visa_risk as any,
+    // normalizeVisaRisk returns 'low' | 'medium' | 'high' | null — matches
+    // the nullable VisaRisk? column on AiAssessment.
+    visaRisk: normalizeVisaRisk(output.visa_risk),
     overallReadinessScore: qualification.overallReadinessScore,
     qualificationScore: qualification.qualificationScore,
-    priorityLevel: qualification.priorityLevel as any,
+    // qualification.priorityLevel is already typed 'p1' | 'p2' | 'p3' by
+    // computeQualification — safe to persist directly without casting.
+    priorityLevel: qualification.priorityLevel,
     recommendedDisposition: output.recommended_disposition,
     summaryForTeam: output.summary_for_team || 'Batch assessment completed',
     profileCompleteness: output.profile_completeness,
     fieldsCollected: output.fields_collected ?? undefined,
     fieldsMissing: output.fields_missing ?? undefined,
-    rawJson: output as any,
+    rawJson: output as unknown as Prisma.InputJsonValue,
   })
 
   await repo.updateLeadScores(leadId, {
@@ -786,15 +795,19 @@ export async function assessStudent(
     timelineUrgencyScore: output.timeline_urgency_score,
     documentReadinessScore: output.document_readiness_score,
     visaComplexityScore: output.visa_complexity_score,
-    visaRisk: output.visa_risk as any,
+    // normalizeVisaRisk returns 'low' | 'medium' | 'high' | null — matches
+    // the nullable VisaRisk? column on AiAssessment.
+    visaRisk: normalizeVisaRisk(output.visa_risk),
     overallReadinessScore: qualification.overallReadinessScore,
     qualificationScore: qualification.qualificationScore,
-    priorityLevel: qualification.priorityLevel as any,
+    // qualification.priorityLevel is already typed 'p1' | 'p2' | 'p3' by
+    // computeQualification — safe to persist directly without casting.
+    priorityLevel: qualification.priorityLevel,
     recommendedDisposition: output.recommended_disposition,
     summaryForTeam: output.summary_for_team || 'Student assessment completed',
     profileCompleteness: output.profile_completeness,
     fieldsCollected: output.fields_collected ?? undefined,
     fieldsMissing: output.fields_missing ?? undefined,
-    rawJson: output as any,
+    rawJson: output as unknown as Prisma.InputJsonValue,
   })
 }

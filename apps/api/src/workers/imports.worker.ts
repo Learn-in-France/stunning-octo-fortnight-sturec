@@ -61,14 +61,16 @@ export function startImportsWorker() {
                 },
               })
 
-              // Chain ai-processing for assessment
-              getAiProcessingQueue().add(`import-assess-${lead.id}`, {
+              // Chain ai-processing for assessment. Await so a failing
+              // enqueue surfaces as a row error (which the outer try/catch
+              // bumps `errors++`) instead of silently losing the job.
+              await getAiProcessingQueue().add(`import-assess-${lead.id}`, {
                 entityType: 'lead',
                 entityId: lead.id,
                 sourceType: 'import',
                 sourceId: batchId,
                 profileData: row,
-              }).catch((err) => console.error(`[imports] Failed to chain ai-processing for lead ${lead.id}:`, err))
+              })
 
               return { status: 'created' as const, leadId: lead.id }
             })

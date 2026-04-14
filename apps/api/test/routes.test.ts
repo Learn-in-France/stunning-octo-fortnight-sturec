@@ -2361,8 +2361,8 @@ describe('Route-level smoke tests', () => {
         payload: { triggerEvent: 'BOOKING_CREATED', payload: {} },
       })
 
-      // No CALCOM_WEBHOOK_SECRET set → 500
-      expect(response.statusCode).toBe(500)
+      // No CALCOM_WEBHOOK_SECRET set → 503 Service Unavailable
+      expect(response.statusCode).toBe(503)
     })
 
     it('POST /webhooks/calcom rejects malformed signatures without throwing', async () => {
@@ -2390,8 +2390,8 @@ describe('Route-level smoke tests', () => {
         payload: { from: '+1234567890', message: { text: 'hi' } },
       })
 
-      // No WHATSAPP_WEBHOOK_SECRET set → 500
-      expect(response.statusCode).toBe(500)
+      // No WHATSAPP_WEBHOOK_SECRET set → 503 Service Unavailable
+      expect(response.statusCode).toBe(503)
     })
 
     it('POST /webhooks/mautic rejects invalid token', async () => {
@@ -2402,8 +2402,8 @@ describe('Route-level smoke tests', () => {
         payload: {},
       })
 
-      // No MAUTIC_WEBHOOK_SECRET set → 500
-      expect(response.statusCode).toBe(500)
+      // No MAUTIC_WEBHOOK_SECRET set → 503 Service Unavailable
+      expect(response.statusCode).toBe(503)
     })
 
     it('GET /documents/:id/download returns signed URL', async () => {

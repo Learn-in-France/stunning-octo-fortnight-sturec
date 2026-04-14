@@ -191,10 +191,11 @@ export function startAiProcessingWorker() {
           })
 
           if (latestAssessment) {
-            getLeadRoutingQueue().add('route-lead', {
+            // Await so BullMQ retries the whole job if downstream enqueue fails.
+            await getLeadRoutingQueue().add('route-lead', {
               leadId: resolvedLeadId,
               assessmentId: latestAssessment.id,
-            }).catch((err) => console.error('[ai-processing] Failed to enqueue lead-routing:', err))
+            })
           }
         }
       }

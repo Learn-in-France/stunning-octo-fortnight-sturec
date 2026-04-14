@@ -83,18 +83,19 @@ export function startLeadRoutingWorker() {
           })
         }
 
-        // Emit Mautic sync for the lead update
-        getMauticSyncQueue().add('lead-qualified', {
+        // Emit Mautic sync for the lead update. Await so the parent job
+        // retries if downstream enqueue fails (prevents silent drop).
+        await getMauticSyncQueue().add('lead-qualified', {
           entityType: 'lead',
           entityId: leadId,
           eventType: 'contact_updated',
           triggeringActionId: assessmentId,
-        }).catch((err) => console.error('[lead-routing] Failed to enqueue Mautic sync:', err))
+        })
 
         // If qualified, notify assigned counsellor (if any)
         if (newStatus === 'qualified') {
           if (lead?.assignedCounsellorId) {
-            getNotificationsQueue().add('lead-qualified', {
+            await getNotificationsQueue().add('lead-qualified', {
               recipientId: lead.assignedCounsellorId,
               channel: 'email',
               templateKey: 'lead_qualified',
@@ -105,7 +106,7 @@ export function startLeadRoutingWorker() {
                 qualificationScore: qualScore,
                 triggeringActionId: assessmentId,
               },
-            }).catch((err) => console.error('[lead-routing] Failed to enqueue notification:', err))
+            })
           }
         }
 

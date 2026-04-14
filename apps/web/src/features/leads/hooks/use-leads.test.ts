@@ -2,7 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createElement, type ReactNode } from 'react'
 import api from '@/lib/api/client'
-import { useLeads, useLead, useLeadStats } from './use-leads'
+import { useLeads, useLead, useLeadStats, useImportLeads } from './use-leads'
 
 // Mock team-cache so leads hooks don't hit a second endpoint
 // Use stable plain functions (not vi.fn) to survive restoreMocks: true
@@ -132,5 +132,49 @@ describe('useLeadStats', () => {
 
     expect(result.current.data?.total).toBe(50)
     expect(result.current.data?.qualified).toBe(20)
+  })
+
+  // Regression: H1 — mutations must invalidate the analytics stats hooks.
+  // The hook's queryKey was formerly ['analytics', '/analytics/overview', {}]
+  // which never matched invalidations with prefix ['analytics', 'overview'].
+  // We verify the mutation's onSuccess invalidation correctly refetches the
+  // stats query.
+  it('useImportLeads onSuccess refetches useLeadStats', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+    const sharedWrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: qc }, children)
+
+    // Initial stats
+    vi.mocked(api.get).mockResolvedValueOnce({
+      data: {
+        leads: { total: 10, new: 10, qualified: 0, converted: 0, disqualified: 0 },
+        students: { active: 0, byStage: {} },
+        applications: { total: 0, submitted: 0, offers: 0, enrolled: 0 },
+        documents: { total: 0, pending: 0 },
+      },
+      period: { from: '2025-01-01', to: '2025-02-01' },
+    })
+
+    const stats = renderHook(() => useLeadStats(), { wrapper: sharedWrapper })
+    await waitFor(() => expect(stats.result.current.isSuccess).toBe(true))
+    expect(stats.result.current.data?.total).toBe(10)
+
+    // Mutation invalidates the ['analytics'] namespace
+    vi.mocked(api.post).mockResolvedValueOnce({ batchId: 'b-1', rowCount: 2, status: 'queued' })
+    // Refetched stats payload after mutation
+    vi.mocked(api.get).mockResolvedValueOnce({
+      data: {
+        leads: { total: 12, new: 12, qualified: 0, converted: 0, disqualified: 0 },
+        students: { active: 0, byStage: {} },
+        applications: { total: 0, submitted: 0, offers: 0, enrolled: 0 },
+        documents: { total: 0, pending: 0 },
+      },
+      period: { from: '2025-01-01', to: '2025-02-01' },
+    })
+
+    const imp = renderHook(() => useImportLeads(), { wrapper: sharedWrapper })
+    await imp.result.current.mutateAsync([{ email: 'a@b.com' }, { email: 'c@d.com' }])
+
+    await waitFor(() => expect(stats.result.current.data?.total).toBe(12))
   })
 })

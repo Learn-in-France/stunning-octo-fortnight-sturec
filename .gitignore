@@ -35,7 +35,13 @@ coverage/
 
 # Debug
 firebase-debug.log
+
+# Secrets / service accounts — catch-all so nothing slips through
 firebase-service-account.json
+*firebase*sa*.json
+*firebase*service-account*.json
+*-sa.json
+*service-account*.json
 
 # Screenshots (dev testing) — root level only, not public assets
 /*.png

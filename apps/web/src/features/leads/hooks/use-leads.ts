@@ -70,9 +70,10 @@ interface LeadImportRow {
 
 // ─── List hook ───────────────────────────────────────────────────
 
-export function useLeads(params: UseLeadsParams = {}) {
+export function useLeads(params: UseLeadsParams = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['leads', params],
+    enabled: options.enabled ?? true,
     queryFn: async () => {
       const apiParams: Record<string, unknown> = {
         page: params.page ?? 1,
@@ -158,8 +159,10 @@ type OverviewEndpoint = '/analytics/overview' | '/analytics/my-overview'
 
 export function useLeadStats(options: { enabled?: boolean; endpoint?: OverviewEndpoint } = {}) {
   const endpoint = options.endpoint ?? '/analytics/overview'
+  const scope: 'overview' | 'my-overview' =
+    endpoint === '/analytics/my-overview' ? 'my-overview' : 'overview'
   return useQuery({
-    queryKey: ['analytics', endpoint, {}],
+    queryKey: ['analytics', scope, {}],
     queryFn: () => api.get(endpoint) as unknown as AnalyticsOverview,
     select: (overview) => overview.data.leads,
     enabled: options.enabled ?? true,
@@ -178,7 +181,7 @@ export function useImportLeads() {
       }>,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'overview'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics'] })
     },
   })
 }

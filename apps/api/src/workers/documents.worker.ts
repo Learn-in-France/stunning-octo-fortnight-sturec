@@ -122,13 +122,14 @@ async function handleUploadComplete(doc: DocInfo) {
     })
   }
 
-  // Trigger AI reassessment based on the new document
-  getAiProcessingQueue().add('document-upload-assessment', {
+  // Trigger AI reassessment based on the new document. Await so the parent
+  // job is retried by BullMQ if this enqueue fails.
+  await getAiProcessingQueue().add('document-upload-assessment', {
     entityType: 'student',
     entityId: doc.studentId,
     sourceType: 'document',
     sourceId: doc.id,
-  }).catch((err) => console.error('[documents] Failed to enqueue AI assessment:', err))
+  })
 
   return { status: 'completed' as const, requirementsUpdated: matchingReqs.length }
 }

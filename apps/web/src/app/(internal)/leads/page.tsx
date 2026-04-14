@@ -44,11 +44,34 @@ export default function LeadsPage() {
 
   const { data, isLoading } = useLeads({
     page, limit: 20, search, status, source, priority, sortBy, sortOrder,
-  })
+  }, { enabled: isAdmin })
   const { data: stats } = useLeadStats({ enabled: isAdmin })
   const importLeads = useImportLeads()
 
   const hasFilters = !!(search || status || source || priority)
+
+  if (!isAdmin) {
+    return (
+      <div>
+        <PageHeader
+          title="Leads"
+          description="Lead oversight is available to admins only."
+        />
+        <div className="rounded-2xl bg-white/50 border border-white/70 backdrop-blur-sm">
+          <EmptyState
+            title="Admin access required"
+            description="Counsellors should work from each student record instead of the global leads queue."
+            icon={
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="22" width="32" height="18" rx="4" stroke="currentColor" strokeWidth="2" />
+                <path d="M16 22v-4a8 8 0 1116 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            }
+          />
+        </div>
+      </div>
+    )
+  }
 
   function clearFilters() {
     setSearch('')
