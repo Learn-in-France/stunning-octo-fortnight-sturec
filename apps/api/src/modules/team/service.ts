@@ -64,11 +64,17 @@ function hashInviteToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
-function buildInviteUrl(data: { token: string; email: string }) {
-  const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+// Exported for unit tests. Not part of the public module API.
+export function buildInviteUrl(data: { token: string; email: string }) {
+  // FRONTEND_URL is a comma-separated list of allowed CORS origins
+  // (e.g. "https://learninfrance.com,https://sturecweb-production.up.railway.app").
+  // For user-facing links we must pick a single canonical URL — the
+  // first entry is treated as the primary public site.
+  const raw = process.env.FRONTEND_URL || 'http://localhost:3000'
+  const baseUrl = raw.split(',')[0].trim().replace(/\/$/, '')
   const params = new URLSearchParams({
     token: data.token,
     email: data.email,
   })
-  return `${baseUrl.replace(/\/$/, '')}/auth/invite?${params.toString()}`
+  return `${baseUrl}/auth/invite?${params.toString()}`
 }
