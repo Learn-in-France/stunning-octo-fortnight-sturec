@@ -131,11 +131,16 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2">
-            <EditorialCard title="Contact" tone="tinted">
+            <EditorialCard title="Contact us" tone="tinted">
               <div className="space-y-2 text-base">
                 <p>Learn in France</p>
                 <p>Dijon, France</p>
                 <p className="mt-4">
+                  <a href="https://wa.me/917982215841" className="font-semibold text-public-blue hover:underline">
+                    +91 79822 15841 (Call or WhatsApp)
+                  </a>
+                </p>
+                <p>
                   <a href="https://wa.me/33695396607" className="font-semibold text-public-blue hover:underline">
                     +33 6 95 39 66 07 (WhatsApp)
                   </a>
@@ -144,6 +149,9 @@ export default function AboutPage() {
                   <a href="mailto:info@learninfrance.com" className="font-semibold text-public-blue hover:underline">
                     info@learninfrance.com
                   </a>
+                </p>
+                <p className="pt-2 text-sm text-public-slate">
+                  English, Hindi &amp; French — reach out any time.
                 </p>
               </div>
             </EditorialCard>
