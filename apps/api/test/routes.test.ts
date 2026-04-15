@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import crypto from 'node:crypto'
 
 // Mock firebase
 vi.mock('../src/integrations/firebase/index.js', () => ({
@@ -2380,6 +2381,43 @@ describe('Route-level smoke tests', () => {
       else process.env.CALCOM_WEBHOOK_SECRET = previousSecret
 
       expect(response.statusCode).toBe(401)
+    })
+
+    it('POST /webhooks/calcom accepts HMAC signed over the raw (pretty-printed) body', async () => {
+      // Regression: the handler used to HMAC JSON.stringify(request.body),
+      // which produces canonical compact JSON. If the provider signs the
+      // raw bytes and sends pretty-printed JSON with whitespace/line
+      // breaks, the re-serialized body differs and signature verification
+      // fails. This test locks in the raw-body parser fix.
+      const previousSecret = process.env.CALCOM_WEBHOOK_SECRET
+      process.env.CALCOM_WEBHOOK_SECRET = 'test-secret'
+
+      // Intentionally pretty-printed — whitespace matters for the HMAC.
+      const rawBody = JSON.stringify(
+        { triggerEvent: 'BOOKING_CREATED', payload: { uid: 'test-ping' } },
+        null,
+        2,
+      )
+      const expected = crypto
+        .createHmac('sha256', 'test-secret')
+        .update(rawBody)
+        .digest('hex')
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/calcom',
+        headers: {
+          'content-type': 'application/json',
+          'x-cal-signature-256': expected,
+        },
+        payload: rawBody,
+      })
+
+      if (previousSecret === undefined) delete process.env.CALCOM_WEBHOOK_SECRET
+      else process.env.CALCOM_WEBHOOK_SECRET = previousSecret
+
+      expect(response.statusCode).toBe(200)
+      expect(response.json()).toEqual({ received: true })
     })
 
     it('POST /webhooks/whatsapp rejects invalid token', async () => {

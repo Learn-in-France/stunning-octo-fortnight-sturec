@@ -32,10 +32,13 @@ export async function handleCalcom(request: FastifyRequest, reply: FastifyReply)
     return reply.code(401).send({ error: 'Missing signature' })
   }
 
-  const body = JSON.stringify(request.body)
+  // HMAC the raw body bytes Cal.com sent — NOT the re-serialized parsed
+  // object, which can differ in whitespace/key order and break verification.
+  // See webhooks/routes.ts for the scoped raw-body parser.
+  const rawBody = request.rawBody ?? ''
   const expected = crypto
     .createHmac('sha256', secret)
-    .update(body)
+    .update(rawBody)
     .digest('hex')
 
   if (!signaturesMatch(signature, expected)) {
@@ -83,10 +86,11 @@ export async function handleMautic(request: FastifyRequest, reply: FastifyReply)
     return reply.code(401).send({ error: 'Missing signature' })
   }
 
-  const body = JSON.stringify(request.body)
+  // HMAC over the raw request bytes, not a re-serialized parsed body.
+  const rawBody = request.rawBody ?? ''
   const expected = crypto
     .createHmac('sha256', secret)
-    .update(body)
+    .update(rawBody)
     .digest('base64')
 
   if (!signaturesMatch(signature, expected)) {
