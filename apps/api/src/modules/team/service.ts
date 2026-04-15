@@ -4,6 +4,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import * as repo from './repository.js'
 import { mapUserToTeamMember } from '../../lib/mappers/index.js'
 import { getNotificationsQueue } from '../../lib/queue/index.js'
+import { frontendUrl } from '../../lib/frontend-url.js'
 
 export async function listTeamMembers(): Promise<TeamMemberItem[]> {
   const members = await repo.findTeamMembers()
@@ -66,15 +67,9 @@ function hashInviteToken(token: string): string {
 
 // Exported for unit tests. Not part of the public module API.
 export function buildInviteUrl(data: { token: string; email: string }) {
-  // FRONTEND_URL is a comma-separated list of allowed CORS origins
-  // (e.g. "https://learninfrance.com,https://sturecweb-production.up.railway.app").
-  // For user-facing links we must pick a single canonical URL — the
-  // first entry is treated as the primary public site.
-  const raw = process.env.FRONTEND_URL || 'http://localhost:3000'
-  const baseUrl = raw.split(',')[0].trim().replace(/\/$/, '')
   const params = new URLSearchParams({
     token: data.token,
     email: data.email,
   })
-  return `${baseUrl}/auth/invite?${params.toString()}`
+  return frontendUrl(`/auth/invite?${params.toString()}`)
 }

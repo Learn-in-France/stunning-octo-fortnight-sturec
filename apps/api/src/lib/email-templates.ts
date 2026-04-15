@@ -157,34 +157,170 @@ const templates: Record<string, TemplateRenderer> = {
     }
   },
 
-  booking_created: ({ recipientFirstName, data }) => {
+  // ─── Booking: admin sees a new booking awaiting assignment ───
+  booking_admin_awaiting_assignment: ({ recipientFirstName, data }) => {
+    const subjectFullName = str(data.subjectFullName, 'a new contact')
+    const subjectEmail = str(data.subjectEmail)
+    const subjectPhone = str(data.subjectPhone)
+    const subjectKind = str(data.subjectKind, 'contact')
     const scheduledAt = str(data.scheduledAt, 'the scheduled time')
-    const heading = 'Your counsellor session is booked'
+    const notes = str(data.notes)
+    const recordUrl = str(data.subjectRecordUrl, str(data.adminQueueUrl, 'https://learninfrance.com/dashboard'))
+    const queueUrl = str(data.adminQueueUrl, 'https://learninfrance.com/dashboard')
+    const assessmentSummary = str(data.assessmentSummary)
+    const priorityLevel = str(data.priorityLevel)
+    const qualScore = data.qualificationScore
+
+    const contactLines: string[] = []
+    if (subjectEmail) contactLines.push(`<li>Email: <a href="mailto:${escapeAttr(subjectEmail)}">${escapeHtml(subjectEmail)}</a></li>`)
+    if (subjectPhone) contactLines.push(`<li>Phone: <a href="tel:${escapeAttr(subjectPhone)}">${escapeHtml(subjectPhone)}</a></li>`)
+    const contactHtml = contactLines.length
+      ? `<ul style="margin:8px 0;padding-left:20px;">${contactLines.join('')}</ul>`
+      : ''
+
+    const assessmentHtml = assessmentSummary
+      ? `<p style="padding:10px 14px;background:#faf6ee;border-left:3px solid #c8102e;margin:14px 0;">
+           <strong>AI read:</strong> ${escapeHtml(assessmentSummary)}
+           ${priorityLevel ? ` <em style="color:#94a3b8;">(${escapeHtml(priorityLevel.toUpperCase())}${typeof qualScore === 'number' ? `, score ${qualScore}` : ''})</em>` : ''}
+         </p>`
+      : ''
+
+    const notesHtml = notes
+      ? `<p><strong>Notes from ${escapeHtml(subjectKind === 'lead' ? 'the lead' : 'the student')}:</strong><br>${escapeHtml(notes)}</p>`
+      : ''
+
+    const heading = `New booking awaiting assignment`
     const body = `
-      <p>Hi ${escapeHtml(recipientFirstName) || 'there'},</p>
-      <p>Your counsellor session is confirmed for <strong>${escapeHtml(scheduledAt)}</strong>.</p>
-      <p>We'll send a reminder before the session. If you need to reschedule,
-         log in to your portal.</p>
+      <p>Hi ${escapeHtml(recipientFirstName) || 'team'},</p>
+      <p><strong>${escapeHtml(subjectFullName)}</strong> just booked a counsellor session for <strong>${escapeHtml(scheduledAt)}</strong> and needs a counsellor assigned.</p>
+      ${contactHtml}
+      ${assessmentHtml}
+      ${notesHtml}
+      <p>Open the dashboard to assign a counsellor from the pending queue.</p>
     `
     return {
-      subject: 'Your counsellor session is booked',
+      subject: `New booking: ${subjectFullName} — needs assignment`,
       html: shell({
-        preheader: `Session confirmed for ${scheduledAt}`,
+        preheader: `${subjectFullName} booked a session for ${scheduledAt}`,
         heading,
         bodyHtml: body,
-        ctaLabel: 'Open your portal',
-        ctaUrl: str(data.portalUrl, 'https://learninfrance.com/portal'),
+        ctaLabel: 'Open pending queue',
+        ctaUrl: queueUrl,
+      }),
+      text: plainText([
+        `Hi ${recipientFirstName || 'team'},`,
+        '',
+        `${subjectFullName} just booked a counsellor session for ${scheduledAt}.`,
+        subjectEmail ? `Email: ${subjectEmail}` : '',
+        subjectPhone ? `Phone: ${subjectPhone}` : '',
+        assessmentSummary ? `AI read: ${assessmentSummary}` : '',
+        notes ? `Notes: ${notes}` : '',
+        '',
+        `Assign from: ${queueUrl}`,
+        `Record: ${recordUrl}`,
+      ]),
+    }
+  },
+
+  // ─── Booking: counsellor gets an assigned session ────────────
+  booking_counsellor_assigned: ({ recipientFirstName, data }) => {
+    const subjectFullName = str(data.subjectFullName, 'a new contact')
+    const subjectEmail = str(data.subjectEmail)
+    const subjectPhone = str(data.subjectPhone)
+    const subjectKind = str(data.subjectKind, 'contact')
+    const scheduledAt = str(data.scheduledAt, 'the scheduled time')
+    const notes = str(data.notes)
+    const recordUrl = str(data.subjectRecordUrl, 'https://learninfrance.com/dashboard')
+    const assessmentSummary = str(data.assessmentSummary)
+    const priorityLevel = str(data.priorityLevel)
+    const qualScore = data.qualificationScore
+
+    const contactLines: string[] = []
+    if (subjectEmail) contactLines.push(`<li>Email: <a href="mailto:${escapeAttr(subjectEmail)}">${escapeHtml(subjectEmail)}</a></li>`)
+    if (subjectPhone) contactLines.push(`<li>Phone: <a href="tel:${escapeAttr(subjectPhone)}">${escapeHtml(subjectPhone)}</a></li>`)
+    const contactHtml = contactLines.length
+      ? `<ul style="margin:8px 0;padding-left:20px;">${contactLines.join('')}</ul>`
+      : ''
+
+    const assessmentHtml = assessmentSummary
+      ? `<p style="padding:10px 14px;background:#faf6ee;border-left:3px solid #c8102e;margin:14px 0;">
+           <strong>AI read:</strong> ${escapeHtml(assessmentSummary)}
+           ${priorityLevel ? ` <em style="color:#94a3b8;">(${escapeHtml(priorityLevel.toUpperCase())}${typeof qualScore === 'number' ? `, score ${qualScore}` : ''})</em>` : ''}
+         </p>`
+      : ''
+
+    const notesHtml = notes
+      ? `<p><strong>Notes from ${escapeHtml(subjectKind === 'lead' ? 'the lead' : 'the student')}:</strong><br>${escapeHtml(notes)}</p>`
+      : ''
+
+    const heading = `You have a new session with ${subjectFullName}`
+    const body = `
+      <p>Hi ${escapeHtml(recipientFirstName) || 'there'},</p>
+      <p>You've been assigned a session with <strong>${escapeHtml(subjectFullName)}</strong> on <strong>${escapeHtml(scheduledAt)}</strong>.</p>
+      ${contactHtml}
+      ${assessmentHtml}
+      ${notesHtml}
+      <p>Open their record to review their profile before the meeting.</p>
+    `
+    return {
+      subject: `Session with ${subjectFullName} — ${scheduledAt}`,
+      html: shell({
+        preheader: `Session assigned: ${subjectFullName} on ${scheduledAt}`,
+        heading,
+        bodyHtml: body,
+        ctaLabel: `Open ${subjectKind === 'lead' ? 'lead' : 'student'} record`,
+        ctaUrl: recordUrl,
       }),
       text: plainText([
         `Hi ${recipientFirstName || 'there'},`,
         '',
-        `Your counsellor session is confirmed for ${scheduledAt}.`,
+        `You've been assigned a session with ${subjectFullName} on ${scheduledAt}.`,
+        subjectEmail ? `Email: ${subjectEmail}` : '',
+        subjectPhone ? `Phone: ${subjectPhone}` : '',
+        assessmentSummary ? `AI read: ${assessmentSummary}` : '',
+        notes ? `Notes: ${notes}` : '',
         '',
-        'We will send a reminder before the session. If you need to',
-        'reschedule, log in to your portal.',
+        `Open record: ${recordUrl}`,
       ]),
     }
   },
+
+  // ─── Booking: student gets confirmation with counsellor name ─
+  booking_student_confirmed: ({ recipientFirstName, data }) => {
+    const counsellorFullName = str(data.counsellorFullName, 'your counsellor')
+    const scheduledAt = str(data.scheduledAt, 'the scheduled time')
+    const portalUrl = str(data.portalUrl, 'https://learninfrance.com/portal')
+
+    const heading = 'Your counsellor session is confirmed'
+    const body = `
+      <p>Hi ${escapeHtml(recipientFirstName) || 'there'},</p>
+      <p>Your session with <strong>${escapeHtml(counsellorFullName)}</strong> is confirmed for
+         <strong>${escapeHtml(scheduledAt)}</strong>.</p>
+      <p>We'll send a reminder before the session. If you need to reschedule,
+         log in to your portal.</p>
+    `
+    return {
+      subject: `Your session with ${counsellorFullName} is confirmed`,
+      html: shell({
+        preheader: `Session confirmed with ${counsellorFullName} for ${scheduledAt}`,
+        heading,
+        bodyHtml: body,
+        ctaLabel: 'Open your portal',
+        ctaUrl: portalUrl,
+      }),
+      text: plainText([
+        `Hi ${recipientFirstName || 'there'},`,
+        '',
+        `Your session with ${counsellorFullName} is confirmed for ${scheduledAt}.`,
+        '',
+        `Portal: ${portalUrl}`,
+      ]),
+    }
+  },
+
+  // Back-compat alias — delegate to the student-facing template so any
+  // code still enqueuing templateKey='booking_created' keeps working.
+  booking_created: (ctx) => templates.booking_student_confirmed(ctx),
 
   stage_changed: ({ recipientFirstName, data }) => {
     const toStage = str(data.toStage, 'a new stage')
