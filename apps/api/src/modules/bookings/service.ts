@@ -5,6 +5,7 @@ import * as repo from './repository.js'
 import { mapBooking } from '../../lib/mappers/index.js'
 import { getNotificationsQueue, getAiProcessingQueue } from '../../lib/queue/index.js'
 import { frontendUrl } from '../../lib/frontend-url.js'
+import { joinFullName } from '../../lib/names.js'
 
 export async function listBookings(user: RequestUser): Promise<BookingListItem[]> {
   let where = {}
@@ -235,8 +236,11 @@ async function buildBookingNotificationData(
 
   const counsellorFirstName = booking.counsellor?.firstName ?? ''
   const counsellorLastName = booking.counsellor?.lastName ?? ''
-  const counsellorFullName =
-    `${counsellorFirstName} ${counsellorLastName}`.trim() || 'your counsellor'
+  const counsellorFullName = joinFullName(
+    counsellorFirstName,
+    counsellorLastName,
+    'your counsellor',
+  )
 
   return {
     triggeringActionId: booking.id,
@@ -248,7 +252,7 @@ async function buildBookingNotificationData(
     subjectKind,
     subjectFirstName,
     subjectLastName,
-    subjectFullName: `${subjectFirstName} ${subjectLastName}`.trim() || 'a new contact',
+    subjectFullName: joinFullName(subjectFirstName, subjectLastName, 'a new contact'),
     subjectEmail,
     subjectPhone,
     subjectRecordUrl,
