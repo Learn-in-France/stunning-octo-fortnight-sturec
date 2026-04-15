@@ -397,6 +397,32 @@ const templates: Record<string, TemplateRenderer> = {
 
   student_assigned: ({ recipientFirstName, data }) => {
     const studentName = str(data.studentName, 'a new student')
+    const studentEmail = str(data.studentEmail)
+    const studentPhone = str(data.studentPhone)
+    const studentUrl = str(data.studentUrl, 'https://learninfrance.com/students')
+    const assessmentSummary = str(data.assessmentSummary)
+    const priorityLevel = str(data.priorityLevel)
+    const qualScore = data.qualificationScore
+    const reason = str(data.reason)
+
+    const contactLines: string[] = []
+    if (studentEmail) contactLines.push(`<li>Email: <a href="mailto:${escapeAttr(studentEmail)}">${escapeHtml(studentEmail)}</a></li>`)
+    if (studentPhone) contactLines.push(`<li>Phone: <a href="tel:${escapeAttr(studentPhone)}">${escapeHtml(studentPhone)}</a></li>`)
+    const contactHtml = contactLines.length
+      ? `<ul style="margin:8px 0;padding-left:20px;">${contactLines.join('')}</ul>`
+      : ''
+
+    const assessmentHtml = assessmentSummary
+      ? `<p style="padding:10px 14px;background:#faf6ee;border-left:3px solid #c8102e;margin:14px 0;">
+           <strong>AI read:</strong> ${escapeHtml(assessmentSummary)}
+           ${priorityLevel ? ` <em style="color:#94a3b8;">(${escapeHtml(priorityLevel.toUpperCase())}${typeof qualScore === 'number' ? `, score ${qualScore}` : ''})</em>` : ''}
+         </p>`
+      : ''
+
+    const reasonHtml = reason
+      ? `<p><strong>Assignment note:</strong> ${escapeHtml(reason)}</p>`
+      : ''
+
     return {
       subject: `New student assigned: ${studentName}`,
       html: shell({
@@ -405,14 +431,24 @@ const templates: Record<string, TemplateRenderer> = {
         bodyHtml: `
           <p>Hi ${escapeHtml(recipientFirstName) || 'there'},</p>
           <p><strong>${escapeHtml(studentName)}</strong> has been assigned to you.</p>
+          ${contactHtml}
+          ${assessmentHtml}
+          ${reasonHtml}
+          <p>Open their record to review the full profile before reaching out.</p>
         `,
-        ctaLabel: 'Open student',
-        ctaUrl: str(data.studentUrl, 'https://learninfrance.com/students'),
+        ctaLabel: 'Open student record',
+        ctaUrl: studentUrl,
       }),
       text: plainText([
         `Hi ${recipientFirstName || 'there'},`,
         '',
         `${studentName} has been assigned to you.`,
+        studentEmail ? `Email: ${studentEmail}` : '',
+        studentPhone ? `Phone: ${studentPhone}` : '',
+        assessmentSummary ? `AI read: ${assessmentSummary}` : '',
+        reason ? `Assignment note: ${reason}` : '',
+        '',
+        `Open record: ${studentUrl}`,
       ]),
     }
   },

@@ -253,6 +253,27 @@ export function findStudentAssessments(studentId: string) {
   })
 }
 
+/**
+ * Used by the counsellor assignment notification path to surface a
+ * one-line AI read in the assignment email.
+ */
+export function findLatestAssessment(studentId: string) {
+  return prisma.aiAssessment.findFirst({
+    where: {
+      OR: [
+        { studentId },
+        { lead: { convertedStudentId: studentId } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      summaryForTeam: true,
+      priorityLevel: true,
+      qualificationScore: true,
+    },
+  })
+}
+
 export function findStudentAssessmentById(studentId: string, assessmentId: string) {
   return prisma.aiAssessment.findFirst({
     where: {

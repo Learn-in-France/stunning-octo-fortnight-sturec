@@ -18,6 +18,8 @@ import type { RequestUser } from '../../middleware/auth.js'
 import * as repo from './repository.js'
 import { toPrismaArgs, paginate } from '../../lib/pagination.js'
 import { getNotificationsQueue, getMauticSyncQueue } from '../../lib/queue/index.js'
+import { frontendUrl } from '../../lib/frontend-url.js'
+import { joinFullName } from '../../lib/names.js'
 import {
   mapStudentToListItem,
   mapStudentToDetail,
@@ -156,20 +158,40 @@ export async function assignCounsellor(id: string, counsellorId: string, assigne
   // Create new assignment
   const assignment = await repo.createAssignment({ studentId: id, counsellorId, assignedBy, reason })
 
-  // Update student
+  // Update student (returns with `user` eagerly loaded)
   const student = await repo.updateStudent(id, {
     assignedCounsellorId: counsellorId,
     assignedAt: new Date(),
   })
 
-  // Notify the counsellor about new assignment
+  // Pull the latest assessment so the counsellor's assignment email
+  // carries a one-line AI read alongside contact info.
+  const latestAssessment = await repo.findLatestAssessment(id).catch(() => null)
+
+  const studentFullName = joinFullName(
+    student.user.firstName,
+    student.user.lastName,
+    'a new student',
+  )
+
+  // Notify the counsellor about new assignment — pass full student
+  // context so the template renders a contact card instead of a bare
+  // "a new student has been assigned" line.
   getNotificationsQueue().add('student-assigned', {
     recipientId: counsellorId,
     channel: 'email',
     templateKey: 'student_assigned',
     data: {
-      studentId: id,
       triggeringActionId: assignment.id,
+      studentId: id,
+      studentName: studentFullName,
+      studentEmail: student.user.email ?? '',
+      studentPhone: student.user.phone ?? '',
+      studentUrl: frontendUrl(`/students/${id}`),
+      assessmentSummary: latestAssessment?.summaryForTeam ?? '',
+      priorityLevel: latestAssessment?.priorityLevel ?? '',
+      qualificationScore: latestAssessment?.qualificationScore ?? null,
+      reason: reason ?? '',
     },
   }).catch((err) => console.error('[students] Failed to enqueue assignment notification:', err))
 
