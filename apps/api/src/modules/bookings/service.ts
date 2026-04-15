@@ -4,6 +4,7 @@ import type { RequestUser } from '../../middleware/auth.js'
 import * as repo from './repository.js'
 import { mapBooking } from '../../lib/mappers/index.js'
 import { getNotificationsQueue, getAiProcessingQueue } from '../../lib/queue/index.js'
+import { frontendUrl } from '../../lib/frontend-url.js'
 
 export async function listBookings(user: RequestUser): Promise<BookingListItem[]> {
   let where = {}
@@ -57,35 +58,30 @@ export async function createBooking(
     }).catch((err) => console.error('[bookings] Failed to enqueue booking summary:', err))
   }
 
+  // Build the full notification payload (student/lead info, assessment,
+  // counsellor name, deep links) so every email carries real context.
+  const notificationData = await buildBookingNotificationData(booking.id)
+
   // Notify admin about new booking awaiting assignment
   if (!bookingTarget.counsellorId) {
     getNotificationsQueue().add('booking-awaiting-assignment', {
       recipientId: 'admin-team',
       channel: 'email',
-      templateKey: 'booking_created',
-      data: {
-        studentId: bookingTarget.studentId || null,
-        leadId: bookingTarget.leadId || null,
-        scheduledAt: data.scheduledAt,
-        triggeringActionId: booking.id,
-        status: 'awaiting_assignment',
-      },
+      templateKey: 'booking_admin_awaiting_assignment',
+      data: notificationData,
     }).catch((err) => console.error('[bookings] Failed to enqueue admin notification:', err))
   }
 
-  // If counsellor is already assigned, notify them directly
+  // If counsellor is already assigned, notify them directly AND confirm to student
   if (bookingTarget.counsellorId) {
-    getNotificationsQueue().add('booking-created', {
+    getNotificationsQueue().add('booking-counsellor-assigned', {
       recipientId: bookingTarget.counsellorId,
       channel: 'email',
-      templateKey: 'booking_created',
-      data: {
-        studentId: bookingTarget.studentId || null,
-        leadId: bookingTarget.leadId || null,
-        scheduledAt: data.scheduledAt,
-        triggeringActionId: booking.id,
-      },
-    }).catch((err) => console.error('[bookings] Failed to enqueue booking notification:', err))
+      templateKey: 'booking_counsellor_assigned',
+      data: notificationData,
+    }).catch((err) => console.error('[bookings] Failed to enqueue counsellor notification:', err))
+
+    await notifyStudentBookingConfirmed(notificationData)
   }
 
   return mapBooking(booking)
@@ -157,20 +153,157 @@ export async function updateBooking(
     scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
   })
 
+  // On counsellor assignment (or reassignment), notify the new counsellor
+  // with full student context AND send the student a confirmation naming
+  // the counsellor.
   if (data.counsellorId && existing.counsellorId !== data.counsellorId) {
-    getNotificationsQueue().add('booking-assigned', {
+    const notificationData = await buildBookingNotificationData(booking.id)
+
+    getNotificationsQueue().add('booking-counsellor-assigned', {
       recipientId: data.counsellorId,
       channel: 'email',
-      templateKey: 'booking_created',
-      data: {
-        studentId: booking.studentId,
-        leadId: booking.leadId,
-        scheduledAt: booking.scheduledAt.toISOString(),
-        triggeringActionId: booking.id,
-        status: booking.status,
-      },
+      templateKey: 'booking_counsellor_assigned',
+      data: notificationData,
     }).catch((err) => console.error('[bookings] Failed to enqueue assignment notification:', err))
+
+    await notifyStudentBookingConfirmed(notificationData)
   }
 
   return mapBooking(booking)
+}
+
+// ─── Notification payload builder ─────────────────────────────
+
+/**
+ * Resolve everything the booking email templates care about in one go —
+ * student contact details, latest AI assessment summary, counsellor
+ * name, scheduled time, notes, and deep links back into the internal
+ * app / student portal. Returned object is flat so templates can read
+ * fields without null-chasing.
+ */
+async function buildBookingNotificationData(
+  bookingId: string,
+): Promise<Record<string, unknown>> {
+  const booking = await repo.findBookingContext(bookingId)
+  if (!booking) {
+    return { triggeringActionId: bookingId }
+  }
+
+  const scheduledAt = booking.scheduledAt.toISOString()
+  const scheduledAtHuman = formatScheduledAt(booking.scheduledAt)
+
+  // Subject = student or lead — pick whichever is set.
+  const subjectKind: 'student' | 'lead' = booking.studentId ? 'student' : 'lead'
+
+  let subjectFirstName = ''
+  let subjectLastName = ''
+  let subjectEmail = ''
+  let subjectPhone = ''
+  let subjectRecordUrl = ''
+  let subjectUserId: string | null = null
+  let latestAssessmentSummary = ''
+  let latestPriorityLevel = ''
+  let latestQualificationScore: number | null = null
+
+  if (booking.student) {
+    const u = booking.student.user
+    subjectFirstName = u.firstName ?? ''
+    subjectLastName = u.lastName ?? ''
+    subjectEmail = u.email ?? ''
+    subjectPhone = u.phone ?? ''
+    subjectUserId = u.id
+    subjectRecordUrl = frontendUrl(`/students/${booking.student.id}`)
+    const assessment = booking.student.aiAssessments[0]
+    if (assessment) {
+      latestAssessmentSummary = assessment.summaryForTeam ?? ''
+      latestPriorityLevel = assessment.priorityLevel ?? ''
+      latestQualificationScore = assessment.qualificationScore
+    }
+  } else if (booking.lead) {
+    subjectFirstName = booking.lead.firstName ?? ''
+    subjectLastName = booking.lead.lastName ?? ''
+    subjectEmail = booking.lead.email ?? ''
+    subjectPhone = booking.lead.phone ?? ''
+    subjectRecordUrl = frontendUrl(`/leads/${booking.lead.id}`)
+    const assessment = booking.lead.aiAssessments[0]
+    if (assessment) {
+      latestAssessmentSummary = assessment.summaryForTeam ?? ''
+      latestPriorityLevel = assessment.priorityLevel ?? ''
+      latestQualificationScore = assessment.qualificationScore
+    }
+  }
+
+  const counsellorFirstName = booking.counsellor?.firstName ?? ''
+  const counsellorLastName = booking.counsellor?.lastName ?? ''
+  const counsellorFullName =
+    `${counsellorFirstName} ${counsellorLastName}`.trim() || 'your counsellor'
+
+  return {
+    triggeringActionId: booking.id,
+    bookingId: booking.id,
+    status: booking.status,
+    scheduledAt: scheduledAtHuman,
+    scheduledAtIso: scheduledAt,
+    notes: booking.notes ?? '',
+    subjectKind,
+    subjectFirstName,
+    subjectLastName,
+    subjectFullName: `${subjectFirstName} ${subjectLastName}`.trim() || 'a new contact',
+    subjectEmail,
+    subjectPhone,
+    subjectRecordUrl,
+    subjectUserId,
+    studentId: booking.studentId,
+    leadId: booking.leadId,
+    counsellorId: booking.counsellorId,
+    counsellorFirstName,
+    counsellorLastName,
+    counsellorFullName,
+    assessmentSummary: latestAssessmentSummary,
+    priorityLevel: latestPriorityLevel,
+    qualificationScore: latestQualificationScore,
+    adminQueueUrl: frontendUrl('/dashboard'),
+    portalUrl: frontendUrl('/portal'),
+  }
+}
+
+/**
+ * Send a confirmation email to the student whose booking was just
+ * assigned a counsellor. No-op for lead bookings (leads don't have a
+ * user account yet) or if we couldn't resolve a user id.
+ */
+async function notifyStudentBookingConfirmed(
+  data: Record<string, unknown>,
+): Promise<void> {
+  const studentUserId = data.subjectUserId
+  if (typeof studentUserId !== 'string' || !studentUserId) return
+
+  await getNotificationsQueue()
+    .add('booking-student-confirmed', {
+      recipientId: studentUserId,
+      channel: 'email',
+      templateKey: 'booking_student_confirmed',
+      data,
+    })
+    .catch((err) =>
+      console.error('[bookings] Failed to enqueue student confirmation:', err),
+    )
+}
+
+function formatScheduledAt(date: Date): string {
+  // e.g. "Tue, 16 Apr 2026 at 14:00 UTC"
+  try {
+    return date.toLocaleString('en-GB', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+      timeZoneName: 'short',
+    })
+  } catch {
+    return date.toISOString()
+  }
 }

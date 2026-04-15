@@ -12,6 +12,64 @@ export function findBookingById(id: string) {
   return prisma.booking.findUnique({ where: { id } })
 }
 
+/**
+ * Fetch a booking plus everything the notification templates need:
+ * the student (or lead) contact info, the latest AI assessment summary,
+ * and the assigned counsellor. Used by the booking notification path so
+ * admins/counsellors/students receive emails with full context instead
+ * of a bare "session confirmed" line.
+ */
+export async function findBookingContext(bookingId: string) {
+  return prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      student: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          aiAssessments: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              summaryForTeam: true,
+              priorityLevel: true,
+              qualificationScore: true,
+            },
+          },
+        },
+      },
+      lead: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          aiAssessments: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              summaryForTeam: true,
+              priorityLevel: true,
+              qualificationScore: true,
+            },
+          },
+        },
+      },
+      counsellor: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
+    },
+  })
+}
+
 export function findStudentByUserId(userId: string) {
   return prisma.student.findFirst({
     where: { userId, deletedAt: null },
