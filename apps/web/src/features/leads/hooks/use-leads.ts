@@ -143,7 +143,7 @@ function activityToTimeline(item: ActivityLogItem): TimelineItem {
     title: item.summary ?? `${capitalize(item.activityType.replace(/_/g, ' '))} via ${item.channel}`,
     description: item.outcome ?? undefined,
     timestamp: item.createdAt,
-    actor: item.createdBy.name,
+    actor: item.createdBy?.name ?? 'System',
   }
 }
 
