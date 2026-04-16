@@ -1397,57 +1397,82 @@ function CaseKpiStrip({ studentId, student }: { studentId: string; student: Retu
 
   if (!student) return null
 
+  const profilePct = latestAssessment?.profileCompleteness
+    ? Math.round(Number(latestAssessment.profileCompleteness) * 100)
+    : null
+
+  const profileColor =
+    profilePct === null ? 'bg-border' :
+    profilePct >= 70 ? 'bg-score-high' :
+    profilePct >= 40 ? 'bg-score-mid' :
+    'bg-score-low'
+
+  const heatLabel = latestAssessment?.leadHeat?.replace(/_/g, ' ') ?? 'Not assessed'
+  const heatColor =
+    latestAssessment?.leadHeat === 'hot' ? 'text-red-600 bg-red-50' :
+    latestAssessment?.leadHeat === 'warm' ? 'text-amber-600 bg-amber-50' :
+    latestAssessment?.leadHeat === 'cold' ? 'text-sky-600 bg-sky-50' :
+    latestAssessment?.leadHeat === 'needs_follow_up' ? 'text-amber-600 bg-amber-50' :
+    'text-text-muted bg-surface-sunken/60'
+
+  const visaLabel = student.visaRisk ?? '—'
+  const visaColor =
+    student.visaRisk === 'low' ? 'text-emerald-600 bg-emerald-50' :
+    student.visaRisk === 'medium' ? 'text-amber-600 bg-amber-50' :
+    student.visaRisk === 'high' ? 'text-red-600 bg-red-50' :
+    'text-text-muted bg-surface-sunken/60'
+
+  const ownerLabel = student.assignedCounsellorId ? 'Assigned' : 'None'
+  const ownerColor = student.assignedCounsellorId
+    ? 'text-emerald-600 bg-emerald-50'
+    : 'text-text-muted bg-surface-sunken/60'
+
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-      <KpiChip label="Stage" value={<StageBadge stage={student.stage} />} />
-      <KpiChip
-        label="Heat"
-        value={
-          <Badge variant={
-            latestAssessment?.leadHeat === 'hot' ? 'danger' :
-            latestAssessment?.leadHeat === 'warm' ? 'warning' :
-            latestAssessment?.leadHeat === 'cold' ? 'info' :
-            latestAssessment?.leadHeat === 'needs_follow_up' ? 'warning' : 'muted'
-          } dot>
-            {latestAssessment?.leadHeat ?? 'Not assessed'}
-          </Badge>
-        }
-      />
-      <KpiChip
-        label="Profile"
-        value={
-          <span className="text-xs font-semibold text-text-primary">
-            {latestAssessment?.profileCompleteness
-              ? `${Math.round(Number(latestAssessment.profileCompleteness) * 100)}%`
-              : '—'}
+    <div className="grid grid-cols-5 gap-2">
+      <KpiCell label="Stage">
+        <StageBadge stage={student.stage} />
+      </KpiCell>
+
+      <KpiCell label="Heat">
+        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold capitalize ${heatColor}`}>
+          {heatLabel}
+        </span>
+      </KpiCell>
+
+      <KpiCell label="Profile">
+        <div className="flex items-center gap-2">
+          <div className="w-16 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
+            <div
+              className={`h-1.5 rounded-full transition-all ${profileColor}`}
+              style={{ width: `${profilePct ?? 0}%` }}
+            />
+          </div>
+          <span className="text-xs font-mono font-semibold text-text-primary">
+            {profilePct !== null ? `${profilePct}%` : '—'}
           </span>
-        }
-      />
-      <KpiChip
-        label="Visa"
-        value={
-          <Badge variant={
-            student.visaRisk === 'low' ? 'success' :
-            student.visaRisk === 'medium' ? 'warning' :
-            student.visaRisk === 'high' ? 'danger' : 'muted'
-          } dot>
-            {student.visaRisk ?? '—'}
-          </Badge>
-        }
-      />
-      <KpiChip
-        label="Owner"
-        value={<span className="text-xs font-semibold text-text-primary">{student.assignedCounsellorId ? 'Assigned' : 'None'}</span>}
-      />
+        </div>
+      </KpiCell>
+
+      <KpiCell label="Visa">
+        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold capitalize ${visaColor}`}>
+          {visaLabel}
+        </span>
+      </KpiCell>
+
+      <KpiCell label="Owner">
+        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${ownerColor}`}>
+          {ownerLabel}
+        </span>
+      </KpiCell>
     </div>
   )
 }
 
-function KpiChip({ label, value }: { label: string; value: ReactNode }) {
+function KpiCell({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
-      {value}
+    <div className="rounded-lg bg-surface-sunken/30 px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-1">{label}</p>
+      <div>{children}</div>
     </div>
   )
 }
