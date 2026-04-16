@@ -30,7 +30,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   if (error || !lead) {
     return (
       <div className="text-center py-20">
-        <p className="text-text-muted">Lead not found.</p>
+        <p className="text-text-muted">{error ? 'Failed to load lead details.' : 'Lead not found.'}</p>
         <Link href="/leads" className="text-sm text-primary-600 hover:underline mt-2 inline-block">
           Back to leads
         </Link>
