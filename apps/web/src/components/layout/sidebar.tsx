@@ -39,7 +39,7 @@ const NAV_SECTIONS: { label?: string; items: NavItem[] }[] = [
       {
         label: 'Leads',
         href: '/leads',
-        roles: ['admin'],
+        roles: ['admin', 'counsellor'],
         icon: (
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M9 1.5L16.5 5.25V12.75L9 16.5L1.5 12.75V5.25L9 1.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />

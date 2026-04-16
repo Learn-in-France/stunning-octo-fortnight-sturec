@@ -188,3 +188,58 @@ export function useImportLeads() {
     },
   })
 }
+
+// ─── Lead action mutations ──────────────────────────────────
+
+export function useConvertLead(leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post(`/leads/${leadId}/convert`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics'] })
+    },
+  })
+}
+
+export function useDisqualifyLead(leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (reason: string) => api.post(`/leads/${leadId}/disqualify`, { reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['analytics'] })
+    },
+  })
+}
+
+export function useReassessLead(leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post(`/leads/${leadId}/activities`, {
+      activityType: 'status_update',
+      channel: 'internal',
+      direction: 'internal',
+      summary: 'Manual AI re-assessment requested',
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads', leadId] })
+    },
+  })
+}
+
+export function useCreateLeadActivity(leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: {
+      activityType: string
+      channel: string
+      direction: string
+      outcome?: string
+      summary?: string
+    }) => api.post(`/leads/${leadId}/activities`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads', leadId] })
+    },
+  })
+}

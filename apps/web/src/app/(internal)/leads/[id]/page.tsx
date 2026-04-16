@@ -1,23 +1,52 @@
 'use client'
 
-import { use } from 'react'
+import { use, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 import type { LeadQualificationBlock } from '@sturec/shared'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Modal } from '@/components/ui/modal'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { PriorityBadge } from '@/components/shared/priority-badge'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { ScoreBar, ScoreCircle } from '@/components/shared/score-bar'
-import { useLead, type LeadDetailView } from '@/features/leads/hooks/use-leads'
+import { useToast } from '@/providers/toast-provider'
+import {
+  useLead,
+  useConvertLead,
+  useDisqualifyLead,
+  useCreateLeadActivity,
+  type LeadDetailView,
+} from '@/features/leads/hooks/use-leads'
 import type { TimelineItem } from '@/features/leads/hooks/use-leads'
 
 export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const router = useRouter()
+  const { addToast } = useToast()
   const { data: lead, isLoading, error } = useLead(id)
+
+  const convertLead = useConvertLead(id)
+  const disqualifyLead = useDisqualifyLead(id)
+  const createActivity = useCreateLeadActivity(id)
+
+  const [showDisqualifyModal, setShowDisqualifyModal] = useState(false)
+  const [disqualifyReason, setDisqualifyReason] = useState('')
+  const [showActivityForm, setShowActivityForm] = useState(false)
+  const [activityForm, setActivityForm] = useState({
+    activityType: 'call' as string,
+    channel: 'phone' as string,
+    direction: 'outbound' as string,
+    outcome: '',
+    summary: '',
+  })
 
   if (isLoading) {
     return (
@@ -40,6 +69,56 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
   const qualification = lead.qualification
   const assessment = lead.latestAssessment
+  const isActionable = lead.status !== 'converted' && lead.status !== 'disqualified'
+
+  function handleConvert() {
+    convertLead.mutate(undefined, {
+      onSuccess: (data: unknown) => {
+        const result = data as { studentId?: string } | undefined
+        addToast('success', 'Lead converted to student.')
+        if (result?.studentId) {
+          router.push(`/students/${result.studentId}`)
+        } else {
+          router.push('/students')
+        }
+      },
+      onError: () => addToast('error', 'Failed to convert lead.'),
+    })
+  }
+
+  function handleDisqualify(e: React.FormEvent) {
+    e.preventDefault()
+    if (!disqualifyReason.trim()) return
+    disqualifyLead.mutate(disqualifyReason.trim(), {
+      onSuccess: () => {
+        addToast('success', 'Lead disqualified.')
+        setShowDisqualifyModal(false)
+        setDisqualifyReason('')
+      },
+      onError: () => addToast('error', 'Failed to disqualify lead.'),
+    })
+  }
+
+  function handleLogActivity(e: React.FormEvent) {
+    e.preventDefault()
+    createActivity.mutate(
+      {
+        activityType: activityForm.activityType,
+        channel: activityForm.channel,
+        direction: activityForm.direction,
+        outcome: activityForm.outcome.trim() || undefined,
+        summary: activityForm.summary.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          addToast('success', 'Activity logged.')
+          setActivityForm({ activityType: 'call', channel: 'phone', direction: 'outbound', outcome: '', summary: '' })
+          setShowActivityForm(false)
+        },
+        onError: () => addToast('error', 'Failed to log activity.'),
+      },
+    )
+  }
 
   return (
     <div>
@@ -63,21 +142,108 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         }
         actions={
           <div className="flex items-center gap-2">
-            {lead.status !== 'converted' && lead.status !== 'disqualified' && (
+            {isActionable && (
               <>
-                <Button size="sm" variant="secondary">Assign</Button>
-                <Button size="sm" variant="secondary">Re-assess</Button>
-                {lead.status === 'qualified' && (
-                  <Button size="sm">Convert to Student</Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setShowActivityForm(!showActivityForm)}
+                >
+                  {showActivityForm ? 'Cancel' : 'Log Activity'}
+                </Button>
+                {(lead.status === 'qualified' || lead.status === 'nurturing') && (
+                  <Button
+                    size="sm"
+                    onClick={handleConvert}
+                    loading={convertLead.isPending}
+                  >
+                    Convert to Student
+                  </Button>
                 )}
-                <Button size="sm" variant="danger">Disqualify</Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => setShowDisqualifyModal(true)}
+                >
+                  Disqualify
+                </Button>
               </>
             )}
           </div>
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Activity logging form */}
+      {showActivityForm && isActionable && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Log Activity</CardTitle>
+          </CardHeader>
+          <form onSubmit={handleLogActivity} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Select
+                label="Type"
+                value={activityForm.activityType}
+                onChange={(e) => setActivityForm({ ...activityForm, activityType: e.target.value })}
+                options={[
+                  { value: 'call', label: 'Call' },
+                  { value: 'whatsapp', label: 'WhatsApp' },
+                  { value: 'email', label: 'Email' },
+                  { value: 'meeting', label: 'Meeting' },
+                  { value: 'follow_up', label: 'Follow-up' },
+                  { value: 'status_update', label: 'Status Update' },
+                  { value: 'other', label: 'Other' },
+                ]}
+              />
+              <Select
+                label="Channel"
+                value={activityForm.channel}
+                onChange={(e) => setActivityForm({ ...activityForm, channel: e.target.value })}
+                options={[
+                  { value: 'phone', label: 'Phone' },
+                  { value: 'whatsapp', label: 'WhatsApp' },
+                  { value: 'email', label: 'Email' },
+                  { value: 'video', label: 'Video' },
+                  { value: 'in_person', label: 'In Person' },
+                  { value: 'internal', label: 'Internal' },
+                  { value: 'other', label: 'Other' },
+                ]}
+              />
+              <Select
+                label="Direction"
+                value={activityForm.direction}
+                onChange={(e) => setActivityForm({ ...activityForm, direction: e.target.value })}
+                options={[
+                  { value: 'outbound', label: 'Outbound' },
+                  { value: 'inbound', label: 'Inbound' },
+                  { value: 'internal', label: 'Internal' },
+                ]}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Outcome"
+                value={activityForm.outcome}
+                onChange={(e) => setActivityForm({ ...activityForm, outcome: e.target.value })}
+                placeholder="e.g. Interested, No answer, Callback requested"
+              />
+              <Input
+                label="Summary"
+                value={activityForm.summary}
+                onChange={(e) => setActivityForm({ ...activityForm, summary: e.target.value })}
+                placeholder="Brief summary of the interaction"
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" type="submit" loading={createActivity.isPending}>
+                Save Activity
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         {/* Left column — profile + qualification */}
         <div className="lg:col-span-2 space-y-6">
           {/* Profile card */}
@@ -118,12 +284,12 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             </div>
           </Card>
 
-          {/* Qualification block — from lead.qualification (LeadQualificationBlock) */}
+          {/* Qualification block */}
           {qualification && (
             <QualificationCard qualification={qualification} assessment={assessment} />
           )}
 
-          {/* AI Summary — from latestAssessment (AiAssessmentSummary) */}
+          {/* AI Summary */}
           {qualification?.summaryForTeam && (
             <Card>
               <CardHeader>
@@ -148,7 +314,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               <CardTitle>Timeline</CardTitle>
             </CardHeader>
             {lead.timeline.length === 0 ? (
-              <p className="text-sm text-text-muted">No activity yet.</p>
+              <p className="text-sm text-text-muted">No activity yet. Use "Log Activity" above to record your first outreach.</p>
             ) : (
               <div className="space-y-0">
                 {lead.timeline
@@ -161,6 +327,30 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           </Card>
         </div>
       </div>
+
+      {/* Disqualify modal */}
+      <Modal open={showDisqualifyModal} onClose={() => setShowDisqualifyModal(false)} title="Disqualify Lead" size="sm">
+        <form onSubmit={handleDisqualify} className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            This marks <strong>{lead.firstName} {lead.lastName}</strong> as disqualified. Add a reason so the team knows why.
+          </p>
+          <Textarea
+            label="Reason"
+            value={disqualifyReason}
+            onChange={(e) => setDisqualifyReason(e.target.value)}
+            placeholder="e.g. Not eligible for France programs, budget too low, not responsive after 3 attempts"
+            className="min-h-[100px]"
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" size="sm" onClick={() => setShowDisqualifyModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="danger" size="sm" loading={disqualifyLead.isPending} disabled={!disqualifyReason.trim()}>
+              Disqualify
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }
