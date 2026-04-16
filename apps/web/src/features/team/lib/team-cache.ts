@@ -4,12 +4,21 @@ import api from '@/lib/api/client'
 let cached: { data: TeamMemberItem[]; ts: number } | null = null
 const TTL = 5 * 60 * 1000 // 5 minutes
 
-/** Fetch team members with simple in-memory TTL cache. Safe to call from queryFn. */
+/**
+ * Fetch team members with simple in-memory TTL cache. Safe to call
+ * from queryFn. Returns an empty array if the caller lacks permission
+ * (counsellors can't access GET /team) so downstream name resolution
+ * falls back to generic labels instead of crashing the page.
+ */
 export async function fetchTeamMembers(): Promise<TeamMemberItem[]> {
   if (cached && Date.now() - cached.ts < TTL) return cached.data
-  const data = await api.get('/team') as unknown as TeamMemberItem[]
-  cached = { data, ts: Date.now() }
-  return data
+  try {
+    const data = await api.get('/team') as unknown as TeamMemberItem[]
+    cached = { data, ts: Date.now() }
+    return data
+  } catch {
+    return []
+  }
 }
 
 /** Build id→name lookup from team member array. */
