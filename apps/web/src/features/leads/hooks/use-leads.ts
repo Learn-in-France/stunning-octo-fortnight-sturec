@@ -111,9 +111,10 @@ export function useLead(id: string) {
     queryFn: async (): Promise<LeadDetailView> => {
       const [lead, assessmentsRes, activitiesRes, team] = await Promise.all([
         api.get(`/leads/${id}`) as unknown as LeadDetail,
+        // Assessment endpoint returns a raw array, not paginated.
         api.get(`/leads/${id}/ai-assessments`, {
           params: { limit: 1, sortBy: 'created_at', sortOrder: 'desc' },
-        }) as unknown as PaginatedResponse<AiAssessmentSummary>,
+        }) as unknown as AiAssessmentSummary[] | PaginatedResponse<AiAssessmentSummary>,
         api.get(`/leads/${id}/activities`, {
           params: { limit: 50, sortBy: 'created_at', sortOrder: 'desc' },
         }) as unknown as PaginatedResponse<ActivityLogItem>,
@@ -121,12 +122,14 @@ export function useLead(id: string) {
       ])
 
       const nameMap = buildNameMap(team)
+      const assessments = Array.isArray(assessmentsRes) ? assessmentsRes : assessmentsRes.items ?? []
+      const activities = Array.isArray(activitiesRes) ? activitiesRes : activitiesRes.items ?? []
 
       return {
         ...lead,
         counsellorName: resolveName(nameMap, lead.assignedCounsellorId),
-        latestAssessment: assessmentsRes.items[0] ?? null,
-        timeline: activitiesRes.items.map(activityToTimeline),
+        latestAssessment: assessments[0] ?? null,
+        timeline: activities.map(activityToTimeline),
       }
     },
     enabled: !!id,
