@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useMemo, useState } from 'react'
 
 import { decodeWebinarToken } from '@/lib/webinar-token'
@@ -47,33 +48,69 @@ export function WebinarLanding({ token }: WebinarLandingProps) {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden pt-12 pb-12 sm:pt-16 sm:pb-16">
+    <section className="relative overflow-hidden pt-10 pb-10 sm:pt-14 sm:pb-14">
       <div className="public-shell">
-        <span className="public-label">Live Webinar · Free</span>
-        <h1 className="public-heading-section mt-6 !text-4xl leading-[0.98] sm:!text-5xl lg:!text-[4.4rem]">
-          From India to France.
-          <br />
-          <span className="public-accent">Your journey begins here.</span>
-        </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-8 text-public-slate">
-          Hear from a Burgundy School of Business alumnus, a BSB representative, and a senior
-          industry professional with 15+ years building a career in France. 45 minutes of straight
-          talk on programmes, scholarships, careers, and life after graduation — plus 20 minutes of
-          live Q&amp;A, moderated by Learn in France.
-        </p>
+        <CoBrand />
+        <div className="mt-8 grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
+          <div>
+            <span className="public-label">Live Webinar · Free</span>
+            <h1 className="public-heading-section mt-5 !text-4xl leading-[0.98] sm:!text-5xl lg:!text-[4.2rem]">
+              From India to France.
+              <br />
+              <span className="public-accent">Your journey begins here.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-public-slate sm:text-lg sm:leading-8">
+              Hear from a Burgundy School of Business alumnus, a BSB representative, and a senior
+              industry professional with 15+ years building a career in France. 45 minutes of
+              straight talk on programmes, scholarships, careers, and life after graduation — plus
+              20 minutes of live Q&amp;A, moderated by Learn in France.
+            </p>
 
-        <div className="mt-8 flex flex-wrap gap-2.5 text-sm font-medium text-public-navy">
-          <MetaChip icon="event" text="Sunday, 11 May 2026" />
-          <MetaChip icon="schedule" text="6:00 PM IST · 45 min + Q&A" />
-          <MetaChip icon="videocam" text="Live on Microsoft Teams" />
-        </div>
+            <div className="mt-7 flex flex-wrap gap-2.5 text-sm font-medium text-public-navy">
+              <MetaChip icon="event" text="Sunday, 11 May 2026" />
+              <MetaChip icon="schedule" text="6:00 PM IST · 45 min + Q&A" />
+              <MetaChip icon="videocam" text="Live on Microsoft Teams" />
+            </div>
 
-        <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-public-red px-4 py-1.5 text-sm font-semibold text-white shadow-[0_8px_24px_-12px_rgba(200,16,46,0.6)]">
-          <span className="material-symbols-outlined !text-[1.05rem] !leading-none">local_fire_department</span>
-          Only 200 seats — RSVP to reserve yours
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-public-red px-4 py-1.5 text-sm font-semibold text-white shadow-[0_8px_24px_-12px_rgba(200,16,46,0.6)]">
+              <span className="material-symbols-outlined !text-[1.05rem] !leading-none">local_fire_department</span>
+              Only 200 seats — RSVP to reserve yours
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="public-hero-image rotate-1 overflow-hidden rounded-3xl shadow-[0_30px_80px_-40px_rgba(10,22,41,0.45)] transition-transform duration-500 hover:rotate-0">
+              <Image
+                src="/images/webinar-hero.webp"
+                alt="Indian student walking through the historic streets of Dijon, France in autumn"
+                width={1584}
+                height={672}
+                priority
+                className="h-full w-full object-cover"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </section>
+  )
+}
+
+function CoBrand() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-public-muted">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.22em]">
+        Presented in partnership with
+      </p>
+      <Image
+        src="/images/bsb-logo.svg"
+        alt="Burgundy School of Business"
+        width={180}
+        height={28}
+        className="h-7 w-auto"
+        priority
+      />
+    </div>
   )
 }
 
@@ -201,7 +238,7 @@ function TrustStrip() {
   const items = [
     { icon: 'verified', label: 'Triple Accredited', sub: 'AACSB · EQUIS · AMBA' },
     { icon: 'trending_up', label: 'Top 50 Worldwide', sub: 'Financial Times' },
-    { icon: 'public', label: 'Powered by LIF', sub: 'France & India based' },
+    { icon: 'public', label: 'Powered by LIF', sub: 'France based' },
     { icon: 'check_circle', label: '100% Free', sub: 'No obligation' },
   ]
   return (
