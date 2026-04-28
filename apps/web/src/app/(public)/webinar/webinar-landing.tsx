@@ -87,33 +87,29 @@ function Hero() {
 function PartnershipLockup() {
   return (
     <div className="relative">
-      <div className="public-hero-image rotate-1 overflow-hidden rounded-3xl border border-public-navy/10 bg-white shadow-[0_30px_80px_-40px_rgba(10,22,41,0.35)] transition-transform duration-500 hover:rotate-0">
-        <div className="flex flex-col items-center justify-center gap-7 p-10 text-center sm:p-14">
+      <div className="overflow-hidden rounded-3xl border border-public-navy/10 bg-white shadow-[0_30px_80px_-40px_rgba(10,22,41,0.35)]">
+        <div className="flex flex-col items-center justify-center gap-8 px-6 py-10 text-center sm:px-10 sm:py-14">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-public-muted">
             A live conversation by
           </p>
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-10">
-            <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-public-cream sm:h-28 sm:w-28">
-              <Image
-                src="/images/brand-wordmark-square.svg"
-                alt="Learn in France"
-                width={88}
-                height={88}
-                className="h-20 w-20 sm:h-24 sm:w-24"
-                priority
-              />
-            </div>
-            <span className="text-2xl font-light text-public-navy/40 sm:text-3xl">×</span>
-            <div className="flex h-24 w-56 items-center justify-center rounded-2xl bg-public-cream sm:h-28 sm:w-72">
-              <Image
-                src="/images/bsb-logo.svg"
-                alt="Burgundy School of Business"
-                width={240}
-                height={36}
-                className="h-9 w-auto sm:h-11"
-                priority
-              />
-            </div>
+          <div className="flex w-full flex-col items-center justify-center gap-8 sm:flex-row sm:gap-10 lg:gap-12">
+            <Image
+              src="/images/brand-wordmark-square.svg"
+              alt="Learn in France"
+              width={160}
+              height={160}
+              className="h-28 w-28 sm:h-32 sm:w-32 lg:h-36 lg:w-36"
+              priority
+            />
+            <span className="text-3xl font-light text-public-navy/30 sm:text-4xl">×</span>
+            <Image
+              src="/images/bsb-logo.svg"
+              alt="Burgundy School of Business"
+              width={520}
+              height={80}
+              className="h-12 w-auto max-w-full sm:h-14 lg:h-16"
+              priority
+            />
           </div>
           <div className="mt-2 max-w-sm border-t border-public-navy/10 pt-5">
             <p className="text-sm leading-6 text-public-slate">
