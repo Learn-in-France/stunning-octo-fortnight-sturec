@@ -20,7 +20,7 @@ export function WebinarConfirmation({ firstName, email }: WebinarConfirmationPro
     <div className="rounded-3xl border border-public-blue/25 bg-white p-8 shadow-[0_30px_60px_-30px_rgba(10,22,41,0.25)]">
       <div className="flex items-center gap-3">
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-public-blue/10 text-public-blue">
-          <span className="material-symbols-rounded !text-3xl">check_circle</span>
+          <span className="material-symbols-outlined !text-3xl">check_circle</span>
         </span>
         <div>
           <p className="public-phase-label !tracking-[0.18em] text-public-blue">You&rsquo;re in</p>
@@ -37,15 +37,15 @@ export function WebinarConfirmation({ firstName, email }: WebinarConfirmationPro
           </p>
           <ul className="mt-3 space-y-2.5 text-public-navy">
             <li className="flex gap-2">
-              <span className="material-symbols-rounded !text-base text-public-red">mail</span>
+              <span className="material-symbols-outlined !text-base text-public-red">mail</span>
               Confirmation email sent to <span className="font-medium">{email}</span>
             </li>
             <li className="flex gap-2">
-              <span className="material-symbols-rounded !text-base text-public-red">videocam</span>
+              <span className="material-symbols-outlined !text-base text-public-red">videocam</span>
               Microsoft Teams join link arrives 24 hours before — by email and WhatsApp
             </li>
             <li className="flex gap-2">
-              <span className="material-symbols-rounded !text-base text-public-red">support_agent</span>
+              <span className="material-symbols-outlined !text-base text-public-red">support_agent</span>
               A Learn in France advisor will reach out after the session to discuss your scholarship
               eligibility and application timeline
             </li>
@@ -64,7 +64,7 @@ export function WebinarConfirmation({ firstName, email }: WebinarConfirmationPro
           rel="noreferrer"
           className="public-button-secondary inline-flex w-full justify-center sm:w-auto"
         >
-          <span className="material-symbols-rounded !text-base">event</span>
+          <span className="material-symbols-outlined !text-base">event</span>
           Add to Google Calendar
         </a>
       </div>
