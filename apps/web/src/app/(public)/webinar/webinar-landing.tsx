@@ -56,10 +56,10 @@ function Hero() {
           <span className="public-accent">Your Master&rsquo;s journey starts here.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-public-slate">
-          Hear from a Burgundy School of Business alumnus, a BSB representative, and an Indian
-          professional with 15 years in France. 45 minutes of straight talk on programmes,
-          scholarships, careers, and life after graduation — plus 20 minutes of live Q&amp;A,
-          moderated by the Learn in France team.
+          Hear from a Burgundy School of Business alumnus, a BSB representative, and a senior
+          industry professional with 15+ years building a career in France. 45 minutes of straight
+          talk on programmes, scholarships, careers, and life after graduation — plus 20 minutes of
+          live Q&amp;A, moderated by Learn in France.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-2.5 text-sm font-medium text-public-navy">
@@ -88,10 +88,10 @@ function MetaChip({ icon, text }: { icon: string; text: string }) {
 
 function PanelStrip() {
   const panel = [
-    { role: 'BSB Alumni', detail: 'Recent Master\'s graduate, BSB Dijon', initials: 'BA' },
-    { role: 'Indian Professional in France', detail: '15 years living & working in France', initials: 'IP' },
+    { role: 'BSB Alumni', detail: 'Master\'s graduate, BSB Dijon', initials: 'BA' },
+    { role: 'Senior Industry Professional', detail: 'India to France · 15+ years senior career', initials: 'SP' },
     { role: 'BSB Representative', detail: 'Burgundy School of Business', initials: 'BR' },
-    { role: 'Learn in France', detail: 'Founder · Moderator', initials: 'PK' },
+    { role: 'Learn in France', detail: 'Moderator', initials: 'LIF' },
   ]
 
   return (
@@ -141,9 +141,9 @@ function WhatYouLearn() {
     },
     {
       icon: 'work',
-      title: 'Career outcomes from someone who lived it',
+      title: 'Career outcomes — from a senior who built one',
       body:
-        'An Indian professional with 15 years in France on language, hiring culture, salary expectations, and how to plan for life after graduation.',
+        'A senior industry professional with 15+ years in France on language, hiring culture, salary expectations, and how to plan for life after graduation.',
     },
     {
       icon: 'paid',
