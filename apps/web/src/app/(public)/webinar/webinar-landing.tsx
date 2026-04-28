@@ -50,8 +50,7 @@ function Hero() {
   return (
     <section className="relative overflow-hidden pt-10 pb-10 sm:pt-14 sm:pb-14">
       <div className="public-shell">
-        <CoBrand />
-        <div className="mt-8 grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
+        <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
           <div>
             <span className="public-label">Live Webinar · Free</span>
             <h1 className="public-heading-section mt-5 !text-4xl leading-[0.98] sm:!text-5xl lg:!text-[4.2rem]">
@@ -78,38 +77,52 @@ function Hero() {
             </div>
           </div>
 
-          <div className="relative">
-            <div className="public-hero-image rotate-1 overflow-hidden rounded-3xl shadow-[0_30px_80px_-40px_rgba(10,22,41,0.45)] transition-transform duration-500 hover:rotate-0">
-              <Image
-                src="/images/webinar-hero.webp"
-                alt="Indian student walking through the historic streets of Dijon, France in autumn"
-                width={1584}
-                height={672}
-                priority
-                className="h-full w-full object-cover"
-              />
-            </div>
-          </div>
+          <PartnershipLockup />
         </div>
       </div>
     </section>
   )
 }
 
-function CoBrand() {
+function PartnershipLockup() {
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-public-muted">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.22em]">
-        Presented in partnership with
-      </p>
-      <Image
-        src="/images/bsb-logo.svg"
-        alt="Burgundy School of Business"
-        width={180}
-        height={28}
-        className="h-7 w-auto"
-        priority
-      />
+    <div className="relative">
+      <div className="public-hero-image rotate-1 overflow-hidden rounded-3xl border border-public-navy/10 bg-white shadow-[0_30px_80px_-40px_rgba(10,22,41,0.35)] transition-transform duration-500 hover:rotate-0">
+        <div className="flex flex-col items-center justify-center gap-7 p-10 text-center sm:p-14">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-public-muted">
+            A live conversation by
+          </p>
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-10">
+            <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-public-cream sm:h-28 sm:w-28">
+              <Image
+                src="/images/brand-wordmark-square.svg"
+                alt="Learn in France"
+                width={88}
+                height={88}
+                className="h-20 w-20 sm:h-24 sm:w-24"
+                priority
+              />
+            </div>
+            <span className="text-2xl font-light text-public-navy/40 sm:text-3xl">×</span>
+            <div className="flex h-24 w-56 items-center justify-center rounded-2xl bg-public-cream sm:h-28 sm:w-72">
+              <Image
+                src="/images/bsb-logo.svg"
+                alt="Burgundy School of Business"
+                width={240}
+                height={36}
+                className="h-9 w-auto sm:h-11"
+                priority
+              />
+            </div>
+          </div>
+          <div className="mt-2 max-w-sm border-t border-public-navy/10 pt-5">
+            <p className="text-sm leading-6 text-public-slate">
+              Learn in France is a France-based education advisory and an official India partner of
+              Burgundy School of Business.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
