@@ -6,6 +6,7 @@ import type { WebinarTokenPayload } from '@/lib/webinar-token'
 import { env } from '@/lib/config/env'
 
 const PROGRAMMES = [
+  'Bachelor in Management',
   'Master in Management — Grande Ecole',
   'MSc — Artificial Intelligence & Digital Strategy Management',
   'MSc — Data Science & Organisational Behaviour',
@@ -153,7 +154,7 @@ export function WebinarRsvpForm({ prefilled, token, onConfirmed }: WebinarRsvpFo
 
       <div className="mt-6 rounded-2xl border border-public-red/30 bg-public-red/5 p-4">
         <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-public-red">
-          When do you plan to start your Master&rsquo;s? *
+          When do you plan to start your studies in France? *
         </label>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {INTAKE_OPTIONS.map((opt) => (

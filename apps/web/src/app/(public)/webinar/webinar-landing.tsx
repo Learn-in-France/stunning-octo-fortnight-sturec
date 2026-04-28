@@ -53,7 +53,7 @@ function Hero() {
         <h1 className="public-heading-section mt-6 !text-4xl leading-[0.98] sm:!text-5xl lg:!text-[4.4rem]">
           From India to France.
           <br />
-          <span className="public-accent">Your Master&rsquo;s journey starts here.</span>
+          <span className="public-accent">Your journey begins here.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-public-slate">
           Hear from a Burgundy School of Business alumnus, a BSB representative, and a senior
@@ -166,8 +166,8 @@ function WhatYouLearn() {
         45 minutes that save you weeks of research
       </h2>
       <p className="mt-4 max-w-xl text-public-slate">
-        Designed for Indian students and parents exploring Master&rsquo;s programmes in France.
-        Whether you&rsquo;re set on France or still comparing — leave with clarity to decide.
+        Designed for Indian students and parents exploring graduate and Master&rsquo;s programmes in
+        France. Whether you&rsquo;re set on France or still comparing — leave with clarity to decide.
       </p>
       <ul className="mt-8 space-y-5">
         {points.map((p) => (
@@ -188,9 +188,9 @@ function WhatYouLearn() {
           Who is this for
         </p>
         <p className="mt-2 text-sm leading-6 text-public-slate">
-          Indian students (and parents) considering a Master&rsquo;s, MSc, or MiM at a top French
-          business school. Set on France or still exploring — this session gives you the clarity to
-          decide.
+          Indian students and parents considering a Bachelor&rsquo;s, Master&rsquo;s, MSc, MiM, or
+          MBA at a top French business school. Set on France or still exploring — this session
+          gives you the clarity to decide.
         </p>
       </div>
     </div>
@@ -232,7 +232,7 @@ function AboutLif() {
         <div className="rounded-3xl border border-public-navy/10 bg-public-cream/60 p-8 sm:p-10">
           <p className="public-phase-label !tracking-[0.18em]">About Learn in France</p>
           <h3 className="public-heading-card mt-3 !text-2xl">
-            A France &amp; India based education advisory.
+            A France based education advisory.
           </h3>
           <p className="mt-3 max-w-3xl text-public-slate">
             We guide Indian students through the complete journey — programme selection,
