@@ -92,22 +92,22 @@ function PartnershipLockup() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-public-muted">
             A live conversation by
           </p>
-          <div className="flex w-full flex-col items-center justify-center gap-8 sm:flex-row sm:gap-10 lg:gap-12">
+          <div className="flex w-full max-w-full flex-col items-center justify-center gap-6 sm:flex-row sm:gap-7">
             <Image
               src="/images/brand-wordmark-square.svg"
               alt="Learn in France"
-              width={160}
-              height={160}
-              className="h-28 w-28 sm:h-32 sm:w-32 lg:h-36 lg:w-36"
+              width={120}
+              height={120}
+              className="h-24 w-24 shrink-0 sm:h-28 sm:w-28"
               priority
             />
-            <span className="text-3xl font-light text-public-navy/30 sm:text-4xl">×</span>
+            <span className="text-2xl font-light text-public-navy/30 sm:text-3xl">×</span>
             <Image
               src="/images/bsb-logo.svg"
               alt="Burgundy School of Business"
-              width={520}
-              height={80}
-              className="h-12 w-auto max-w-full sm:h-14 lg:h-16"
+              width={300}
+              height={46}
+              className="h-9 w-auto max-w-[260px] shrink sm:h-11 sm:max-w-[300px]"
               priority
             />
           </div>
