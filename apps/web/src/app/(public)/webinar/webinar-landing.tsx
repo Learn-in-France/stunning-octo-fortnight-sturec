@@ -53,13 +53,13 @@ function Hero() {
         <h1 className="public-heading-section mt-6 !text-4xl leading-[0.98] sm:!text-5xl lg:!text-[4.4rem]">
           From India to France.
           <br />
-          <span className="public-accent">Your Master&rsquo;s journey starts here.</span>
+          <span className="public-accent">Your journey begins here.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-public-slate">
-          Hear from a Burgundy School of Business alumnus, a BSB representative, and an Indian
-          professional with 15 years in France. 45 minutes of straight talk on programmes,
-          scholarships, careers, and life after graduation — plus 20 minutes of live Q&amp;A,
-          moderated by the Learn in France team.
+          Hear from a Burgundy School of Business alumnus, a BSB representative, and a senior
+          industry professional with 15+ years building a career in France. 45 minutes of straight
+          talk on programmes, scholarships, careers, and life after graduation — plus 20 minutes of
+          live Q&amp;A, moderated by Learn in France.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-2.5 text-sm font-medium text-public-navy">
@@ -88,10 +88,10 @@ function MetaChip({ icon, text }: { icon: string; text: string }) {
 
 function PanelStrip() {
   const panel = [
-    { role: 'BSB Alumni', detail: 'Recent Master\'s graduate, BSB Dijon', initials: 'BA' },
-    { role: 'Indian Professional in France', detail: '15 years living & working in France', initials: 'IP' },
+    { role: 'BSB Alumni', detail: 'Master\'s graduate, BSB Dijon', initials: 'BA' },
+    { role: 'Senior Industry Professional', detail: 'India to France · 15+ years senior career', initials: 'SP' },
     { role: 'BSB Representative', detail: 'Burgundy School of Business', initials: 'BR' },
-    { role: 'Learn in France', detail: 'Founder · Moderator', initials: 'PK' },
+    { role: 'Learn in France', detail: 'Moderator', initials: 'LIF' },
   ]
 
   return (
@@ -141,9 +141,9 @@ function WhatYouLearn() {
     },
     {
       icon: 'work',
-      title: 'Career outcomes from someone who lived it',
+      title: 'Career outcomes — from a senior who built one',
       body:
-        'An Indian professional with 15 years in France on language, hiring culture, salary expectations, and how to plan for life after graduation.',
+        'A senior industry professional with 15+ years in France on language, hiring culture, salary expectations, and how to plan for life after graduation.',
     },
     {
       icon: 'paid',
@@ -166,8 +166,8 @@ function WhatYouLearn() {
         45 minutes that save you weeks of research
       </h2>
       <p className="mt-4 max-w-xl text-public-slate">
-        Designed for Indian students and parents exploring Master&rsquo;s programmes in France.
-        Whether you&rsquo;re set on France or still comparing — leave with clarity to decide.
+        Designed for Indian students and parents exploring graduate and Master&rsquo;s programmes in
+        France. Whether you&rsquo;re set on France or still comparing — leave with clarity to decide.
       </p>
       <ul className="mt-8 space-y-5">
         {points.map((p) => (
@@ -188,9 +188,9 @@ function WhatYouLearn() {
           Who is this for
         </p>
         <p className="mt-2 text-sm leading-6 text-public-slate">
-          Indian students (and parents) considering a Master&rsquo;s, MSc, or MiM at a top French
-          business school. Set on France or still exploring — this session gives you the clarity to
-          decide.
+          Indian students and parents considering a Bachelor&rsquo;s, Master&rsquo;s, MSc, MiM, or
+          MBA at a top French business school. Set on France or still exploring — this session
+          gives you the clarity to decide.
         </p>
       </div>
     </div>
@@ -232,7 +232,7 @@ function AboutLif() {
         <div className="rounded-3xl border border-public-navy/10 bg-public-cream/60 p-8 sm:p-10">
           <p className="public-phase-label !tracking-[0.18em]">About Learn in France</p>
           <h3 className="public-heading-card mt-3 !text-2xl">
-            A France &amp; India based education advisory.
+            A France based education advisory.
           </h3>
           <p className="mt-3 max-w-3xl text-public-slate">
             We guide Indian students through the complete journey — programme selection,
@@ -240,12 +240,18 @@ function AboutLif() {
             on-ground arrival support in France. Burgundy School of Business is one of our
             university partners.
           </p>
-          <p className="mt-4 text-sm text-public-muted">
-            <a href="https://www.learninfrance.com" className="underline hover:text-public-navy">
+          <p className="mt-5 text-sm text-public-slate">
+            <a
+              href="https://www.learninfrance.com"
+              className="text-public-navy underline decoration-public-navy/30 decoration-1 underline-offset-4 hover:decoration-public-navy"
+            >
               learninfrance.com
             </a>
-            {' · '}
-            <a href="https://cal.com/learninfrance" className="underline hover:text-public-navy">
+            <span className="mx-2 text-public-muted">·</span>
+            <a
+              href="https://cal.com/learninfrance"
+              className="text-public-navy underline decoration-public-navy/30 decoration-1 underline-offset-4 hover:decoration-public-navy"
+            >
               Free guidance call
             </a>
           </p>
