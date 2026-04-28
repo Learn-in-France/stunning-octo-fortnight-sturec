@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 
-import { decodeWebinarToken, type WebinarTokenPayload } from '@/lib/webinar-token'
+import { decodeWebinarToken } from '@/lib/webinar-token'
 import { WebinarRsvpForm } from './webinar-form'
 import { WebinarConfirmation } from './webinar-confirmation'
 
@@ -47,7 +47,7 @@ export function WebinarLanding({ token }: WebinarLandingProps) {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden pt-12 pb-10 sm:pt-16 sm:pb-12">
+    <section className="relative overflow-hidden pt-12 pb-12 sm:pt-16 sm:pb-16">
       <div className="public-shell">
         <span className="public-label">Live Webinar · Free</span>
         <h1 className="public-heading-section mt-6 !text-4xl leading-[0.98] sm:!text-5xl lg:!text-[4.4rem]">
@@ -56,55 +56,42 @@ function Hero() {
           <span className="public-accent">Your Master&rsquo;s journey starts here.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-public-slate">
-          Hear from current Burgundy School of Business students, an Indian professional living in
-          France, and the Learn in France advisory team. 45 minutes of straight talk on programmes,
-          scholarships, careers, and life after graduation — plus 20 minutes of live Q&amp;A.
+          Hear from a Burgundy School of Business alumnus, a BSB representative, and an Indian
+          professional with 15 years in France. 45 minutes of straight talk on programmes,
+          scholarships, careers, and life after graduation — plus 20 minutes of live Q&amp;A,
+          moderated by the Learn in France team.
         </p>
-        <div className="mt-7 flex flex-col gap-2 text-sm font-medium text-public-navy sm:flex-row sm:items-center sm:gap-6">
-          <span className="inline-flex items-center gap-2">
-            <span className="material-symbols-rounded text-public-red">event</span>
-            Sunday, 11 May 2026
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <span className="material-symbols-rounded text-public-red">schedule</span>
-            6:00 PM IST · 45 min + Q&amp;A
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <span className="material-symbols-rounded text-public-red">videocam</span>
-            Live on Microsoft Teams
-          </span>
+
+        <div className="mt-8 flex flex-wrap gap-2.5 text-sm font-medium text-public-navy">
+          <MetaChip icon="event" text="Sunday, 11 May 2026" />
+          <MetaChip icon="schedule" text="6:00 PM IST · 45 min + Q&A" />
+          <MetaChip icon="videocam" text="Live on Microsoft Teams" />
         </div>
-        <p className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-public-red">
-          <span className="material-symbols-rounded">local_fire_department</span>
+
+        <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-public-red px-4 py-1.5 text-sm font-semibold text-white shadow-[0_8px_24px_-12px_rgba(200,16,46,0.6)]">
+          <span className="material-symbols-outlined !text-[1.05rem] !leading-none">local_fire_department</span>
           Only 200 seats — RSVP to reserve yours
-        </p>
+        </div>
       </div>
     </section>
   )
 }
 
+function MetaChip({ icon, text }: { icon: string; text: string }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-public-navy/15 bg-white/70 px-3.5 py-1.5">
+      <span className="material-symbols-outlined !text-[1.05rem] !leading-none text-public-red">{icon}</span>
+      {text}
+    </span>
+  )
+}
+
 function PanelStrip() {
   const panel = [
-    {
-      role: 'BSB Student Ambassador',
-      detail: 'Current Master\'s student, Dijon',
-      initials: 'BS',
-    },
-    {
-      role: 'BSB Student Ambassador',
-      detail: 'Current Master\'s student, Dijon',
-      initials: 'BS',
-    },
-    {
-      role: 'Indian Professional in France',
-      detail: '14 years living & working in France',
-      initials: 'IP',
-    },
-    {
-      role: 'Learn in France',
-      detail: 'Founder · Moderator',
-      initials: 'PK',
-    },
+    { role: 'BSB Alumni', detail: 'Recent Master\'s graduate, BSB Dijon', initials: 'BA' },
+    { role: 'Indian Professional in France', detail: '15 years living & working in France', initials: 'IP' },
+    { role: 'BSB Representative', detail: 'Burgundy School of Business', initials: 'BR' },
+    { role: 'Learn in France', detail: 'Founder · Moderator', initials: 'PK' },
   ]
 
   return (
@@ -117,7 +104,7 @@ function PanelStrip() {
               key={i}
               className="flex items-center gap-3 rounded-2xl border border-public-navy/10 bg-white/70 p-4 backdrop-blur"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-public-navy/90 text-sm font-bold text-public-cream">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-public-navy/90 text-sm font-bold text-public-cream">
                 {p.initials}
               </div>
               <div className="min-w-0">
@@ -142,15 +129,21 @@ function WhatYouLearn() {
     },
     {
       icon: 'school',
-      title: 'Student Q&A — the honest version',
+      title: 'Inside BSB — alumni perspective',
       body:
-        'Two BSB students share what nobody else tells you: admissions, campus life, costs, French bureaucracy, and the surprises in year one.',
+        'A recent BSB graduate on what the experience was actually like — admissions, campus life, costs, French bureaucracy, and the things only graduates know.',
+    },
+    {
+      icon: 'apartment',
+      title: 'Direct from BSB',
+      body:
+        'A representative from Burgundy School of Business on programmes, intakes, application paths, and what a strong applicant looks like.',
     },
     {
       icon: 'work',
       title: 'Career outcomes from someone who lived it',
       body:
-        'An Indian professional with 14 years in France on language, hiring culture, salary expectations, and how to plan for life after graduation.',
+        'An Indian professional with 15 years in France on language, hiring culture, salary expectations, and how to plan for life after graduation.',
     },
     {
       icon: 'paid',
@@ -179,8 +172,10 @@ function WhatYouLearn() {
       <ul className="mt-8 space-y-5">
         {points.map((p) => (
           <li key={p.title} className="flex gap-4">
-            <span className="material-symbols-rounded mt-0.5 text-public-red">{p.icon}</span>
-            <div>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-public-red/10 text-public-red">
+              <span className="material-symbols-outlined !text-[1.4rem] !leading-none">{p.icon}</span>
+            </span>
+            <div className="min-w-0 pt-1">
               <p className="text-base font-semibold text-public-navy">{p.title}</p>
               <p className="mt-1 text-sm leading-6 text-public-slate">{p.body}</p>
             </div>
@@ -210,13 +205,15 @@ function TrustStrip() {
     { icon: 'check_circle', label: '100% Free', sub: 'No obligation' },
   ]
   return (
-    <section className="border-y border-public-navy/10 bg-white/60 py-8">
+    <section className="border-y border-public-navy/10 bg-white/60 py-8 sm:py-10">
       <div className="public-shell">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((it) => (
             <div key={it.label} className="flex items-center gap-3">
-              <span className="material-symbols-rounded text-public-blue">{it.icon}</span>
-              <div>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-public-blue/10 text-public-blue">
+                <span className="material-symbols-outlined !text-[1.25rem] !leading-none">{it.icon}</span>
+              </span>
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-public-navy">{it.label}</p>
                 <p className="text-xs text-public-muted">{it.sub}</p>
               </div>
@@ -248,10 +245,7 @@ function AboutLif() {
               learninfrance.com
             </a>
             {' · '}
-            <a
-              href="https://cal.com/learninfrance"
-              className="underline hover:text-public-navy"
-            >
+            <a href="https://cal.com/learninfrance" className="underline hover:text-public-navy">
               Free guidance call
             </a>
           </p>
