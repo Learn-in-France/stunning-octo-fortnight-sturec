@@ -6,6 +6,7 @@ import sensible from '@fastify/sensible'
 import { errorHandler } from './middleware/error-handler.js'
 import { authRoutes } from './modules/auth/routes.js'
 import { catalogRoutes, publicCatalogRoutes } from './modules/catalog/routes.js'
+import { webinarRoutes } from './modules/webinar/routes.js'
 import { leadRoutes } from './modules/leads/routes.js'
 import { studentRoutes } from './modules/students/routes.js'
 import { applicationRoutes } from './modules/applications/routes.js'
@@ -38,6 +39,7 @@ server.get('/health', async () => ({ status: 'ok' }))
 
 // Public routes (no auth)
 await server.register(publicCatalogRoutes, { prefix: '/api/v1' })
+await server.register(webinarRoutes, { prefix: '/api/v1' })
 
 // API routes (auth required)
 await server.register(authRoutes, { prefix: '/api/v1' })
