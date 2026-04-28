@@ -240,12 +240,18 @@ function AboutLif() {
             on-ground arrival support in France. Burgundy School of Business is one of our
             university partners.
           </p>
-          <p className="mt-4 text-sm text-public-muted">
-            <a href="https://www.learninfrance.com" className="underline hover:text-public-navy">
+          <p className="mt-5 text-sm text-public-slate">
+            <a
+              href="https://www.learninfrance.com"
+              className="text-public-navy underline decoration-public-navy/30 decoration-1 underline-offset-4 hover:decoration-public-navy"
+            >
               learninfrance.com
             </a>
-            {' · '}
-            <a href="https://cal.com/learninfrance" className="underline hover:text-public-navy">
+            <span className="mx-2 text-public-muted">·</span>
+            <a
+              href="https://cal.com/learninfrance"
+              className="text-public-navy underline decoration-public-navy/30 decoration-1 underline-offset-4 hover:decoration-public-navy"
+            >
               Free guidance call
             </a>
           </p>
