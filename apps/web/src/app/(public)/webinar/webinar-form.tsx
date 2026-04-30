@@ -98,7 +98,7 @@ export function WebinarRsvpForm({ prefilled, token, onConfirmed }: WebinarRsvpFo
       <p className="mt-2 text-sm text-public-slate">
         {isPersonalised
           ? 'We pulled your details from our records. Edit anything if it changed, then pick your intake.'
-          : 'Fill the details below and we’ll send your Microsoft Teams join link 24 hours before the session.'}
+          : 'Fill the details below and we’ll send your Google Meet join link 24 hours before the session.'}
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -193,7 +193,7 @@ export function WebinarRsvpForm({ prefilled, token, onConfirmed }: WebinarRsvpFo
       </button>
 
       <p className="mt-4 text-xs leading-5 text-public-muted">
-        We&rsquo;ll send the Microsoft Teams join link to your email and WhatsApp 24 hours before
+        We&rsquo;ll send the Google Meet join link to your email and WhatsApp 24 hours before
         the session. By submitting, you agree to receive event-related email and WhatsApp messages
         from Learn in France. Unsubscribe anytime.
       </p>

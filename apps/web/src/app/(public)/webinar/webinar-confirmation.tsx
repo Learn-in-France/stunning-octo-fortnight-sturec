@@ -8,13 +8,13 @@ export function WebinarConfirmation({ firstName, email }: WebinarConfirmationPro
     'https://calendar.google.com/calendar/render?action=TEMPLATE' +
     '&text=' +
     encodeURIComponent('From India to France — Live Webinar') +
-    '&dates=20260511T123000Z/20260511T133000Z' +
+    '&dates=20260515T123000Z/20260515T133000Z' +
     '&details=' +
     encodeURIComponent(
-      'Live with BSB students + Indian professional in France. Microsoft Teams link will be sent 24h before via email and WhatsApp.\n\nLearn in France · learninfrance.com',
+      'Live with the BSB international team and a BSB student ambassador, moderated by Learn in France. Google Meet link will be sent 24h before via email and WhatsApp.\n\nLearn in France · learninfrance.com',
     ) +
     '&location=' +
-    encodeURIComponent('Microsoft Teams (link sent 24h before)')
+    encodeURIComponent('Google Meet (link sent 24h before)')
 
   return (
     <div className="rounded-3xl border border-public-blue/25 bg-white p-8 shadow-[0_30px_60px_-30px_rgba(10,22,41,0.25)]">
@@ -42,7 +42,7 @@ export function WebinarConfirmation({ firstName, email }: WebinarConfirmationPro
             </li>
             <li className="flex gap-2">
               <span className="material-symbols-outlined !text-base text-public-red">videocam</span>
-              Microsoft Teams join link arrives 24 hours before — by email and WhatsApp
+              Google Meet join link arrives 24 hours before — by email and WhatsApp
             </li>
             <li className="flex gap-2">
               <span className="material-symbols-outlined !text-base text-public-red">support_agent</span>
@@ -53,7 +53,7 @@ export function WebinarConfirmation({ firstName, email }: WebinarConfirmationPro
         </div>
 
         <p>
-          <strong className="text-public-navy">Sunday, 11 May 2026</strong>
+          <strong className="text-public-navy">Friday, 15 May 2026</strong>
           {' · '}6:00 PM IST
           {' · '}45 min + 20 min Q&amp;A
         </p>
