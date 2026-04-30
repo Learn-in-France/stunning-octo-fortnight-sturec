@@ -11,6 +11,7 @@ export interface MauticContact {
   firstname?: string
   lastname?: string
   phone?: string
+  city?: string
   tags?: string[]
   // Custom fields mapped to Mautic contact fields
   sturec_student_id?: string
@@ -18,6 +19,8 @@ export interface MauticContact {
   sturec_stage?: string
   sturec_priority_level?: string
   sturec_qualification_score?: number
+  webinar_url?: string
+  webinar_join_url?: string
 }
 
 interface MauticApiResponse {

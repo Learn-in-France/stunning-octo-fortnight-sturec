@@ -11,6 +11,10 @@ export interface RsvpResult {
 const SEAT_CAPACITY = 100
 const SEAT_BASELINE = 10
 
+const WEBINAR_BASE     = 'https://learninfrance.com/webinar'
+const MEET_JOIN_URL    = 'https://meet.google.com/uts-izsp-tnw'
+const MAUTIC_FIELD_MAX = 191
+
 export interface SeatStatus {
   filled: number
   capacity: number
@@ -59,24 +63,76 @@ export async function recordRsvp(input: RsvpInput): Promise<RsvpResult> {
   })
 
   // Side effects (best-effort, do not block response)
-  void tagMauticContact(input.mauticId, email)
+  void syncMauticForRsvp(input)
   void sendConfirmationEmail(input, intakeLabel)
 
   return { status: 'created', leadId: lead.id }
 }
 
-async function tagMauticContact(mauticId: number | undefined, email: string) {
+/**
+ * Make sure Mautic has a contact for this RSVP and that they end up in
+ * Segment 8 (RSVP'd) so the 24h + 1h reminder emails reach them.
+ *
+ * Three flows:
+ *   - Tokenized invitee (input.mauticId set): just add the rsvp-confirmed tag.
+ *   - Walk-in whose email already exists in Mautic: same — tag only.
+ *   - Walk-in not in Mautic at all: create the contact with both the
+ *     master webinar tag and the rsvp-confirmed tag, then populate the
+ *     join URL + token URL custom fields.
+ */
+async function syncMauticForRsvp(input: RsvpInput) {
+  const email     = input.email.trim().toLowerCase()
+  const firstName = input.firstName.trim()
+  const lastName  = input.lastName?.trim() || undefined
+  const phone     = input.phone?.trim() || undefined
+  const city      = input.city?.trim() || undefined
+
   try {
-    let id = mauticId
+    let id = input.mauticId
     if (!id) {
       const found = await mautic.findContactByEmail(email)
-      if (!found) return
-      id = found.id
+      id = found?.id
     }
-    await mautic.updateContact(id, { tags: ['webinar-rsvp-confirmed'] })
+
+    if (id) {
+      // Existing — just stamp the RSVP tag. Mautic dedups tags.
+      await mautic.updateContact(id, { tags: ['webinar-rsvp-confirmed'] })
+      return
+    }
+
+    // Walk-in: create with all RSVP profile data + both tags up front
+    const newId = await mautic.createContact({
+      email,
+      firstname: firstName,
+      lastname:  lastName,
+      phone,
+      city,
+      tags: ['webinar-2026-05-11', 'webinar-rsvp-confirmed'],
+    })
+
+    // Populate the join URL (so 24h/1h reminders link works) + the
+    // tokenized RSVP URL (kept for parity with imported contacts).
+    const tokenUrl = buildWebinarTokenUrl(newId, email, firstName)
+    await mautic.updateContact(newId, {
+      webinar_join_url: MEET_JOIN_URL,
+      ...(tokenUrl ? { webinar_url: tokenUrl } : {}),
+    })
   } catch (err) {
-    console.warn('[webinar] mautic tag failed:', err instanceof Error ? err.message : err)
+    console.warn('[webinar] mautic sync failed:', err instanceof Error ? err.message : err)
   }
+}
+
+function buildWebinarTokenUrl(mauticId: number, email: string, firstName: string): string | null {
+  const payload: Record<string, unknown> = { mauticId, email }
+  if (firstName) payload.firstName = firstName.slice(0, 40)
+  let b64 = Buffer.from(JSON.stringify(payload)).toString('base64url')
+  let url = `${WEBINAR_BASE}?t=${b64}.x`
+  if (url.length > MAUTIC_FIELD_MAX) {
+    delete payload.firstName
+    b64 = Buffer.from(JSON.stringify(payload)).toString('base64url')
+    url = `${WEBINAR_BASE}?t=${b64}.x`
+  }
+  return url.length <= MAUTIC_FIELD_MAX ? url : null
 }
 
 async function sendConfirmationEmail(input: RsvpInput, intakeLabel: string) {
