@@ -237,9 +237,10 @@ function PanelStrip() {
       linkedin: 'https://www.linkedin.com/in/ankitpandeyfr/',
     },
     {
-      name: 'BSB Student Ambassador',
-      role: 'Burgundy School of Business · Name & profile to follow',
-      image: '/images/webinar-panelists/student-ambassador.webp',
+      name: 'Hradyesh Trivedi',
+      role: 'Burgundy School of Business · Student Ambassador',
+      image: '/images/webinar-panelists/hradyesh-trivedi.webp',
+      linkedin: 'https://www.linkedin.com/in/hradyesh-trivedi/',
     },
   ]
 
