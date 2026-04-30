@@ -39,7 +39,8 @@ PAYLOAD=$(jq -n \
     plainText:      $plainText,
     isPublished:    true,
     emailType:      "list",
-    language:       "en"
+    language:       "en",
+    lists:          [8]
   }')
 
 echo "Uploading 'Meet the panel' email to $MAUTIC_URL/api/emails/new ..."
