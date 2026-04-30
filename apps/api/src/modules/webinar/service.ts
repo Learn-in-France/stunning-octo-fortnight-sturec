@@ -8,6 +8,25 @@ export interface RsvpResult {
   leadId: string
 }
 
+const SEAT_CAPACITY = 100
+const SEAT_BASELINE = 10
+
+export interface SeatStatus {
+  filled: number
+  capacity: number
+  remaining: number
+}
+
+export async function getSeatStatus(): Promise<SeatStatus> {
+  const actual = await repo.countRsvps()
+  const filled = Math.min(SEAT_CAPACITY, actual + SEAT_BASELINE)
+  return {
+    filled,
+    capacity: SEAT_CAPACITY,
+    remaining: Math.max(0, SEAT_CAPACITY - filled),
+  }
+}
+
 export async function recordRsvp(input: RsvpInput): Promise<RsvpResult> {
   const email = input.email.trim().toLowerCase()
 
@@ -19,7 +38,7 @@ export async function recordRsvp(input: RsvpInput): Promise<RsvpResult> {
 
   const intakeLabel = INTAKE_LABELS[input.intake]
   const notes = [
-    `[Webinar May 11 2026 RSVP — ${new Date().toISOString().slice(0, 10)}]`,
+    `[Webinar May 15 2026 RSVP — ${new Date().toISOString().slice(0, 10)}]`,
     `Intake target: ${intakeLabel}`,
     input.programme ? `Programme: ${input.programme}` : null,
     input.city ? `City: ${input.city}` : null,
@@ -67,7 +86,7 @@ async function sendConfirmationEmail(input: RsvpInput, intakeLabel: string) {
     await sendTransactionalEmail({
       to: input.email,
       toName: input.firstName,
-      subject: `You're in — May 11 webinar confirmed, ${firstName}`,
+      subject: `You're in — May 15 webinar confirmed, ${firstName}`,
       htmlContent: html,
       tags: ['webinar-2026-05-11', 'rsvp-confirmation'],
     })
@@ -81,14 +100,14 @@ function buildConfirmationHtml(firstName: string, intakeLabel: string): string {
 <html><body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f6f0e5;padding:24px;color:#0a1629">
 <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;border:1px solid rgba(10,22,41,0.08)">
   <p style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#1a3a7a;margin:0 0 8px">You're in</p>
-  <h1 style="font-size:24px;margin:0 0 16px">Seat confirmed for May 11, ${firstName}.</h1>
+  <h1 style="font-size:24px;margin:0 0 16px">Seat confirmed for May 15, ${firstName}.</h1>
   <p style="font-size:15px;line-height:1.55;color:#415468;margin:0 0 16px">
-    Sunday, 11 May 2026 · 6:00 PM IST · 45 min + 20 min Q&amp;A · Microsoft Teams
+    Friday, 15 May 2026 · 6:00 PM IST · 45 min + 20 min Q&amp;A · Google Meet
   </p>
   <div style="background:#f6f0e5;border-radius:12px;padding:16px;margin:16px 0">
     <p style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#1a3a7a;margin:0 0 8px">What happens next</p>
     <ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.6;color:#0a1629">
-      <li>Microsoft Teams join link arrives 24 hours before — by email and WhatsApp</li>
+      <li>Google Meet join link arrives 24 hours before — by email and WhatsApp</li>
       <li>A Learn in France advisor will reach out after the session to discuss your scholarship eligibility and application timeline</li>
       <li>You told us your intake plan is <strong>${intakeLabel}</strong> — we&rsquo;ll tailor our follow-up to that</li>
     </ul>

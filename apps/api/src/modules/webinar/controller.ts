@@ -10,3 +10,8 @@ export async function recordRsvp(request: FastifyRequest, reply: FastifyReply) {
     leadId: result.leadId,
   })
 }
+
+export async function getRsvpCount(_request: FastifyRequest, reply: FastifyReply) {
+  const data = await service.getSeatStatus()
+  return reply.code(200).send(data)
+}

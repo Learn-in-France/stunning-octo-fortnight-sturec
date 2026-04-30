@@ -1,8 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
+import { env } from '@/lib/config/env'
 import { decodeWebinarToken } from '@/lib/webinar-token'
 import { WebinarRsvpForm } from './webinar-form'
 import { WebinarConfirmation } from './webinar-confirmation'
@@ -11,13 +12,38 @@ interface WebinarLandingProps {
   token: string | null
 }
 
+interface SeatStatus {
+  filled: number
+  capacity: number
+  remaining: number
+}
+
 export function WebinarLanding({ token }: WebinarLandingProps) {
   const prefilled = useMemo(() => decodeWebinarToken(token), [token])
   const [confirmedFor, setConfirmedFor] = useState<{ firstName: string; email: string } | null>(null)
+  const [seats, setSeats] = useState<SeatStatus | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const res = await fetch(`${env.apiUrl}/api/v1/webinar/rsvp/count`, { cache: 'no-store' })
+        if (!res.ok) return
+        const data = (await res.json()) as SeatStatus
+        if (!cancelled) setSeats(data)
+      } catch {
+        // ignore — pill falls back to static copy
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [confirmedFor])
 
   return (
     <div className="public-page pb-20">
-      <Hero />
+      <Hero seats={seats} />
       <PanelStrip />
 
       <section className="py-12 sm:py-16">
@@ -46,7 +72,7 @@ export function WebinarLanding({ token }: WebinarLandingProps) {
   )
 }
 
-function Hero() {
+function Hero({ seats }: { seats: SeatStatus | null }) {
   return (
     <section className="relative overflow-hidden pt-10 pb-10 sm:pt-14 sm:pb-14">
       <div className="public-shell">
@@ -59,28 +85,59 @@ function Hero() {
               <span className="public-accent">Your journey begins here.</span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-public-slate sm:text-lg sm:leading-8">
-              Hear from a Burgundy School of Business alumnus, a BSB representative, and a senior
-              industry professional with 15+ years building a career in France. 45 minutes of
-              straight talk on programmes, scholarships, careers, and life after graduation — plus
-              20 minutes of live Q&amp;A, moderated by Learn in France.
+              A live conversation with the Burgundy School of Business international team and a
+              BSB student ambassador, moderated by Learn in France. 45 minutes of straight talk
+              on programmes, scholarships, careers, and life after graduation — plus 20 minutes
+              of live Q&amp;A.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-2.5 text-sm font-medium text-public-navy">
-              <MetaChip icon="event" text="Sunday, 11 May 2026" />
+              <MetaChip icon="event" text="Friday, 15 May 2026" />
               <MetaChip icon="schedule" text="6:00 PM IST · 45 min + Q&A" />
-              <MetaChip icon="videocam" text="Live on Microsoft Teams" />
+              <MetaChip icon="videocam" text="Live on Google Meet" />
             </div>
 
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-public-red px-4 py-1.5 text-sm font-semibold text-white shadow-[0_8px_24px_-12px_rgba(200,16,46,0.6)]">
-              <span className="material-symbols-outlined !text-[1.05rem] !leading-none">local_fire_department</span>
-              Only 200 seats — RSVP to reserve yours
-            </div>
+            <SeatCounter seats={seats} />
           </div>
 
           <PartnershipLockup />
         </div>
       </div>
     </section>
+  )
+}
+
+function SeatCounter({ seats }: { seats: SeatStatus | null }) {
+  const filled = seats?.filled ?? 10
+  const capacity = seats?.capacity ?? 100
+  const remaining = seats?.remaining ?? capacity - filled
+  const pct = Math.min(100, Math.round((filled / capacity) * 100))
+  const soldOut = remaining <= 0
+
+  return (
+    <div className="mt-5 max-w-sm rounded-2xl border border-public-red/20 bg-white/80 p-3 shadow-[0_8px_24px_-12px_rgba(200,16,46,0.4)] backdrop-blur">
+      <div className="flex items-center justify-between gap-3">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-public-red">
+          <span className="material-symbols-outlined !text-[0.95rem] !leading-none">local_fire_department</span>
+          {soldOut ? 'Waitlist only' : 'Filling fast'}
+        </span>
+        <span className="text-xs font-semibold text-public-navy tabular-nums">
+          <span className="text-public-red">{filled}</span>
+          <span className="text-public-muted"> / {capacity} seats</span>
+        </span>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-public-navy/10">
+        <div
+          className="h-full rounded-full bg-public-red transition-[width] duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="mt-2 text-[11px] text-public-slate">
+        {soldOut
+          ? 'All seats taken — RSVP to join the waitlist.'
+          : `${remaining} seat${remaining === 1 ? '' : 's'} left — RSVP to reserve yours.`}
+      </p>
+    </div>
   )
 }
 
@@ -123,6 +180,21 @@ function PartnershipLockup() {
   )
 }
 
+function LinkedinIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-label="LinkedIn"
+      className="shrink-0 text-[#0A66C2]"
+    >
+      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45C23.2 24 24 23.23 24 22.28V1.72C24 .77 23.2 0 22.22 0z" />
+    </svg>
+  )
+}
+
 function MetaChip({ icon, text }: { icon: string; text: string }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-public-navy/15 bg-white/70 px-3.5 py-1.5">
@@ -133,29 +205,83 @@ function MetaChip({ icon, text }: { icon: string; text: string }) {
 }
 
 function PanelStrip() {
-  const panel = [
-    { role: 'BSB Alumni', detail: 'Master\'s graduate, BSB Dijon', initials: 'BA' },
-    { role: 'Senior Industry Professional', detail: 'India to France · 15+ years senior career', initials: 'SP' },
-    { role: 'BSB Representative', detail: 'Burgundy School of Business', initials: 'BR' },
-    { role: 'Learn in France', detail: 'Moderator', initials: 'LIF' },
+  const panel: Array<{
+    name: string
+    role: string
+    image: string | null
+    initials?: string
+    linkedin?: string
+  }> = [
+    {
+      name: 'Rudy Hallou',
+      role: 'BSB · International Operations Director',
+      image: '/images/webinar-panelists/rudy.jpeg',
+      linkedin: 'https://www.linkedin.com/in/rudyhallou/',
+    },
+    {
+      name: 'Lilas Arquilliere',
+      role: 'BSB · International Promotion Officer',
+      image: '/images/webinar-panelists/lilas-arquilliere.jpeg',
+      linkedin: 'https://www.linkedin.com/in/lilasarquilliere/?locale=en',
+    },
+    {
+      name: 'Moumita Biswas',
+      role: 'BSB · Regional Representative, South Asia',
+      image: '/images/webinar-panelists/moumita.png',
+      linkedin: 'https://www.linkedin.com/in/moumita-biswas-930364112/',
+    },
+    {
+      name: 'Ankit Pandey',
+      role: 'BSB Student Ambassador',
+      image: '/images/webinar-panelists/ankit-pandey.jpg',
+      linkedin: 'https://www.linkedin.com/in/ankitpandeyfr/',
+    },
+    {
+      name: 'Learn in France',
+      role: 'Moderator',
+      image: null,
+      initials: 'LIF',
+    },
   ]
 
   return (
-    <section className="border-y border-public-navy/10 bg-public-mist/40 py-8 sm:py-10">
+    <section className="border-y border-public-navy/10 bg-public-mist/40 py-10 sm:py-12">
       <div className="public-shell">
         <p className="public-phase-label !tracking-[0.18em]">Meet the panel</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {panel.map((p, i) => (
+        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          {panel.map((p) => (
             <div
-              key={i}
-              className="flex items-center gap-3 rounded-2xl border border-public-navy/10 bg-white/70 p-4 backdrop-blur"
+              key={p.name}
+              className="flex flex-col items-center gap-3 rounded-2xl border border-public-navy/10 bg-white/70 p-4 text-center backdrop-blur"
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-public-navy/90 text-sm font-bold text-public-cream">
-                {p.initials}
-              </div>
+              {p.image ? (
+                <Image
+                  src={p.image}
+                  alt={p.name}
+                  width={160}
+                  height={160}
+                  className="h-20 w-20 rounded-full object-cover sm:h-24 sm:w-24"
+                />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-public-navy/90 text-sm font-bold text-public-cream sm:h-24 sm:w-24">
+                  {p.initials}
+                </div>
+              )}
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-public-navy">{p.role}</p>
-                <p className="truncate text-xs text-public-muted">{p.detail}</p>
+                {p.linkedin ? (
+                  <a
+                    href={p.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm font-semibold leading-tight text-public-navy underline-offset-2 hover:underline"
+                  >
+                    {p.name}
+                    <LinkedinIcon />
+                  </a>
+                ) : (
+                  <p className="text-sm font-semibold leading-tight text-public-navy">{p.name}</p>
+                )}
+                <p className="mt-1 text-xs leading-snug text-public-muted">{p.role}</p>
               </div>
             </div>
           ))}
