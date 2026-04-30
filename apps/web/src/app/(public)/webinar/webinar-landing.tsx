@@ -232,15 +232,14 @@ function PanelStrip() {
     },
     {
       name: 'Ankit Pandey',
-      role: 'BSB Student Ambassador',
+      role: 'Senior Industry Professional · India to France, 15+ years',
       image: '/images/webinar-panelists/ankit-pandey.webp',
       linkedin: 'https://www.linkedin.com/in/ankitpandeyfr/',
     },
     {
-      name: 'Learn in France',
-      role: 'Moderator',
-      image: null,
-      initials: 'LIF',
+      name: 'BSB Student Ambassador',
+      role: 'Burgundy School of Business · Name & profile to follow',
+      image: '/images/webinar-panelists/student-ambassador.webp',
     },
   ]
 
