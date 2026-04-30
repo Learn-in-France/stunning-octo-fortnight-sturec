@@ -215,25 +215,25 @@ function PanelStrip() {
     {
       name: 'Rudy Hallou',
       role: 'BSB · International Operations Director',
-      image: '/images/webinar-panelists/rudy.jpeg',
+      image: '/images/webinar-panelists/rudy.webp',
       linkedin: 'https://www.linkedin.com/in/rudyhallou/',
     },
     {
       name: 'Lilas Arquilliere',
       role: 'BSB · International Promotion Officer',
-      image: '/images/webinar-panelists/lilas-arquilliere.jpeg',
+      image: '/images/webinar-panelists/lilas-arquilliere.webp',
       linkedin: 'https://www.linkedin.com/in/lilasarquilliere/?locale=en',
     },
     {
       name: 'Moumita Biswas',
       role: 'BSB · Regional Representative, South Asia',
-      image: '/images/webinar-panelists/moumita.png',
+      image: '/images/webinar-panelists/moumita.webp',
       linkedin: 'https://www.linkedin.com/in/moumita-biswas-930364112/',
     },
     {
       name: 'Ankit Pandey',
       role: 'BSB Student Ambassador',
-      image: '/images/webinar-panelists/ankit-pandey.jpg',
+      image: '/images/webinar-panelists/ankit-pandey.webp',
       linkedin: 'https://www.linkedin.com/in/ankitpandeyfr/',
     },
     {
