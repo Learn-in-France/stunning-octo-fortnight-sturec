@@ -49,7 +49,7 @@ export function WebinarLanding({ token }: WebinarLandingProps) {
       <section className="py-12 sm:py-16">
         <div className="public-shell">
           <div className="grid gap-12 lg:grid-cols-[1.05fr_1fr] lg:items-start">
-            {/* Form sits first on mobile (just below the panel) — moves to the right column on desktop. */}
+            {/* Form sits first on mobile (just below the panel); moves to the right column on desktop. */}
             <div id="reserve" className="order-1 lg:order-2 lg:sticky lg:top-24 scroll-mt-24">
               {confirmedFor ? (
                 <WebinarConfirmation firstName={confirmedFor.firstName} email={confirmedFor.email} />
@@ -62,7 +62,12 @@ export function WebinarLanding({ token }: WebinarLandingProps) {
               )}
             </div>
 
-            <div className="order-2 lg:order-1">
+            {/* Mobile-only partnership lockup — sits directly under the form. Hidden on desktop (already in hero). */}
+            <div className="order-2 lg:hidden">
+              <PartnershipLockup />
+            </div>
+
+            <div className="order-3 lg:order-1">
               <WhatYouLearn />
             </div>
           </div>
@@ -103,7 +108,10 @@ function Hero({ seats }: { seats: SeatStatus | null }) {
             <SeatCounter seats={seats} />
           </div>
 
-          <PartnershipLockup />
+          {/* Hidden on mobile — re-rendered below the RSVP form to keep the form above the fold */}
+          <div className="hidden lg:block">
+            <PartnershipLockup />
+          </div>
         </div>
       </div>
     </section>
