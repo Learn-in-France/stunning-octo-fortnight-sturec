@@ -180,21 +180,6 @@ function PartnershipLockup() {
   )
 }
 
-function LinkedinIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-label="LinkedIn"
-      className="shrink-0 text-[#0A66C2]"
-    >
-      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45C23.2 24 24 23.23 24 22.28V1.72C24 .77 23.2 0 22.22 0z" />
-    </svg>
-  )
-}
-
 function MetaChip({ icon, text }: { icon: string; text: string }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-public-navy/15 bg-white/70 px-3.5 py-1.5">
@@ -210,37 +195,31 @@ function PanelStrip() {
     role: string
     image: string | null
     initials?: string
-    linkedin?: string
   }> = [
     {
       name: 'Rudy Hallou',
       role: 'BSB · International Operations Director',
       image: '/images/webinar-panelists/rudy.webp',
-      linkedin: 'https://www.linkedin.com/in/rudyhallou/',
     },
     {
       name: 'Lilas Arquilliere',
       role: 'BSB · International Promotion Officer',
       image: '/images/webinar-panelists/lilas-arquilliere.webp',
-      linkedin: 'https://www.linkedin.com/in/lilasarquilliere/?locale=en',
     },
     {
       name: 'Moumita Biswas',
       role: 'BSB · Regional Representative, South Asia',
       image: '/images/webinar-panelists/moumita.webp',
-      linkedin: 'https://www.linkedin.com/in/moumita-biswas-930364112/',
     },
     {
       name: 'Ankit Pandey',
       role: 'Senior Industry Professional · India to France, 15+ years',
       image: '/images/webinar-panelists/ankit-pandey.webp',
-      linkedin: 'https://www.linkedin.com/in/ankitpandeyfr/',
     },
     {
       name: 'Hradyesh Trivedi',
       role: 'Burgundy School of Business · Student Ambassador',
       image: '/images/webinar-panelists/hradyesh-trivedi.webp',
-      linkedin: 'https://www.linkedin.com/in/hradyesh-trivedi/',
     },
   ]
 
@@ -268,19 +247,7 @@ function PanelStrip() {
                 </div>
               )}
               <div className="min-w-0">
-                {p.linkedin ? (
-                  <a
-                    href={p.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-semibold leading-tight text-public-navy underline-offset-2 hover:underline"
-                  >
-                    {p.name}
-                    <LinkedinIcon />
-                  </a>
-                ) : (
-                  <p className="text-sm font-semibold leading-tight text-public-navy">{p.name}</p>
-                )}
+                <p className="text-sm font-semibold leading-tight text-public-navy">{p.name}</p>
                 <p className="mt-1 text-xs leading-snug text-public-muted">{p.role}</p>
               </div>
             </div>
