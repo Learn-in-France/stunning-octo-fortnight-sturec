@@ -49,9 +49,8 @@ export function WebinarLanding({ token }: WebinarLandingProps) {
       <section className="py-12 sm:py-16">
         <div className="public-shell">
           <div className="grid gap-12 lg:grid-cols-[1.05fr_1fr] lg:items-start">
-            <WhatYouLearn />
-
-            <div className="lg:sticky lg:top-24">
+            {/* Form sits first on mobile (just below the panel) — moves to the right column on desktop. */}
+            <div id="reserve" className="order-1 lg:order-2 lg:sticky lg:top-24 scroll-mt-24">
               {confirmedFor ? (
                 <WebinarConfirmation firstName={confirmedFor.firstName} email={confirmedFor.email} />
               ) : (
@@ -61,6 +60,10 @@ export function WebinarLanding({ token }: WebinarLandingProps) {
                   onConfirmed={(payload) => setConfirmedFor(payload)}
                 />
               )}
+            </div>
+
+            <div className="order-2 lg:order-1">
+              <WhatYouLearn />
             </div>
           </div>
         </div>
