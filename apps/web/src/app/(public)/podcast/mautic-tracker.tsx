@@ -14,12 +14,10 @@ import { useEffect } from 'react'
 const MAUTIC_URL = process.env.NEXT_PUBLIC_MAUTIC_URL || 'https://mautic.learninfrance.com'
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   interface Window {
     MauticTrackingObject?: string
     _mfq?: unknown[]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mt?: (...args: any[]) => void
+    mt?: (...args: unknown[]) => void
   }
 }
 
