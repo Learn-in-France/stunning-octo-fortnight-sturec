@@ -51,3 +51,7 @@ firebase-service-account.json
 
 # Claude memory (local only)
 .claude/
+
+# Podcast video assets — committed once, shipped via Railway image bake.
+# If updating an audiogram, re-commit the file (note: old blob stays in history).
+# apps/web/public/clips/*.mp4   # ← keep this commented; un-comment if you want to LFS-ify later

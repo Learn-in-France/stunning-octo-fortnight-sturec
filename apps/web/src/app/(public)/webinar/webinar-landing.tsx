@@ -399,7 +399,7 @@ function AboutLif() {
             </a>
             <span className="mx-2 text-public-muted">·</span>
             <a
-              href="https://cal.com/learninfrance"
+              href="https://cal.com/learninfrance-com-y637w5/studentgpt"
               className="text-public-navy underline decoration-public-navy/30 decoration-1 underline-offset-4 hover:decoration-public-navy"
             >
               Free guidance call
