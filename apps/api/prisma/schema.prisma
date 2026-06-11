@@ -363,11 +363,30 @@ model Lead {
   notes                 String?       @db.Text
   mauticContactId       Int?          @map("mautic_contact_id")
   convertedStudentId    String?       @map("converted_student_id") @db.Uuid
+
+  // Lead-intelligence experiment (2026-06)
+  intentScore           Int?          @map("intent_score")
+  intentUpdatedAt       DateTime?     @map("intent_updated_at")
+  programmeRequested    String?       @map("programme_requested")
+  programmeInPortfolio  Boolean?      @map("programme_in_portfolio")
+  intakeYear            Int?          @map("intake_year")
+  fundingSelfPossible   Boolean?      @map("funding_self_possible")
+  franceReal            Boolean?      @map("france_real")
+  englishReady          Boolean?      @map("english_ready")
+  contactValid          Boolean?      @map("contact_valid")
+  dqTags                String[]      @default([]) @map("dq_tags")
+  outcome               LeadOutcome?
+  outcomeReason         String?       @map("outcome_reason")
+  outcomeAt             DateTime?     @map("outcome_at")
+  acquisitionSourceId   String?       @map("acquisition_source_id") @db.Uuid
+
   createdAt             DateTime      @default(now()) @map("created_at")
   updatedAt             DateTime      @updatedAt @map("updated_at")
   deletedAt             DateTime?     @map("deleted_at")
 
   // Relations
+  acquisitionSource   AcquisitionSource? @relation("LeadAcquisitionSource", fields: [acquisitionSourceId], references: [id])
+  events              LeadEvent[]    @relation("LeadEvents")
   user                User?          @relation("LeadUser", fields: [userId], references: [id])
   assignedCounsellor  User?          @relation("LeadCounsellor", fields: [assignedCounsellorId], references: [id])
   createdByUser       User?          @relation("LeadCreator", fields: [createdByUserId], references: [id])
@@ -386,7 +405,95 @@ model Lead {
   @@index([email])
   @@index([qualificationScore])
   @@index([priorityLevel])
+  @@index([intentScore])
+  @@index([outcome])
+  @@index([acquisitionSourceId])
   @@map("leads")
+}
+
+// ── Lead-intelligence experiment (2026-06) ──────────────────────────
+
+enum LeadEventType {
+  email_open
+  email_click
+  wa_reply
+  booking
+  doc_upload
+  webinar_attend
+  chat_message
+  call_logged
+}
+
+enum LeadEventOrigin {
+  mautic
+  brevo
+  calcom
+  sturec
+  manual
+}
+
+enum LeadOutcome {
+  applied
+  enrolled
+  deferred_next_cycle
+  disqualified
+  not_interested
+  unreachable
+}
+
+enum AcquisitionKind {
+  event
+  webinar
+  campaign
+  agent
+  organic
+  other
+}
+
+model LeadEvent {
+  id           String          @id @default(uuid()) @db.Uuid
+  leadId       String          @map("lead_id") @db.Uuid
+  eventType    LeadEventType   @map("event_type")
+  origin       LeadEventOrigin
+  linkCategory String?         @map("link_category") // whatsapp | booking | programme | scholarship | website
+  occurredAt   DateTime        @map("occurred_at")
+  weight       Int             @default(0)
+  metadata     Json?
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  lead         Lead            @relation("LeadEvents", fields: [leadId], references: [id])
+
+  @@unique([leadId, eventType, occurredAt, origin]) // idempotent ingestion
+  @@index([leadId])
+  @@index([eventType])
+  @@index([occurredAt])
+  @@map("lead_events")
+}
+
+model AcquisitionSource {
+  id         String          @id @default(uuid()) @db.Uuid
+  name       String          @unique // e.g. "BSB Hyderabad Opt-In 2026-05-13"
+  kind       AcquisitionKind @default(event)
+  costEur    Int?            @map("cost_eur") // left null until QBR
+  occurredOn DateTime?       @map("occurred_on") @db.Date
+  notes      String?         @db.Text
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  leads      Lead[]          @relation("LeadAcquisitionSource")
+
+  @@map("lead_sources")
+}
+
+model FunnelSnapshot {
+  id         String   @id @default(uuid()) @db.Uuid
+  weekStart  DateTime @map("week_start") @db.Date
+  sourceName String   @default("") @map("source_name") // "" = all sources
+  stage      String   // pool | engaged | gate_passed | applied | enrolled | disqualified
+  count      Int
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([weekStart, sourceName, stage])
+  @@map("funnel_snapshots")
 }
 
 model Student {

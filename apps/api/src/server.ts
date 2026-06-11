@@ -21,6 +21,7 @@ import { opsRoutes } from './modules/ops/routes.js'
 import { notificationRoutes } from './modules/notifications/routes.js'
 import { counsellorRoutes } from './modules/counsellor/routes.js'
 import { campaignRoutes } from './modules/campaigns/routes.js'
+import { intelligenceRoutes } from './modules/intelligence/routes.js'
 
 const server = Fastify({ logger: true })
 
@@ -57,6 +58,7 @@ await server.register(opsRoutes, { prefix: '/api/v1' })
 await server.register(notificationRoutes, { prefix: '/api/v1' })
 await server.register(counsellorRoutes, { prefix: '/api/v1' })
 await server.register(campaignRoutes, { prefix: '/api/v1' })
+await server.register(intelligenceRoutes, { prefix: '/api/v1' })
 
 // Webhook routes (no auth — verified by provider-specific secrets)
 await server.register(webhookRoutes, { prefix: '/api/v1' })

@@ -56,8 +56,13 @@ export async function webhookRoutes(server: FastifyInstance) {
     handler: ctrl.handleWhatsApp,
   })
 
-  // Mautic campaign event callbacks
+  // Mautic campaign event callbacks + engagement (email_on_open, page_on_hit)
   server.post('/webhooks/mautic', {
     handler: ctrl.handleMautic,
+  })
+
+  // Brevo marketing events (opened, click)
+  server.post('/webhooks/brevo', {
+    handler: ctrl.handleBrevo,
   })
 }

@@ -28,3 +28,10 @@ export async function enqueueMauticEvent(raw: Record<string, unknown>) {
     payload: raw,
   })
 }
+
+export async function enqueueBrevoEvent(raw: Record<string, unknown>) {
+  await getWebhooksQueue().add('brevo-event', {
+    provider: 'brevo',
+    payload: raw,
+  })
+}

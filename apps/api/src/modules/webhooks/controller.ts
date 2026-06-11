@@ -73,6 +73,25 @@ export async function handleWhatsApp(request: FastifyRequest, reply: FastifyRepl
 
 // ─── Mautic ─────────────────────────────────────────────────
 
+export async function handleBrevo(request: FastifyRequest, reply: FastifyReply) {
+  const secret = process.env.BREVO_WEBHOOK_SECRET
+  if (!secret) {
+    request.log.error('BREVO_WEBHOOK_SECRET not configured')
+    return reply.code(503).send({ error: 'Webhook not configured', code: 'WEBHOOK_NOT_CONFIGURED' })
+  }
+
+  // Brevo doesn't HMAC-sign marketing webhooks — verify shared secret token
+  const token = (request.query as Record<string, string>)?.token
+    || request.headers['x-webhook-secret'] as string
+
+  if (token !== secret) {
+    return reply.code(401).send({ error: 'Invalid token' })
+  }
+
+  await webhookService.enqueueBrevoEvent(request.body as Record<string, unknown>)
+  return reply.code(200).send({ received: true })
+}
+
 export async function handleMautic(request: FastifyRequest, reply: FastifyReply) {
   const secret = process.env.MAUTIC_WEBHOOK_SECRET
   if (!secret) {
