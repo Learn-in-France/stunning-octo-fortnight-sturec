@@ -63,6 +63,11 @@ export interface LeadDetail extends LeadListItem {
   qualifiedAt: string | null
   priorityUpdatedAt: string | null
   createdByUserId: string | null
+  /** 6Q gate fields (lead-intelligence experiment) */
+  programmeRequested?: string | null
+  programmeInPortfolio?: boolean | null
+  intakeYear?: number | null
+  outcome?: string | null
   /** Internal qualification block — never exposed to students */
   qualification: LeadQualificationBlock | null
 }

@@ -18,6 +18,8 @@ import { PriorityBadge } from '@/components/shared/priority-badge'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { ScoreBar, ScoreCircle } from '@/components/shared/score-bar'
 import { useToast } from '@/providers/toast-provider'
+import { ActionStrip } from '@/features/intelligence/action-strip'
+import { useLeadTimeline } from '@/features/intelligence/hooks'
 import {
   useLead,
   useConvertLead,
@@ -138,6 +140,9 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             <StatusBadge status={lead.status} />
             {lead.isPartnerHotLead && <Badge variant="warning">Hot partner lead</Badge>}
             {lead.needsIntakeCompletion && <Badge variant="muted">Needs intake completion</Badge>}
+            {lead.dqTags?.map((tag) => (
+              <Badge key={tag} variant="danger">{tag}</Badge>
+            ))}
           </div>
         }
         actions={
@@ -172,6 +177,23 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         }
       />
+
+      {/* Shared quick actions — same write-paths as the Work Queue */}
+      {isActionable && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-surface-raised px-4 py-3">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Quick actions</span>
+          <ActionStrip
+            lead={{
+              id: lead.id,
+              firstName: lead.firstName,
+              phone: lead.phone,
+              programmeRequested: lead.programmeRequested,
+              programmeInPortfolio: lead.programmeInPortfolio,
+              intakeYear: lead.intakeYear,
+            }}
+          />
+        </div>
+      )}
 
       {/* Activity logging form */}
       {showActivityForm && isActionable && (
@@ -309,6 +331,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
         {/* Right column — timeline */}
         <div className="space-y-6">
+          <IntentTimelineCard leadId={lead.id} intentScore={lead.intentScore} />
           <Card>
             <CardHeader>
               <CardTitle>Timeline</CardTitle>
@@ -497,4 +520,40 @@ function formatDateTime(iso: string): string {
 function formatDisposition(d: string | null): string {
   if (!d) return 'Unknown'
   return d.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+}
+
+function IntentTimelineCard({ leadId, intentScore }: { leadId: string; intentScore: number | null }) {
+  const { data, isLoading } = useLeadTimeline(leadId)
+  const events = data?.events ?? []
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Intent Signals</CardTitle>
+        <Badge variant={(intentScore ?? 0) >= 15 ? 'success' : (intentScore ?? 0) > 0 ? 'warning' : 'muted'}>
+          intent {intentScore ?? 0}
+        </Badge>
+      </CardHeader>
+      {isLoading ? (
+        <p className="text-xs text-text-muted">Loading…</p>
+      ) : events.length === 0 ? (
+        <p className="text-xs text-text-muted">No engagement signals yet.</p>
+      ) : (
+        <ul className="space-y-2">
+          {events.slice(0, 15).map((e) => (
+            <li key={e.id} className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-text-secondary">
+                {e.eventType.replace(/_/g, ' ')}
+                {e.linkCategory ? ` · ${e.linkCategory}` : ''}
+                <span className="text-text-muted"> · {e.origin}</span>
+              </span>
+              <span className="whitespace-nowrap font-mono text-text-muted">
+                +{e.weight} · {new Date(e.occurredAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  )
 }

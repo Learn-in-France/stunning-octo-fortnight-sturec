@@ -11,6 +11,7 @@ import {
   mapActivityLog,
 } from '../../lib/mappers/index.js'
 import { getMauticSyncQueue, getNotificationsQueue, getImportsQueue, getAiProcessingQueue } from '../../lib/queue/index.js'
+import { recordOutcome } from '../intelligence/service.js'
 import { randomUUID } from 'crypto'
 
 export async function listLeads(
@@ -109,11 +110,11 @@ export async function assignLead(id: string, counsellorId: string) {
 export async function disqualifyLead(id: string, reason: string, user: RequestUser) {
   const existing = await repo.findLeadById(id)
   if (!existing || !canAccessLead(existing, user)) return null
-  const lead = await repo.updateLead(id, {
-    status: 'disqualified',
-    notes: reason,
-  })
-  return mapLeadToListItem(lead)
+  // Single close write-path ("merge the decisions, not the screens"):
+  // the legacy disqualify door records the same outcome; status follows.
+  await recordOutcome(id, { outcome: 'disqualified', reason }, user)
+  const lead = await repo.findLeadById(id)
+  return lead ? mapLeadToListItem(lead) : null
 }
 
 export async function convertLead(id: string, user: RequestUser) {
