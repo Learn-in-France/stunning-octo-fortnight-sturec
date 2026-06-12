@@ -2,7 +2,7 @@
 
 **Goal:** instrument Sturec so the BSB-pool experiment is fully measurable: signals → intent score → 6Q gate → work queue → outcomes → funnel by source. No partner portal, no tenancy, no cost comparison yet (costs = QBR).
 
-**STATUS: ALL BUILT + DEPLOYED + E2E-VERIFIED 2026-06-12.**
+**STATUS: ALL BUILT + DEPLOYED + E2E-VERIFIED 2026-06-12.** Gate fields backfilled pool-wide (1,983 programmes · 1,480 dq-tagged); initial lifecycle batch: 1,040→nurturing, 52 qualified, 39 hard-DQ'd. RBAC: counsellors see assigned only; funnel admin-only.
 
 **Decisions locked (2026-06-11):**
 - Mautic ingestion via **webhook** (receiver already exists in `modules/webhooks` → BullMQ → `webhooks.worker.ts`), weekly SQL reconciliation as backstop.
@@ -25,6 +25,8 @@
 | 25 | Backfill | ✅ done | 122 outcomes, 5,576 source-linked, 3,277 events, 1,676 intents |
 | 26 | Mautic + Brevo webhooks configured | ✅ done | Mautic hook id 2; secrets on @sturec/api |
 | 27 | Weekly funnel snapshot job | ✅ done | Mondays 06:00 UTC |
+| 28 | Import auto-scoring + gate pre-fill + source link | ✅ done | deterministic, runs in imports worker |
+| 29 | Lifecycle rules (auto status transitions) | ✅ done | hard-tag DQ · gate-clean+intent≥15 → qualified · engaged → nurturing; per-lead on recompute + nightly |
 
 ## Experiment metrics (what the dashboard must answer)
 
