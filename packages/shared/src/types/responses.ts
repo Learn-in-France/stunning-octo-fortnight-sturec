@@ -67,6 +67,10 @@ export interface LeadDetail extends LeadListItem {
   programmeRequested?: string | null
   programmeInPortfolio?: boolean | null
   intakeYear?: number | null
+  fundingSelfPossible?: boolean | null
+  franceReal?: boolean | null
+  englishReady?: boolean | null
+  contactValid?: boolean | null
   outcome?: string | null
   /** Internal qualification block — never exposed to students */
   qualification: LeadQualificationBlock | null
