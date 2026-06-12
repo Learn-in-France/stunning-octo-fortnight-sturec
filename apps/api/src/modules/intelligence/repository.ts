@@ -98,7 +98,8 @@ export async function recomputeIntent(leadId?: string): Promise<number> {
 }
 
 /** Ranked work queue: engaged, un-gated-out, current-cycle leads. */
-export async function workQueue(opts: { limit: number; offset: number; intakeMax: number }) {
+export async function workQueue(opts: { limit: number; offset: number; intakeMax: number; counsellorId?: string }) {
+  const scope = opts.counsellorId ? { assignedCounsellorId: opts.counsellorId } : {}
   const [rows, total] = await Promise.all([
     prisma.lead.findMany({
       where: {
@@ -106,6 +107,7 @@ export async function workQueue(opts: { limit: number; offset: number; intakeMax
         outcome: null,
         dqTags: { isEmpty: true },
         OR: [{ intakeYear: null }, { intakeYear: { lte: opts.intakeMax } }],
+        ...scope,
       },
       orderBy: [{ intentScore: { sort: 'desc', nulls: 'last' } }, { updatedAt: 'desc' }],
       take: opts.limit,
@@ -134,6 +136,7 @@ export async function workQueue(opts: { limit: number; offset: number; intakeMax
         outcome: null,
         dqTags: { isEmpty: true },
         OR: [{ intakeYear: null }, { intakeYear: { lte: opts.intakeMax } }],
+        ...scope,
       },
     }),
   ])
@@ -183,8 +186,8 @@ export async function updateOutcome(leadId: string, outcome: string, reason?: st
 export async function findLeadById(leadId: string) {
   return prisma.lead.findFirst({
     where: { id: leadId, deletedAt: null },
-    select: { id: true, programmeRequested: true, programmeInPortfolio: true, intakeYear: true,
-      fundingSelfPossible: true, franceReal: true, englishReady: true, contactValid: true },
+    select: { id: true, assignedCounsellorId: true, programmeRequested: true, programmeInPortfolio: true,
+      intakeYear: true, fundingSelfPossible: true, franceReal: true, englishReady: true, contactValid: true },
   })
 }
 

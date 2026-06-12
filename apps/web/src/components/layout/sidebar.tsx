@@ -52,7 +52,7 @@ const NAV_SECTIONS: { label?: string; items: NavItem[] }[] = [
       {
         label: 'Funnel',
         href: '/funnel',
-        roles: ['admin', 'counsellor'],
+        roles: ['admin'],
         icon: (
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M2 2.5H16L11 8.5V14.5L7 16V8.5L2 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />

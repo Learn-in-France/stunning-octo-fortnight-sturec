@@ -108,6 +108,8 @@ export function mapLeadToListItem(lead: PrismaLead): LeadListItem {
     qualificationScore: lead.qualificationScore,
     priorityLevel: lead.priorityLevel as LeadListItem['priorityLevel'],
     profileCompleteness,
+    intentScore: lead.intentScore ?? null,
+    dqTags: lead.dqTags ?? [],
     isPartnerHotLead,
     needsIntakeCompletion: needsPartnerIntakeCompletion({
       source: lead.source,
