@@ -2,6 +2,8 @@
 
 **Goal:** instrument Sturec so the BSB-pool experiment is fully measurable: signals → intent score → 6Q gate → work queue → outcomes → funnel by source. No partner portal, no tenancy, no cost comparison yet (costs = QBR).
 
+**STATUS: ALL BUILT + DEPLOYED + E2E-VERIFIED 2026-06-12.**
+
 **Decisions locked (2026-06-11):**
 - Mautic ingestion via **webhook** (receiver already exists in `modules/webhooks` → BullMQ → `webhooks.worker.ts`), weekly SQL reconciliation as backstop.
 - `lead_sources.cost_eur` stays **nullable/unfilled** until QBR.
@@ -12,17 +14,17 @@
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 17 | Prisma migration: lead_events, lead_sources, gate/outcome/intent columns, Program.active | 🔨 in progress | |
-| 18 | Mautic webhook handler → lead_events | ⬜ | email_on_open + page_on_hit |
-| 19 | Intent recompute job | ⬜ | booking 25 · doc 20 · WA 15 · webinar 12 · diag-click 8 · open 1, ~30d decay |
-| 20 | Brevo webhook + native emitters (booking/chat/doc) | ⬜ | |
-| 21 | Intelligence module API (work-queue / gate / outcome / funnel) | ⬜ | |
-| 22 | Work Queue page + gate form + outcome buttons | ⬜ | the morning screen |
-| 23 | Funnel dashboard | ⬜ | source × stage; € column dormant until QBR |
-| 24 | AI chat asks 6 gate questions → structured fields | ⬜ | |
-| 25 | Backfill 234 outcomes + lead_sources from source_partner | ⬜ | baseline for the case study |
-| 26 | Configure Mautic webhook (ops) | ⬜ | needs Mautic UI + prod endpoint |
-| 27 | Weekly funnel snapshot job | ⬜ | before/after charting |
+| 17 | Prisma migration | ✅ done | live on prod; BSB catalog seeded (9 active, Sustainable inactive) |
+| 18 | Mautic webhook handler → lead_events | ✅ done | E2E verified in prod 2026-06-12 |
+| 19 | Intent recompute job | ✅ done | per-lead on event + nightly refresh 03:00 UTC |
+| 20 | Brevo webhook + native emitters | ✅ done | Brevo webhook id 2034266; booking/WA/chat emit; doc deferred (student-stage) |
+| 21 | Intelligence module API | ✅ done | /intelligence/* (work-queue, gate, outcome, events, timeline, funnel) |
+| 22 | Work Queue page + gate form + outcome | ✅ done | /work-queue in sidebar |
+| 23 | Funnel dashboard | ✅ done | /funnel; € dormant until QBR |
+| 24 | AI chat gate extraction | ✅ done | assessment prompt + saveAssessment apply |
+| 25 | Backfill | ✅ done | 122 outcomes, 5,576 source-linked, 3,277 events, 1,676 intents |
+| 26 | Mautic + Brevo webhooks configured | ✅ done | Mautic hook id 2; secrets on @sturec/api |
+| 27 | Weekly funnel snapshot job | ✅ done | Mondays 06:00 UTC |
 
 ## Experiment metrics (what the dashboard must answer)
 
