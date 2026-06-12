@@ -16,6 +16,9 @@ import { buildIdempotencyKey, withIdempotency } from '../lib/queue/idempotency.j
 import { getAiProcessingQueue } from '../lib/queue/queues.js'
 import type { ImportJobData } from '../lib/queue/queues.js'
 import prisma from '../lib/prisma.js'
+import { parseImportRow, scoreImportRow } from '../modules/intelligence/import-scoring.js'
+import { deriveDqTags } from '../modules/intelligence/service.js'
+import { ensureAcquisitionSource, getActiveProgrammeNames } from '../modules/intelligence/repository.js'
 
 export function startImportsWorker() {
   const worker = new Worker<ImportJobData>(
@@ -24,6 +27,9 @@ export function startImportsWorker() {
       const { batchId, rows } = job.data
 
       const idempotencyKey = buildIdempotencyKey('imports', [batchId])
+
+      // One catalog read per batch — used to score + gate-prefill every row
+      const activeProgrammes = await getActiveProgrammeNames()
 
       const outcome = await withIdempotency(idempotencyKey, async () => {
         let created = 0
@@ -47,6 +53,15 @@ export function startImportsWorker() {
 
               const firstName = String(row.firstName || row.first_name || 'Unknown')
               const lastName = row.lastName || row.last_name || undefined
+              const sourcePartner = row.sourcePartner ? String(row.sourcePartner) : null
+
+              // Deterministic import-time scoring + 6Q gate pre-fill
+              const parsed = parseImportRow(row)
+              const scored = scoreImportRow(parsed, activeProgrammes)
+              const dqTags = deriveDqTags(scored.gate)
+              const acquisitionSourceId = sourcePartner
+                ? await ensureAcquisitionSource(sourcePartner)
+                : null
 
               const lead = await prisma.lead.create({
                 data: {
@@ -55,9 +70,18 @@ export function startImportsWorker() {
                   lastName: lastName ? String(lastName) : null,
                   phone: row.phone ? String(row.phone) : null,
                   source: 'university' as any,
-                  sourcePartner: row.sourcePartner ? String(row.sourcePartner) : null,
+                  sourcePartner,
                   status: 'new_lead',
                   notes: row.notes ? String(row.notes) : null,
+                  qualificationScore: scored.qualificationScore,
+                  priorityLevel: scored.priorityLevel,
+                  intentScore: 0,
+                  programmeRequested: scored.gate.programmeRequested ?? null,
+                  programmeInPortfolio: scored.gate.programmeInPortfolio ?? null,
+                  intakeYear: scored.gate.intakeYear ?? null,
+                  franceReal: scored.gate.franceReal ?? null,
+                  dqTags,
+                  acquisitionSourceId,
                 },
               })
 

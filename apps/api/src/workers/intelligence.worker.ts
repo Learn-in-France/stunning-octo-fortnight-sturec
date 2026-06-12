@@ -14,7 +14,8 @@
 import { Worker } from 'bullmq'
 import { getRedisConnection } from '../lib/queue/connection.js'
 import { getIntelligenceQueue, type IntelligenceJobData } from '../lib/queue/index.js'
-import { recomputeIntent, snapshotFunnel } from '../modules/intelligence/repository.js'
+import { recomputeIntent, snapshotFunnel, applyLifecycleRules } from '../modules/intelligence/repository.js'
+import { INTENT_QUALIFY_THRESHOLD } from '../modules/intelligence/types.js'
 
 function mondayOfCurrentWeek(): Date {
   const now = new Date()
@@ -31,7 +32,13 @@ export function startIntelligenceWorker() {
       switch (job.data.task) {
         case 'intent_recompute': {
           const updated = await recomputeIntent(job.data.leadId)
-          return { status: 'recomputed', leadsUpdated: updated }
+          // Lifecycle rules ride on every recompute: per-lead when event-driven,
+          // full pass after the nightly refresh. Explicit + logged into lead notes.
+          const transitions = await applyLifecycleRules({
+            leadId: job.data.leadId,
+            intentThreshold: INTENT_QUALIFY_THRESHOLD,
+          })
+          return { status: 'recomputed', leadsUpdated: updated, transitions }
         }
         case 'funnel_snapshot': {
           const written = await snapshotFunnel(mondayOfCurrentWeek())

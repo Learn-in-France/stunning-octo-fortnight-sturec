@@ -199,6 +199,61 @@ export async function getLeadEvents(leadId: string, limit = 50) {
   })
 }
 
+/** Upsert an acquisition source by name (event/campaign), return its id. */
+export async function ensureAcquisitionSource(name: string): Promise<string> {
+  const src = await prisma.acquisitionSource.upsert({
+    where: { name },
+    create: { name, kind: 'event' },
+    update: {},
+    select: { id: true },
+  })
+  return src.id
+}
+
+/**
+ * Rule-driven lifecycle transitions (explicit, logged into notes):
+ *  1. hard DQ tags (prog_not_offered / dead_contact) → disqualified
+ *  2. gate-clean + intent ≥ threshold → qualified
+ *  3. any engagement (intent > 0) → nurturing
+ * Never touches converted/disqualified leads or leads with an outcome.
+ * Returns counts per transition.
+ */
+export async function applyLifecycleRules(opts: { leadId?: string; intentThreshold: number }) {
+  const leadFilter = opts.leadId ? Prisma.sql`AND l.id = ${opts.leadId}::uuid` : Prisma.empty
+
+  const dq = await prisma.$executeRaw`
+    UPDATE leads l SET
+      status = 'disqualified',
+      notes = coalesce(l.notes,'') || E'\n[auto ' || to_char(now(),'YYYY-MM-DD') || '] status -> disqualified: hard gate tag (' || array_to_string(l.dq_tags, ',') || ')'
+    WHERE l.deleted_at IS NULL AND l.outcome IS NULL
+      AND l.status IN ('new','nurturing','qualified')
+      AND l.dq_tags && ARRAY['prog_not_offered','dead_contact']::text[]
+      ${leadFilter}
+  `
+  const qualified = await prisma.$executeRaw`
+    UPDATE leads l SET
+      status = 'qualified',
+      qualified_at = now(),
+      notes = coalesce(l.notes,'') || E'\n[auto ' || to_char(now(),'YYYY-MM-DD') || '] status -> qualified: gate clean + intent >= ' || ${opts.intentThreshold}::text
+    WHERE l.deleted_at IS NULL AND l.outcome IS NULL
+      AND l.status IN ('new','nurturing')
+      AND cardinality(l.dq_tags) = 0
+      AND l.programme_in_portfolio = true
+      AND l.intent_score >= ${opts.intentThreshold}
+      ${leadFilter}
+  `
+  const nurturing = await prisma.$executeRaw`
+    UPDATE leads l SET
+      status = 'nurturing',
+      notes = coalesce(l.notes,'') || E'\n[auto ' || to_char(now(),'YYYY-MM-DD') || '] status -> nurturing: engagement detected'
+    WHERE l.deleted_at IS NULL AND l.outcome IS NULL
+      AND l.status = 'new'
+      AND l.intent_score > 0
+      ${leadFilter}
+  `
+  return { disqualified: dq, qualified, nurturing }
+}
+
 /** Live funnel: stage counts per source (same definitions as the snapshot). */
 export async function funnelLive() {
   return prisma.$queryRaw<

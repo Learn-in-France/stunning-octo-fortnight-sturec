@@ -31,6 +31,8 @@ export const CLICK_CATEGORY_WEIGHTS: Record<string, number> = {
 
 export const INTENT_DECAY_DAYS = 30
 export const INTENT_CAP = 100
+/** Gate-clean leads at/above this intent auto-qualify (≈ one commitment action). Tune at QBR. */
+export const INTENT_QUALIFY_THRESHOLD = 15
 
 export interface NewLeadEvent {
   leadId: string
