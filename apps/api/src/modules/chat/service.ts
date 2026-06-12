@@ -16,7 +16,9 @@ import {
 } from '../../integrations/groq/prompts.js'
 import { computeQualification } from '../../lib/qualification.js'
 import { deriveCumulativeIntakeCapture, type IntakeAssessmentLike } from '../../lib/intake.js'
-import { getAiProcessingQueue } from '../../lib/queue/index.js'
+import { getAiProcessingQueue, getIntelligenceQueue } from '../../lib/queue/index.js'
+import { recordEvents } from '../intelligence/repository.js'
+import { applyGate } from '../intelligence/service.js'
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -39,6 +41,14 @@ interface AiStructuredOutput {
   lead_heat: string | null
   should_suggest_booking?: boolean
   options: string[] | null
+  /** 6Q qualification gate extracted from conversation (lead-intelligence experiment) */
+  gate?: {
+    programme_requested?: string | null
+    intake_year?: number | null
+    funding_self_possible?: boolean | null
+    france_real?: boolean | null
+    english_ready?: boolean | null
+  } | null
 }
 
 const scoreFieldNames = [
@@ -387,6 +397,28 @@ export async function sendMessage(
   // Save user message
   await repo.createMessage({ sessionId, role: 'user', content })
 
+  // Lead-intelligence: a student chatting is an intent signal
+  if (session.leadId) {
+    void recordEvents([
+      {
+        leadId: session.leadId,
+        eventType: 'chat_message',
+        origin: 'sturec',
+        occurredAt: new Date(),
+        metadata: { sessionId },
+      },
+    ])
+      .then((written) => {
+        if (written > 0) {
+          return getIntelligenceQueue().add('intent-recompute', {
+            task: 'intent_recompute',
+            leadId: session.leadId!,
+          })
+        }
+      })
+      .catch((err) => console.error('[chat] lead_event record failed:', err))
+  }
+
   // Build context for AI
   const messages = await buildAiContext(session)
 
@@ -641,6 +673,23 @@ async function saveAssessmentFromStructured(
     priorityLevel: qualification.priorityLevel,
     profileCompleteness: output.profile_completeness,
   })
+
+  // 6Q gate answers extracted from conversation → structured lead columns.
+  // Chatting counts as a live contact, so contactValid is set true here.
+  if (output.gate) {
+    try {
+      await applyGate(leadId, {
+        programmeRequested: output.gate.programme_requested ?? undefined,
+        intakeYear: output.gate.intake_year ?? undefined,
+        fundingSelfPossible: output.gate.funding_self_possible ?? undefined,
+        franceReal: output.gate.france_real ?? undefined,
+        englishReady: output.gate.english_ready ?? undefined,
+        contactValid: true,
+      })
+    } catch (err) {
+      console.error('[chat] gate apply failed:', err)
+    }
+  }
 }
 
 export async function generateAssessment(

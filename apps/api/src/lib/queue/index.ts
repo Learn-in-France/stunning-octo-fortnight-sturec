@@ -7,6 +7,7 @@ export {
   getDocumentsQueue,
   getImportsQueue,
   getWebhooksQueue,
+  getIntelligenceQueue,
 } from './queues.js'
 export type {
   AiProcessingJobData,
@@ -16,6 +17,7 @@ export type {
   DocumentJobData,
   ImportJobData,
   WebhookJobData,
+  IntelligenceJobData,
 } from './queues.js'
 export {
   buildIdempotencyKey,

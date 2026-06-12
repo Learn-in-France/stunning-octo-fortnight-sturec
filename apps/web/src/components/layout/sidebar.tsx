@@ -37,6 +37,29 @@ const NAV_SECTIONS: { label?: string; items: NavItem[] }[] = [
     label: 'Pipeline',
     items: [
       {
+        label: 'Work Queue',
+        href: '/work-queue',
+        roles: ['admin', 'counsellor'],
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M2 4.5H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M2 9H12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M2 13.5H8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M13 11L15 13L13 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ),
+      },
+      {
+        label: 'Funnel',
+        href: '/funnel',
+        roles: ['admin', 'counsellor'],
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M2 2.5H16L11 8.5V14.5L7 16V8.5L2 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+          </svg>
+        ),
+      },
+      {
         label: 'Leads',
         href: '/leads',
         roles: ['admin', 'counsellor'],

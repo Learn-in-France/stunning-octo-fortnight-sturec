@@ -147,13 +147,26 @@ Return this exact shape:
   "summary_for_team": "",
   "lead_heat": null,
   "should_suggest_booking": false,
-  "options": null
+  "options": null,
+  "gate": {
+    "programme_requested": null,
+    "intake_year": null,
+    "funding_self_possible": null,
+    "france_real": null,
+    "english_ready": null
+  }
 }
 
 Rules:
 - Base the assessment on the full known context, not just the latest message.
 - fields_collected must be cumulative across all known information in the provided context.
 - fields_missing must be the remaining canonical intake fields.
+- gate: extract ONLY what the student has actually said — never guess; leave null when unknown.
+  - programme_requested: the programme/course they want, verbatim-ish (e.g. "MSc Data Science", "MBA", "PhD in physics").
+  - intake_year: the calendar year they intend to start (e.g. 2026, 2027).
+  - funding_self_possible: false ONLY if they state they can proceed solely with a 100% scholarship / cannot fund anything themselves; true if they mention a budget, loan, or family funding.
+  - france_real: false ONLY if they say France is not a real option / they prefer another country exclusively; true if France is clearly a genuine choice.
+  - english_ready: false ONLY if they indicate they cannot study or interview in English; true if they have a test score or English-medium education.
 - should_suggest_booking should be true when at least 4 of the 7 intake fields are known.
 - options: 2-4 short clickable chips the student would click to SEND to the advisor, phrased in student first-person voice. Never include options that ask the student about themselves (no "your"-containing phrases, no questions the advisor would ask). If no good student-voice chips apply, use null.
 - Keep summary_for_team concise and useful for a counsellor handoff.`

@@ -58,8 +58,14 @@ export interface ImportJobData {
 }
 
 export interface WebhookJobData {
-  provider: 'calcom' | 'whatsapp' | 'mautic'
+  provider: 'calcom' | 'whatsapp' | 'mautic' | 'brevo'
   payload: Record<string, unknown>
+}
+
+export interface IntelligenceJobData {
+  task: 'intent_recompute' | 'funnel_snapshot'
+  /** present for intent_recompute; omit to recompute every lead with events */
+  leadId?: string
 }
 
 // Lazy-init queues to avoid connection at import time
@@ -70,6 +76,7 @@ let _mauticSync: Queue<MauticSyncJobData> | undefined
 let _documents: Queue<DocumentJobData> | undefined
 let _imports: Queue<ImportJobData> | undefined
 let _webhooks: Queue<WebhookJobData> | undefined
+let _intelligence: Queue<IntelligenceJobData> | undefined
 
 function createQueue<T>(name: string): Queue<T> {
   return new Queue<T>(name, {
@@ -111,4 +118,9 @@ export function getImportsQueue() {
 export function getWebhooksQueue() {
   if (!_webhooks) _webhooks = createQueue<WebhookJobData>('webhooks')
   return _webhooks
+}
+
+export function getIntelligenceQueue() {
+  if (!_intelligence) _intelligence = createQueue<IntelligenceJobData>('intelligence')
+  return _intelligence
 }

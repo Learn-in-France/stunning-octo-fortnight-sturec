@@ -11,8 +11,10 @@
 import { Worker } from 'bullmq'
 import { getRedisConnection } from '../lib/queue/connection.js'
 import { buildIdempotencyKey, withIdempotency } from '../lib/queue/idempotency.js'
-import type { WebhookJobData } from '../lib/queue/queues.js'
+import { getIntelligenceQueue, type WebhookJobData } from '../lib/queue/index.js'
 import prisma from '../lib/prisma.js'
+import { resolveLeadId, resolveLeadIdByPhone, recordEvents } from '../modules/intelligence/repository.js'
+import { classifyLink, type NewLeadEvent } from '../modules/intelligence/types.js'
 
 export function startWebhooksWorker() {
   const worker = new Worker<WebhookJobData>(
@@ -27,6 +29,8 @@ export function startWebhooksWorker() {
           return await processWhatsAppEvent(payload)
         case 'mautic':
           return await processMauticEvent(payload)
+        case 'brevo':
+          return await processBrevoEvent(payload)
         default:
           return { status: 'skipped', reason: `Unknown provider: ${provider}` }
       }
@@ -99,6 +103,21 @@ async function processCalcomEvent(raw: Record<string, unknown>) {
             notes: payload.payload.title || undefined,
           },
         })
+
+        // Booking = strongest intent signal; resolve lead via metadata or attendee email
+        const attendeeEmail = payload.payload.attendees?.[0]?.email
+        const eventLeadId = leadId || (attendeeEmail ? await resolveLeadId({ email: attendeeEmail }) : null)
+        if (eventLeadId) {
+          await ingestEvents([
+            {
+              leadId: eventLeadId,
+              eventType: 'booking',
+              origin: 'calcom',
+              occurredAt: new Date(),
+              metadata: { bookingUid },
+            },
+          ])
+        }
         return { status: 'created' as const }
       }
 
@@ -179,6 +198,20 @@ async function processWhatsAppEvent(raw: Record<string, unknown>) {
         deliveredAt: payload.timestamp ? new Date(payload.timestamp) : new Date(),
       },
     })
+
+    // Inbound WA message = the strongest channel intent signal we have
+    const leadId = await resolveLeadIdByPhone(payload.from)
+    if (leadId) {
+      await ingestEvents([
+        {
+          leadId,
+          eventType: 'wa_reply',
+          origin: 'sturec',
+          occurredAt: payload.timestamp ? new Date(payload.timestamp) : new Date(),
+          metadata: { from: payload.from },
+        },
+      ])
+    }
     return { status: 'logged' as const }
   })
 
@@ -188,6 +221,11 @@ async function processWhatsAppEvent(raw: Record<string, unknown>) {
 
 // ─── Mautic ─────────────────────────────────────────────────
 
+interface MauticLeadEntity {
+  id: number
+  fields?: { core?: { email?: { value?: string } } }
+}
+
 interface MauticWebhookPayload {
   'mautic.lead_post_save_update'?: Array<{ lead: { id: number; fields: Record<string, unknown> } }>
   'mautic.campaign_on_trigger'?: Array<{
@@ -196,6 +234,43 @@ interface MauticWebhookPayload {
     lead: { id: number }
     result?: unknown
   }>
+  'mautic.email_on_open'?: Array<{
+    stat?: {
+      id?: number
+      dateRead?: string
+      email?: { id?: number; name?: string; subject?: string }
+      lead?: MauticLeadEntity
+    }
+    timestamp?: string
+  }>
+  'mautic.page_on_hit'?: Array<{
+    hit?: {
+      id?: number
+      dateHit?: string
+      url?: string
+      urlTitle?: string
+      source?: string
+      sourceId?: number
+      lead?: MauticLeadEntity
+    }
+    timestamp?: string
+  }>
+}
+
+function mauticLeadEmail(lead?: MauticLeadEntity): string | undefined {
+  return lead?.fields?.core?.email?.value || undefined
+}
+
+/** Record events then enqueue intent recompute for the affected leads. */
+async function ingestEvents(events: NewLeadEvent[]) {
+  const written = await recordEvents(events)
+  if (written > 0) {
+    const leadIds = [...new Set(events.map((e) => e.leadId))]
+    for (const leadId of leadIds) {
+      await getIntelligenceQueue().add('intent-recompute', { task: 'intent_recompute', leadId })
+    }
+  }
+  return written
 }
 
 async function processMauticEvent(raw: Record<string, unknown>) {
@@ -234,5 +309,96 @@ async function processMauticEvent(raw: Record<string, unknown>) {
     }
   }
 
-  return { status: 'processed' }
+  // Engagement signals → lead_events (lead-intelligence experiment)
+  let eventsWritten = 0
+
+  const opens = payload['mautic.email_on_open']
+  if (opens?.length) {
+    const toRecord: NewLeadEvent[] = []
+    for (const item of opens) {
+      const leadId = await resolveLeadId({
+        mauticContactId: item.stat?.lead?.id,
+        email: mauticLeadEmail(item.stat?.lead),
+      })
+      if (!leadId) continue
+      toRecord.push({
+        leadId,
+        eventType: 'email_open',
+        origin: 'mautic',
+        occurredAt: new Date(item.stat?.dateRead || item.timestamp || Date.now()),
+        metadata: { emailId: item.stat?.email?.id, emailName: item.stat?.email?.name },
+      })
+    }
+    eventsWritten += await ingestEvents(toRecord)
+  }
+
+  const hits = payload['mautic.page_on_hit']
+  if (hits?.length) {
+    const toRecord: NewLeadEvent[] = []
+    for (const item of hits) {
+      const leadId = await resolveLeadId({
+        mauticContactId: item.hit?.lead?.id,
+        email: mauticLeadEmail(item.hit?.lead),
+      })
+      if (!leadId || !item.hit?.url) continue
+      const category = classifyLink(item.hit.url)
+      if (category === 'unsubscribe') continue
+      toRecord.push({
+        leadId,
+        eventType: 'email_click',
+        origin: 'mautic',
+        occurredAt: new Date(item.hit?.dateHit || item.timestamp || Date.now()),
+        linkCategory: category,
+        metadata: { url: item.hit.url, source: item.hit.source, sourceId: item.hit.sourceId },
+      })
+    }
+    eventsWritten += await ingestEvents(toRecord)
+  }
+
+  return { status: 'processed', eventsWritten }
+}
+
+// ─── Brevo ──────────────────────────────────────────────────
+
+interface BrevoWebhookPayload {
+  event?: string // 'opened' | 'click' | 'unique_opened' | ...
+  email?: string
+  link?: string
+  date?: string
+  ts_event?: number
+  'camp id'?: number
+  camp_id?: number
+}
+
+async function processBrevoEvent(raw: Record<string, unknown>) {
+  const payload = raw as unknown as BrevoWebhookPayload
+  if (!payload.email || !payload.event) {
+    return { status: 'skipped', reason: 'Missing email or event' }
+  }
+
+  const isOpen = payload.event === 'opened' || payload.event === 'unique_opened' || payload.event === 'proxy_open'
+  const isClick = payload.event === 'click'
+  if (!isOpen && !isClick) return { status: 'skipped', reason: `Unhandled event: ${payload.event}` }
+
+  const leadId = await resolveLeadId({ email: payload.email })
+  if (!leadId) return { status: 'skipped', reason: 'No matching lead' }
+
+  const occurredAt = payload.ts_event
+    ? new Date(payload.ts_event * 1000)
+    : new Date(payload.date || Date.now())
+
+  const category = isClick && payload.link ? classifyLink(payload.link) : undefined
+  if (category === 'unsubscribe') return { status: 'skipped', reason: 'Unsubscribe link' }
+
+  const written = await ingestEvents([
+    {
+      leadId,
+      eventType: isClick ? 'email_click' : 'email_open',
+      origin: 'brevo',
+      occurredAt,
+      linkCategory: category,
+      metadata: { campaignId: payload.camp_id ?? payload['camp id'], link: payload.link },
+    },
+  ])
+  return { status: 'processed', eventsWritten: written }
 }
