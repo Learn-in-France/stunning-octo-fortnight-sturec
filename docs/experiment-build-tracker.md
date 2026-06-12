@@ -44,3 +44,18 @@
 4. 2027+ leads → nurture, never the daily queue.
 
 *Updated as tasks complete. Related: `docs/next-work-lead-intelligence.md` (full plan), `docs/lead-qualification-gate.md` (6Q spec).*
+
+## Next UI iteration (agreed 2026-06-12 — NOT yet built)
+
+**Principle: keep the two pages, merge the decisions, not the screens.**
+/leads = the registry (browse/manage); /work-queue = the call sheet (act). The risk is not
+two pages — it is the same business action recordable two different ways.
+
+1. **Outcome = the single human "close" action; status follows automatically.**
+   outcome=applied → status advance + convert-to-student prompt; outcome=disqualified →
+   status disqualified. Lead-detail's legacy disqualify button becomes the same outcome
+   write-path (one switch, two doors).
+2. **Shared action strip** (WhatsApp · +WA reply · +Call · Gate · Outcome) used by BOTH
+   the work-queue rows and the lead detail page; intent timeline shown on detail too.
+3. **Observe ~2 weeks** of real counsellor use before any deeper merge; only then consider
+   collapsing the queue into a "My Queue" tab on /leads.
