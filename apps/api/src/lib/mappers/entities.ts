@@ -166,6 +166,10 @@ export function mapLeadToDetail(
     programmeRequested: lead.programmeRequested ?? null,
     programmeInPortfolio: lead.programmeInPortfolio ?? null,
     intakeYear: lead.intakeYear ?? null,
+    fundingSelfPossible: lead.fundingSelfPossible ?? null,
+    franceReal: lead.franceReal ?? null,
+    englishReady: lead.englishReady ?? null,
+    contactValid: lead.contactValid ?? null,
     outcome: (lead.outcome as string | null) ?? null,
     qualification,
   }

@@ -18,7 +18,7 @@ import { PriorityBadge } from '@/components/shared/priority-badge'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { ScoreBar, ScoreCircle } from '@/components/shared/score-bar'
 import { useToast } from '@/providers/toast-provider'
-import { ActionStrip } from '@/features/intelligence/action-strip'
+import { ActionStrip, GateCard } from '@/features/intelligence/action-strip'
 import { useLeadTimeline } from '@/features/intelligence/hooks'
 import {
   useLead,
@@ -306,8 +306,24 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             </div>
           </Card>
 
-          {/* Qualification block */}
-          {qualification && (
+          {/* Qualification gate — the counsellor-recordable qualification */}
+          <GateCard
+            lead={{
+              id: lead.id,
+              firstName: lead.firstName,
+              phone: lead.phone,
+              programmeRequested: lead.programmeRequested,
+              programmeInPortfolio: lead.programmeInPortfolio,
+              intakeYear: lead.intakeYear,
+              fundingSelfPossible: lead.fundingSelfPossible,
+              franceReal: lead.franceReal,
+              englishReady: lead.englishReady,
+              contactValid: lead.contactValid,
+            }}
+          />
+
+          {/* AI qualification scorecard — only for leads the AI actually assessed (chat) */}
+          {qualification?.componentScores && Object.values(qualification.componentScores).some((v) => v != null) && (
             <QualificationCard qualification={qualification} assessment={assessment} />
           )}
 
