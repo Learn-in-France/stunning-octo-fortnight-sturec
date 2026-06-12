@@ -136,7 +136,6 @@ export default function WorkQueuePage() {
                 <th className="px-3 py-2">#</th>
                 <th className="px-3 py-2">Lead</th>
                 <th className="px-3 py-2">Intent</th>
-                <th className="px-3 py-2">Heat</th>
                 <th className="px-3 py-2">Programme</th>
                 <th className="px-3 py-2">Intake</th>
                 <th className="px-3 py-2">Source</th>
@@ -161,7 +160,6 @@ export default function WorkQueuePage() {
                       {item.intentScore ?? 0}
                     </Badge>
                   </td>
-                  <td className="px-3 py-2 text-xs">{item.latestAiAssessment?.leadHeat ?? '—'}</td>
                   <td className="px-3 py-2 max-w-[220px] truncate" title={item.programmeRequested ?? undefined}>
                     {item.programmeRequested ?? <span className="text-gray-400">unknown</span>}
                   </td>

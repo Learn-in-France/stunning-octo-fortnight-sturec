@@ -70,6 +70,14 @@ export async function recordOutcome(leadId: string, input: OutcomeInput) {
 export async function logManualEvent(leadId: string, input: ManualEventInput) {
   const existing = await repo.findLeadById(leadId)
   if (!existing) return null
+
+  // Debounce: identical manual event within 10 minutes = double-tap, not new signal
+  const recent = await repo.getLeadEvents(leadId, 10)
+  const cutoff = Date.now() - 10 * 60 * 1000
+  if (recent.some((e) => e.eventType === input.eventType && e.origin === 'manual' && e.occurredAt.getTime() > cutoff)) {
+    return { recorded: 0, deduped: true }
+  }
+
   const written = await repo.recordEvents([
     {
       leadId,
