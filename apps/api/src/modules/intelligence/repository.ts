@@ -171,15 +171,46 @@ export async function updateGate(
   })
 }
 
+/**
+ * Outcome is THE single human close action — status follows from it
+ * ("merge the decisions, not the screens"). Mapping:
+ *   applied/enrolled → qualified · disqualified/not_interested → disqualified
+ *   deferred_next_cycle → nurturing · unreachable → status unchanged
+ * Never downgrades a converted lead. Reason + transition logged into notes.
+ */
+const OUTCOME_STATUS: Record<string, string | null> = {
+  applied: 'qualified',
+  enrolled: 'qualified',
+  disqualified: 'disqualified',
+  not_interested: 'disqualified',
+  deferred_next_cycle: 'nurturing',
+  unreachable: null,
+}
+
 export async function updateOutcome(leadId: string, outcome: string, reason?: string) {
-  return prisma.lead.update({
+  const newStatus = OUTCOME_STATUS[outcome] ?? null
+  await prisma.$executeRaw`
+    UPDATE leads SET
+      outcome = ${outcome}::"LeadOutcome",
+      outcome_reason = ${reason ?? null},
+      outcome_at = now(),
+      status = CASE
+        WHEN ${newStatus}::text IS NULL OR status = 'converted' THEN status
+        ELSE ${newStatus}::"LeadStatus"
+      END,
+      qualified_at = CASE
+        WHEN ${newStatus}::text = 'qualified' AND qualified_at IS NULL THEN now()
+        ELSE qualified_at
+      END,
+      notes = coalesce(notes,'') || E'\n[' || to_char(now(),'YYYY-MM-DD') || '] outcome: ' || ${outcome}
+        || coalesce(': ' || ${reason ?? null}, '')
+        || CASE WHEN ${newStatus}::text IS NOT NULL AND status <> 'converted'
+                THEN ' (status -> ' || ${newStatus}::text || ')' ELSE '' END
+    WHERE id = ${leadId}::uuid AND deleted_at IS NULL
+  `
+  return prisma.lead.findUnique({
     where: { id: leadId },
-    data: {
-      outcome: outcome as never,
-      outcomeReason: reason,
-      outcomeAt: new Date(),
-    },
-    select: { id: true, outcome: true, outcomeAt: true },
+    select: { id: true, outcome: true, outcomeAt: true, status: true },
   })
 }
 

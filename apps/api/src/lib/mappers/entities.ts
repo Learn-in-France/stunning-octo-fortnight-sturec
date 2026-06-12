@@ -163,6 +163,10 @@ export function mapLeadToDetail(
     qualifiedAt: isoOrNull(lead.qualifiedAt),
     priorityUpdatedAt: isoOrNull(lead.priorityUpdatedAt),
     createdByUserId: lead.createdByUserId,
+    programmeRequested: lead.programmeRequested ?? null,
+    programmeInPortfolio: lead.programmeInPortfolio ?? null,
+    intakeYear: lead.intakeYear ?? null,
+    outcome: (lead.outcome as string | null) ?? null,
     qualification,
   }
 }

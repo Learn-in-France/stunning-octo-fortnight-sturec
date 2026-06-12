@@ -84,7 +84,11 @@ export function useApplyGate() {
   return useMutation({
     mutationFn: ({ leadId, gate }: { leadId: string; gate: GateInput }) =>
       api.post(`/intelligence/leads/${leadId}/gate`, gate),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['intelligence'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['intelligence'] })
+      qc.invalidateQueries({ queryKey: ['leads'] })
+      qc.invalidateQueries({ queryKey: ['lead'] })
+    },
   })
 }
 
@@ -93,7 +97,11 @@ export function useRecordOutcome() {
   return useMutation({
     mutationFn: ({ leadId, outcome, reason }: { leadId: string; outcome: OutcomeValue; reason?: string }) =>
       api.post(`/intelligence/leads/${leadId}/outcome`, { outcome, reason }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['intelligence'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['intelligence'] })
+      qc.invalidateQueries({ queryKey: ['leads'] })
+      qc.invalidateQueries({ queryKey: ['lead'] })
+    },
   })
 }
 
@@ -102,7 +110,28 @@ export function useLogManualEvent() {
   return useMutation({
     mutationFn: ({ leadId, eventType, note }: { leadId: string; eventType: 'wa_reply' | 'call_logged' | 'webinar_attend'; note?: string }) =>
       api.post(`/intelligence/leads/${leadId}/events`, { eventType, note }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['intelligence'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['intelligence'] })
+      qc.invalidateQueries({ queryKey: ['leads'] })
+      qc.invalidateQueries({ queryKey: ['lead'] })
+    },
+  })
+}
+
+export interface LeadEventItem {
+  id: string
+  eventType: string
+  origin: string
+  linkCategory: string | null
+  occurredAt: string
+  weight: number
+}
+
+export function useLeadTimeline(leadId: string | undefined) {
+  return useQuery<{ events: LeadEventItem[] }>({
+    queryKey: ['intelligence', 'timeline', leadId],
+    queryFn: () => api.get(`/intelligence/leads/${leadId}/timeline`) as Promise<{ events: LeadEventItem[] }>,
+    enabled: !!leadId,
   })
 }
 
