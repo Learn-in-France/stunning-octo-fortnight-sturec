@@ -43,9 +43,9 @@ export async function intelligenceRoutes(server: FastifyInstance) {
     handler: ctrl.getLeadTimeline,
   })
 
-  // Live funnel by source (the experiment dashboard)
+  // Live funnel by source (the experiment dashboard) — management view, admin only
   server.get('/intelligence/funnel', {
-    preHandler: [authMiddleware, requireRole('admin', 'counsellor')],
+    preHandler: [authMiddleware, requireRole('admin')],
     handler: ctrl.getFunnel,
   })
 }

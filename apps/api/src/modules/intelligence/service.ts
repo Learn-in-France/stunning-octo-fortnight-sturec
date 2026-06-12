@@ -9,6 +9,7 @@
 
 import * as repo from './repository.js'
 import { getIntelligenceQueue } from '../../lib/queue/index.js'
+import type { RequestUser } from '../../middleware/auth.js'
 import type { GateInput, OutcomeInput, ManualEventInput, WorkQueueQuery } from './schema.js'
 
 const CURRENT_CYCLE_MAX_YEAR = 2026
@@ -25,18 +26,25 @@ export function deriveDqTags(gate: GateInput): string[] {
   return tags
 }
 
-export async function getWorkQueue(query: WorkQueueQuery) {
+function canAccess(lead: { assignedCounsellorId: string | null }, user: RequestUser) {
+  return user.role === 'admin' || lead.assignedCounsellorId === user.id
+}
+
+export async function getWorkQueue(query: WorkQueueQuery, user: RequestUser) {
   const { rows, total } = await repo.workQueue({
     limit: query.limit,
     offset: query.offset,
     intakeMax: query.intakeMax ?? CURRENT_CYCLE_MAX_YEAR,
+    // Counsellors only see their assigned leads; admins see all
+    counsellorId: user.role === 'counsellor' ? user.id : undefined,
   })
   return { items: rows, total, limit: query.limit, offset: query.offset }
 }
 
-export async function applyGate(leadId: string, input: GateInput) {
+export async function applyGate(leadId: string, input: GateInput, user?: RequestUser) {
   const existing = await repo.findLeadById(leadId)
   if (!existing) return null
+  if (user && !canAccess(existing, user)) return null
 
   // Merge: only overwrite answers actually provided; recompute tags on the merged state
   const merged: GateInput = {
@@ -61,15 +69,17 @@ export async function applyGate(leadId: string, input: GateInput) {
   return repo.updateGate(leadId, { ...merged, dqTags: deriveDqTags(merged) })
 }
 
-export async function recordOutcome(leadId: string, input: OutcomeInput) {
+export async function recordOutcome(leadId: string, input: OutcomeInput, user?: RequestUser) {
   const existing = await repo.findLeadById(leadId)
   if (!existing) return null
+  if (user && !canAccess(existing, user)) return null
   return repo.updateOutcome(leadId, input.outcome, input.reason)
 }
 
-export async function logManualEvent(leadId: string, input: ManualEventInput) {
+export async function logManualEvent(leadId: string, input: ManualEventInput, user?: RequestUser) {
   const existing = await repo.findLeadById(leadId)
   if (!existing) return null
+  if (user && !canAccess(existing, user)) return null
 
   // Debounce: identical manual event within 10 minutes = double-tap, not new signal
   const recent = await repo.getLeadEvents(leadId, 10)
@@ -93,9 +103,10 @@ export async function logManualEvent(leadId: string, input: ManualEventInput) {
   return { recorded: written }
 }
 
-export async function getLeadTimeline(leadId: string) {
+export async function getLeadTimeline(leadId: string, user?: RequestUser) {
   const existing = await repo.findLeadById(leadId)
   if (!existing) return null
+  if (user && !canAccess(existing, user)) return null
   return repo.getLeadEvents(leadId)
 }
 

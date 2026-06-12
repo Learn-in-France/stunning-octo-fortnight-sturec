@@ -3,7 +3,8 @@
 /**
  * Work Queue — the morning screen for the lead-intelligence experiment.
  * Ranked by intent (behavioral), filtered to no-disqualifier + current cycle.
- * Row actions: WhatsApp deep-link · log WA reply / call · 6Q gate · outcome.
+ * Counsellors see only their assigned leads (scoped server-side); admins see all.
+ * Built on the same Table/badge components as /leads for visual coherence.
  */
 
 import { useState } from 'react'
@@ -18,6 +19,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Modal } from '@/components/ui/modal'
 import { Pagination } from '@/components/ui/pagination'
 import { Select } from '@/components/ui/select'
+import { Table, type Column } from '@/components/ui/table'
 import { useToast } from '@/providers/toast-provider'
 import {
   useWorkQueue,
@@ -40,6 +42,20 @@ const OUTCOME_OPTIONS: Array<{ value: OutcomeValue; label: string }> = [
   { value: 'unreachable', label: 'Unreachable' },
 ]
 
+/** Same visual language as the Score chip on /leads */
+function IntentScore({ value }: { value: number | null }) {
+  const v = value ?? 0
+  const color =
+    v >= 15 ? 'text-score-high bg-score-high/10' :
+    v > 0 ? 'text-score-mid bg-score-mid/10' :
+    'text-score-low bg-score-low/10'
+  return (
+    <span className={`inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-semibold font-mono ${color}`}>
+      {v}
+    </span>
+  )
+}
+
 function TriToggle({ label, value, onChange }: {
   label: string
   value: boolean | null | undefined
@@ -47,7 +63,7 @@ function TriToggle({ label, value, onChange }: {
 }) {
   return (
     <div className="flex items-center justify-between gap-2 py-1.5">
-      <span className="text-sm">{label}</span>
+      <span className="text-sm text-text-primary">{label}</span>
       <div className="flex gap-1">
         <Button size="sm" variant={value === true ? 'primary' : 'secondary'} onClick={() => onChange(true)}>Yes</Button>
         <Button size="sm" variant={value === false ? 'primary' : 'secondary'} onClick={() => onChange(false)}>No</Button>
@@ -115,7 +131,76 @@ export default function WorkQueuePage() {
   }
 
   const items = data?.items ?? []
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
+
+  const columns: Column<WorkQueueItem>[] = [
+    {
+      key: 'intent',
+      header: 'Intent',
+      className: 'w-16',
+      render: (row) => <IntentScore value={row.intentScore} />,
+    },
+    {
+      key: 'name',
+      header: 'Name',
+      render: (row) => (
+        <div>
+          <p className="font-medium text-text-primary">
+            {row.firstName} {row.lastName ?? ''}
+          </p>
+          <p className="text-xs text-text-muted">{row.email}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'programme',
+      header: 'Programme',
+      render: (row) => (
+        <div className="max-w-[220px]">
+          <p className="truncate text-xs text-text-secondary" title={row.programmeRequested ?? undefined}>
+            {row.programmeRequested ?? <span className="text-text-muted">unknown</span>}
+          </p>
+          {row.programmeInPortfolio === false && <Badge variant="danger">not offered</Badge>}
+        </div>
+      ),
+    },
+    {
+      key: 'intake',
+      header: 'Intake',
+      className: 'w-16',
+      render: (row) => <span className="text-xs text-text-secondary">{row.intakeYear ?? '—'}</span>,
+    },
+    {
+      key: 'source',
+      header: 'Source',
+      render: (row) => (
+        <p className="max-w-[160px] truncate text-[11px] text-text-muted" title={row.sourcePartner ?? undefined}>
+          {row.sourcePartner ?? '—'}
+        </p>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (row) => (
+        <div className="flex flex-wrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          {row.phone && (
+            <a
+              href={`https://wa.me/${row.phone.replace(/\D/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+            >
+              WhatsApp
+            </a>
+          )}
+          <Button size="sm" variant="secondary" onClick={() => quickLog(row, 'wa_reply')}>+WA reply</Button>
+          <Button size="sm" variant="secondary" onClick={() => quickLog(row, 'call_logged')}>+Call</Button>
+          <Button size="sm" variant="secondary" onClick={() => openGate(row)}>Gate</Button>
+          <Button size="sm" variant="secondary" onClick={() => { setOutcomeLead(row); setOutcome('not_interested') }}>Outcome</Button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <div>
@@ -127,87 +212,38 @@ export default function WorkQueuePage() {
       {isLoading ? (
         <LoadingSpinner />
       ) : items.length === 0 ? (
-        <EmptyState title="Queue is clear" description="No gated, current-cycle leads waiting." />
+        <div className="bg-surface-raised rounded-xl border border-border">
+          <EmptyState title="Queue is clear" description="No gated, current-cycle leads waiting." />
+        </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">Lead</th>
-                <th className="px-3 py-2">Intent</th>
-                <th className="px-3 py-2">Programme</th>
-                <th className="px-3 py-2">Intake</th>
-                <th className="px-3 py-2">Source</th>
-                <th className="px-3 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, i) => (
-                <tr key={item.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="px-3 py-2 text-gray-400">{(page - 1) * PAGE_SIZE + i + 1}</td>
-                  <td className="px-3 py-2">
-                    <button
-                      className="font-medium text-blue-700 hover:underline"
-                      onClick={() => router.push(`/leads/${item.id}`)}
-                    >
-                      {item.firstName} {item.lastName ?? ''}
-                    </button>
-                    <div className="text-xs text-gray-500">{item.email}</div>
-                  </td>
-                  <td className="px-3 py-2">
-                    <Badge variant={(item.intentScore ?? 0) >= 10 ? 'success' : (item.intentScore ?? 0) > 0 ? 'warning' : 'default'}>
-                      {item.intentScore ?? 0}
-                    </Badge>
-                  </td>
-                  <td className="px-3 py-2 max-w-[220px] truncate" title={item.programmeRequested ?? undefined}>
-                    {item.programmeRequested ?? <span className="text-gray-400">unknown</span>}
-                  </td>
-                  <td className="px-3 py-2">{item.intakeYear ?? '—'}</td>
-                  <td className="px-3 py-2 max-w-[160px] truncate text-xs text-gray-500" title={item.sourcePartner ?? undefined}>
-                    {item.sourcePartner ?? '—'}
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap items-center gap-1">
-                      {item.phone && (
-                        <a
-                          href={`https://wa.me/${item.phone.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700"
-                        >
-                          WhatsApp
-                        </a>
-                      )}
-                      <Button size="sm" variant="secondary" onClick={() => quickLog(item, 'wa_reply')}>+WA reply</Button>
-                      <Button size="sm" variant="secondary" onClick={() => quickLog(item, 'call_logged')}>+Call</Button>
-                      <Button size="sm" variant="secondary" onClick={() => openGate(item)}>Gate</Button>
-                      <Button size="sm" variant="secondary" onClick={() => { setOutcomeLead(item); setOutcome('not_interested') }}>Outcome</Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="mt-4">
-          <Pagination page={page} limit={PAGE_SIZE} total={data?.total ?? 0} onPageChange={setPage} />
-        </div>
+        <>
+          <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
+            <Table
+              columns={columns}
+              data={items}
+              rowKey={(row) => row.id}
+              onRowClick={(row) => router.push(`/leads/${row.id}`)}
+            />
+          </div>
+          <Pagination
+            page={page}
+            limit={PAGE_SIZE}
+            total={data?.total ?? 0}
+            onPageChange={setPage}
+          />
+        </>
       )}
 
       {/* 6Q gate modal */}
       <Modal open={!!gateLead} onClose={() => setGateLead(null)} title={`Qualification gate — ${gateLead?.firstName ?? ''}`}>
         <div className="space-y-2">
-          <label className="block text-sm font-medium">Programme requested</label>
+          <label className="block text-sm font-medium text-text-primary">Programme requested</label>
           <Input
             value={gate.programmeRequested ?? ''}
             onChange={(e) => setGate((g) => ({ ...g, programmeRequested: e.target.value || null }))}
             placeholder="e.g. MSc - Artificial Intelligence & Digital Strategy Management"
           />
-          <label className="block text-sm font-medium">Intake year</label>
+          <label className="block text-sm font-medium text-text-primary">Intake year</label>
           <Input
             type="number"
             value={gate.intakeYear ?? ''}

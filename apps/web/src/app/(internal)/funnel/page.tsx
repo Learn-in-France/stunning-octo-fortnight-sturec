@@ -18,17 +18,17 @@ function pct(part: number, whole: number): string {
 
 function Row({ row, isTotal }: { row: FunnelRow; isTotal?: boolean }) {
   return (
-    <tr className={isTotal ? 'border-t-2 bg-gray-50 font-semibold' : 'border-b last:border-0 hover:bg-gray-50'}>
+    <tr className={isTotal ? 'border-t-2 border-border bg-surface-sunken/40 font-semibold' : 'border-b border-border last:border-0 hover:bg-surface-sunken/40'}>
       <td className="max-w-[280px] truncate px-3 py-2" title={row.source}>{row.source}</td>
       <td className="px-3 py-2 text-right">{row.pool.toLocaleString()}</td>
       <td className="px-3 py-2 text-right">
         {row.engaged.toLocaleString()}
-        <span className="ml-1 text-xs text-gray-400">{pct(row.engaged, row.pool)}</span>
+        <span className="ml-1 text-xs text-text-muted">{pct(row.engaged, row.pool)}</span>
       </td>
       <td className="px-3 py-2 text-right">{row.gatePassed.toLocaleString()}</td>
       <td className="px-3 py-2 text-right">{row.applied.toLocaleString()}</td>
       <td className="px-3 py-2 text-right">{row.enrolled.toLocaleString()}</td>
-      <td className="px-3 py-2 text-right text-gray-500">{row.disqualified.toLocaleString()}</td>
+      <td className="px-3 py-2 text-right text-text-muted">{row.disqualified.toLocaleString()}</td>
     </tr>
   )
 }
@@ -58,17 +58,17 @@ export default function FunnelPage() {
               { label: 'Applied', value: data.totals.applied },
               { label: 'Enrolled', value: data.totals.enrolled },
             ].map((c) => (
-              <div key={c.label} className="rounded-lg border border-gray-200 bg-white p-4">
-                <div className="text-xs uppercase text-gray-500">{c.label}</div>
-                <div className="text-2xl font-bold">{c.value.toLocaleString()}</div>
+              <div key={c.label} className="rounded-lg border border-border bg-surface-raised p-4">
+                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">{c.label}</div>
+                <div className="text-2xl font-bold text-text-primary">{c.value.toLocaleString()}</div>
               </div>
             ))}
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          <div className="overflow-x-auto rounded-lg border border-border bg-surface-raised">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
+                <tr className="border-b border-border text-left text-[11px] font-semibold text-text-muted uppercase tracking-wider">
                   <th className="px-3 py-2">Source</th>
                   <th className="px-3 py-2 text-right">Pool</th>
                   <th className="px-3 py-2 text-right">Engaged</th>

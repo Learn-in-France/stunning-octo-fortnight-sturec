@@ -45,6 +45,8 @@ export interface LeadListItem {
   qualificationScore: number | null
   priorityLevel: PriorityLevel | null
   profileCompleteness: number | null
+  intentScore: number | null
+  dqTags: string[]
   isPartnerHotLead: boolean
   needsIntakeCompletion: boolean
   assignedCounsellorId: string | null

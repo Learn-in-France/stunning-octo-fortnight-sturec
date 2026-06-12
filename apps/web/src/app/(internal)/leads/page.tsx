@@ -131,6 +131,12 @@ export default function LeadsPage() {
       render: (row) => <QualScore value={row.qualificationScore} />,
     },
     {
+      key: 'intentScore',
+      header: 'Intent',
+      className: 'w-16',
+      render: (row) => <QualScore value={row.intentScore ?? 0} />,
+    },
+    {
       key: 'name',
       header: 'Name',
       sortable: true,
@@ -159,6 +165,9 @@ export default function LeadsPage() {
             {row.needsIntakeCompletion && (
               <Badge variant="muted">Needs intake</Badge>
             )}
+            {row.dqTags?.map((tag) => (
+              <Badge key={tag} variant="danger">{tag}</Badge>
+            ))}
           </div>
         </div>
       ),
